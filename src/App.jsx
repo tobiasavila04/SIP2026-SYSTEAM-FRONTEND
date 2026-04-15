@@ -56,7 +56,7 @@ function PantallaAutenticacion({ alIniciarSesion }) {
             {!esLogin && (
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-1.5">Nombre Completo</label>
-                <input type="text" name="name" onChange={manejarCambio} required placeholder="Ej: Tobias Avila"
+                <input type="text" name="name" onChange={manejarCambio} required placeholder="Ej: Juan Perez"
                   className="w-full px-4 py-3 bg-slate-700 text-white rounded-lg border border-slate-600 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all placeholder:text-slate-400" />
               </div>
             )}
