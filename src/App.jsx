@@ -1,42 +1,80 @@
 import { useState, useEffect } from 'react';
 
+// Función helper para verificar disponibilidad del servidor
+const verificarServidorDisponible = async () => {
+  try {
+    const respuesta = await fetch('/api/users', { method: 'HEAD' });
+    return respuesta.ok || respuesta.status === 401; // 401 significa que el servidor existe pero necesita auth
+  } catch {
+    return false;
+  }
+};
+
 // COMPONENTE 1: PANTALLA DE LOGIN Y REGISTRO (001.001 y 001.002)
 function PantallaAutenticacion({ alIniciarSesion }) {
   const [esLogin, setEsLogin] = useState(true);
   const [DatosFormulario, setDatosFormulario] = useState({ name: '', email: '', password: '' });
 
   //Actualiza el estado letra por letra mientras el usuario escribe.
-  const manejarCambio = (evento) => {
-    setDatosFormulario({ ...DatosFormulario, [evento.target.name]: evento.target.value });
+  const manejarCambio = (e) => {
+    setDatosFormulario({ ...DatosFormulario, [e.target.name]: e.target.value });
   };
 
   // Se ejecuta al hacer clic en "Entrar" o "Registrarme".
-  const manejarEnvio = async (evento) => {
+  const manejarEnvio = async (e) => {
     e.preventDefault();
 
-    // ⚠️ cambiar 'localhost' por IP.
-    const urlPeticion = esLogin ? 'http://localhost:8080/auth/login' : 'http://localhost:8080/auth/register';
+    const urlPeticion = esLogin ? '/auth/login' : '/auth/register';
+    const payload = esLogin ? { email: DatosFormulario.email, password: DatosFormulario.password } : DatosFormulario;
     
     try {
+      console.log('Enviando petición a:', urlPeticion);
+      console.log('Payload:', JSON.stringify(payload));
+      
+      // Verificar que el servidor está disponible
+      const servidorDisponible = await verificarServidorDisponible();
+      if (!servidorDisponible) {
+        alert(`❌ Servidor no disponible en http://localhost:8080\n\n¿El servidor Java está corriendo?\n\nEjecuta en otra terminal:\njava -jar tu-app.jar`);
+        return;
+      }
+      
       const respuesta = await fetch(urlPeticion, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(esLogin ? { email: DatosFormulario.email, password: DatosFormulario.password } : DatosFormulario)
+        body: JSON.stringify(payload)
       });
+
+      console.log('Respuesta status:', respuesta.status);
+      console.log('Respuesta ok:', respuesta.ok);
 
       if (respuesta.ok) {
         if (esLogin) {
           const datos = await respuesta.json();
-          alIniciarSesion(datos.token, datos.userId); 
+          console.log('Datos recibidos:', datos);
+          alIniciarSesion(datos.accessToken, datos.userId);
+          alert('¡Sesión iniciada correctamente!');
         } else {
           alert('¡Usuario registrado con éxito! Ahora iniciá sesión.');
           setEsLogin(true);
+          setDatosFormulario({ name: '', email: '', password: '' });
         }
       } else {
-        alert('Error en las credenciales o datos inválidos.');
+        const respuestaTexto = await respuesta.text();
+        console.error('Respuesta de error:', respuestaTexto);
+        
+        let mensajeError = 'Error desconocido';
+        try {
+          const errorData = JSON.parse(respuestaTexto);
+          mensajeError = errorData.message || errorData.error || JSON.stringify(errorData);
+        } catch {
+          mensajeError = respuestaTexto || `Error ${respuesta.status}`;
+        }
+        
+        alert(`Error ${respuesta.status}: ${mensajeError}\n\nAbre DevTools (F12) → Console para más detalles`);
       }
     } catch (error) {
-      alert('Error de conexión con el servidor Java.');
+      console.error('Error completo:', error);
+      alert(`❌ Error de conexión: ${error.message}\n\nVerifica que el servidor Java está corriendo en http://localhost:8080`);
     }
   };
 
@@ -97,6 +135,27 @@ function PantallaAutenticacion({ alIniciarSesion }) {
 function VistaPerfilUsuario({ token, idUsuario }) {
   const [datosPerfil, setDatosPerfil] = useState({ name: '', email: '' });
   const [datosPassword, setDatosPassword] = useState({ currentPassword: '', newPassword: '' });
+  const [cargando, setCargando] = useState(true);
+
+  // Cargar datos del usuario autenticado al montar el componente
+  useEffect(() => {
+    const cargarDatosUsuario = async () => {
+      try {
+        const respuesta = await fetch('/api/users/me', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (respuesta.ok) {
+          const datos = await respuesta.json();
+          setDatosPerfil({ name: datos.name, email: datos.email });
+        }
+      } catch (error) {
+        console.error('Error cargando datos del usuario:', error);
+      } finally {
+        setCargando(false);
+      }
+    };
+    cargarDatosUsuario();
+  }, [token]);
 
   // MANEJADORES DE CAMBIOS (Inputs) 
   const manejarCambioPerfil = (evento) => setDatosPerfil({ ...datosPerfil, [evento.target.name]: evento.target.value });
@@ -106,8 +165,7 @@ function VistaPerfilUsuario({ token, idUsuario }) {
   const manejarActualizacionPerfil = async (evento) => {
     evento.preventDefault();
     try {
-      // ⚠️ Cambiar localhost por IP si es necesario.
-      const respuesta = await fetch(`http://localhost:8080/api/users/${idUsuario}`, {
+      const respuesta = await fetch(`/api/users/me`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
@@ -119,10 +177,11 @@ function VistaPerfilUsuario({ token, idUsuario }) {
       if (respuesta.ok) {
         alert('¡Datos actualizados con éxito!');
       } else {
-        alert('Error al actualizar los datos.');
+        const errorData = await respuesta.json().catch(() => ({}));
+        alert(`Error: ${errorData.message || 'No se pudieron actualizar los datos'}`);
       }
     } catch (error) {
-      alert('Error de conexión con el servidor.');
+      alert(`Error de conexión: ${error.message}`);
     }
   };
 
@@ -130,14 +189,12 @@ function VistaPerfilUsuario({ token, idUsuario }) {
   const manejarActualizacionPassword = async (evento) => {
     evento.preventDefault();
     try {
-      // ⚠️ Cambiar localhost por IP si es necesario.
-      const respuesta = await fetch('http://localhost:8080/auth/change-password', {
+      const respuesta = await fetch('/auth/change-password', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}` 
         },
-        // Enviamos los datos tal cual los espera el ChangePasswordRequest.java
         body: JSON.stringify(datosPassword) 
       });
 
@@ -145,12 +202,17 @@ function VistaPerfilUsuario({ token, idUsuario }) {
         alert('¡Contraseña actualizada con éxito!');
         setDatosPassword({ currentPassword: '', newPassword: '' }); 
       } else {
-        alert('Error: La contraseña actual no coincide o la nueva es muy corta (mín. 8 caracteres).');
+        const errorData = await respuesta.json().catch(() => ({}));
+        alert(`Error: ${errorData.message || 'La contraseña actual no coincide o es muy corta (mín. 8 caracteres)'}`);
       }
     } catch (error) {
-      alert('Error de conexión con el servidor.');
+      alert(`Error de conexión: ${error.message}`);
     }
   };
+
+  if (cargando) {
+    return <div className="text-center py-8">Cargando datos del perfil...</div>;
+  }
 
   // --- RENDERIZADO VISUAL ---
   return (
@@ -201,41 +263,79 @@ function VistaPerfilUsuario({ token, idUsuario }) {
 }
 
 // COMPONENTE 2: ADMINISTRACIÓN DE USUARIOS (001.004)
-function VistaAdministradorUsuario({ token }) {
+function VistaAdministradorUsuario({ token, idUsuarioActual }) {
   const [listaUsuarios, setListaUsuarios] = useState([]);
+  const [tienePermiso, setTienePermiso] = useState(true);
 
   // Traer usuarios usando el endpoint GET /api/users
   const obtenerUsuarios = async () => {
     try {
-      // ⚠️ ambiar localhost por IP.
-      const respuesta = await fetch('http://localhost:8080/api/users', {
+      const respuesta = await fetch('/api/users', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (respuesta.ok) {
         const datos = await respuesta.json();
         setListaUsuarios(datos.content || []); 
+        setTienePermiso(true);
+      } else if (respuesta.status === 403) {
+        setTienePermiso(false);
+        console.warn('No tienes permisos para ver usuarios');
       }
     } catch (error) {
-      console.error('Error cargando usuarios');
+      console.error('Error cargando usuarios:', error);
     }
   };
 
   // Se ejecuta automáticamente al entrar a la pestaña de Administrador
-  useEffect(() => { obtenerUsuarios(); }, []);
+  useEffect(() => { obtenerUsuarios(); }, [token]);
 
   const manejarDeshabilitacion = async (idUsuario) => {
+    if (idUsuario === parseInt(idUsuarioActual)) {
+      alert('No puedes deshabilitar tu propia cuenta');
+      return;
+    }
+    
     if(!confirm('¿Seguro que querés deshabilitar este usuario?')) return;
     try {
-       // ⚠️ ambiar localhost por IP.
-      await fetch(`http://localhost:8080/api/users/${idUsuario}`, {
+      const respuesta = await fetch(`/api/users/${idUsuario}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      obtenerUsuarios(); // Recargamos la tabla
+      
+      console.log('Status:', respuesta.status);
+      const respuestaTexto = await respuesta.text();
+      console.log('Respuesta:', respuestaTexto);
+      
+      if (respuesta.ok) {
+        alert('Usuario deshabilitado correctamente');
+        obtenerUsuarios(); // Recargamos la tabla
+      } else if (respuesta.status === 403) {
+        alert('❌ Acceso denegado: No tienes permisos para deshabilitar usuarios.\n\nDebes ser administrador.');
+        setTienePermiso(false);
+      } else {
+        let mensajeError = 'Intenta nuevamente';
+        try {
+          const errorData = JSON.parse(respuestaTexto);
+          mensajeError = errorData.message || JSON.stringify(errorData);
+        } catch {
+          mensajeError = respuestaTexto || `Error ${respuesta.status}`;
+        }
+        alert(`Error ${respuesta.status}: ${mensajeError}\n\nAbre DevTools (F12) → Console para más detalles`);
+      }
     } catch (error) {
-      alert('Error al deshabilitar');
+      console.error('Error:', error);
+      alert(`Error de conexión: ${error.message}`);
     }
   };
+
+  if (!tienePermiso) {
+    return (
+      <div className="bg-red-50 rounded-xl shadow p-6 border border-red-200">
+        <h3 className="text-xl font-bold text-red-700 mb-2">Acceso Denegado</h3>
+        <p className="text-red-600">No tienes permisos para acceder al panel de administración. Debes ser administrador para gestionar usuarios.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white rounded-xl shadow p-6">
@@ -263,7 +363,7 @@ function VistaAdministradorUsuario({ token }) {
                   </span>
                 </td>
                 <td className="p-3">
-                  {usuario.enabled && (
+                  {usuario.enabled && parseInt(idUsuarioActual) !== usuario.id && (
                     <button onClick={() => manejarDeshabilitacion(usuario.id)} className="text-red-500 hover:text-red-700 font-semibold">
                       Deshabilitar
                     </button>
@@ -344,7 +444,7 @@ export default function App() {
           {vistaActual === 'admin' ? 'Gestión de Usuarios' : 'Mi Perfil'}
         </h1>
         
-        {vistaActual === 'admin' && <VistaAdministradorUsuario token={token} idUsuario={userId} />}
+        {vistaActual === 'admin' && <VistaAdministradorUsuario token={token} idUsuarioActual={userId} />}
         {vistaActual === 'perfil' && <VistaPerfilUsuario token={token} idUsuario={userId} />}
         
       </main>
