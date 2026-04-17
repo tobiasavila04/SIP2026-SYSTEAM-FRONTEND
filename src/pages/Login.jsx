@@ -1,6 +1,6 @@
 import { useState } from 'react';
+import {LoginForm} from "@/components/login-form.jsx"
 
-// Función helper para verificar disponibilidad del servidor
 const verificarServidorDisponible = async () => {
   try {
     const respuesta = await fetch('/api/users', { method: 'HEAD' });
@@ -26,7 +26,7 @@ export default function Login({ alIniciarSesion }) {
     try {
       const servidorDisponible = await verificarServidorDisponible();
       if (!servidorDisponible) {
-        alert(`❌ Servidor no disponible.\nVerifica que el backend de Ulises esté corriendo en http://localhost:8080`);
+        alert(`❌ Servidor no disponible.\nVerifica que el backend esté corriendo en http://localhost:8080`);
         return;
       }
       
@@ -54,93 +54,42 @@ export default function Login({ alIniciarSesion }) {
     }
   };
 
-  return (
+const ESTILO_LOGO_NEON = {
+  fontSize: 'clamp(4rem, 15vw, 10rem)', 
+  lineHeight: '1', 
+  letterSpacing: '-0.04em', 
+  background: 'linear-gradient(90deg, #6366f1 0%, #a855f7 40%, #2dd4bf 100%)', 
+  WebkitTextFillColor: 'transparent',  
+  backgroundClip: 'text'
+};
+
+ return (
     <div className="min-h-screen bg-[#0b1121] flex flex-col items-center justify-center p-6 font-sans">
-      
       <div className="mb-10 md:mb-14 w-full flex justify-center">
-        <h1 
-          className="font-black tracking-tighter text-center select-none"
-          style={{ 
-            fontSize: 'clamp(4rem, 15vw, 10rem)', 
-            lineHeight: '1',
-            letterSpacing: '-0.04em', 
-            
-            /* --- EL EFECTO DE COLORES (DEGRADADO) --- */
-            background: 'linear-gradient(90deg, #6366f1 0%, #a855f7 40%, #2dd4bf 100%)', 
-            WebkitTextFillColor: 'transparent', 
-            backgroundClip: 'text',
-            
-            /* --- EL RESPLANDOR (GLOW EFFECT) --- */
-            filter: 'drop-shadow(0px 0px 15px rgba(99, 102, 241, 0.4))' /* Un resplandor sutil color índigo */
-          }} 
-        >
+        <h1 className="font-black tracking-tighter text-center select-none" style={ESTILO_LOGO_NEON}>
           IDEAFY
         </h1>
       </div>
 
-      {/* ========================================== */}
-      {/* CAJA DE LOGIN / REGISTRO                     */}
-      {/* ========================================== */}
-      <div className="max-w-md w-full bg-slate-900/80 rounded-xl shadow-2xl border border-slate-800 p-10 transition-all">
-        <h2 className="text-3xl font-bold text-white mb-8 tracking-tight">
-          {esLogin ? 'Inicia sesión' : 'Crear Cuenta'}
-        </h2>
-        
-        <form onSubmit={manejarEnvio} className="space-y-5">
-          {!esLogin && (
-            <div>
-              <input 
-                type="text" 
-                name="name" 
-                onChange={manejarCambio} 
-                required 
-                placeholder="Nombre Completo"
-                className="w-full px-4 py-3.5 bg-slate-800 text-white rounded-md border border-slate-700 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-colors" 
-              />
-            </div>
-          )}
-          
-          <div>
-            <input 
-              type="email" 
-              name="email" 
-              onChange={manejarCambio} 
-              required 
-              placeholder="Email o número de teléfono"
-              className="w-full px-4 py-3.5 bg-slate-800 text-white rounded-md border border-slate-700 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-colors" 
-            />
-          </div>
-          
-          <div className="mb-6">
-            <input 
-              type="password" 
-              name="password" 
-              onChange={manejarCambio} 
-              required 
-              placeholder="Contraseña"
-              className="w-full px-4 py-3.5 bg-slate-800 text-white rounded-md border border-slate-700 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-colors" 
-            />
-          </div>
-          
-          <button type="submit" className="w-full py-3.5 mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-md transition-all shadow-lg">
-            {esLogin ? 'Iniciar sesión' : 'Registrarme'}
-          </button>
-        </form>
-        
-        {/* ========================================== */}
-        {/* BOTÓN PARA ALTERNAR ENTRE LOGIN Y REGISTRO   */}
-        {/* ========================================== */}
-        <div className="mt-8 text-slate-400 text-sm">
-          {esLogin ? '¿Primera vez en IDEAFY? ' : '¿Ya tenés una cuenta? '}
-          <button 
-            onClick={() => setEsLogin(!esLogin)} 
-            className="text-white hover:underline font-medium transition-colors"
-          >
-            {esLogin ? 'Suscríbete ahora.' : 'Iniciá sesión.'}
-          </button>
+     <div className="w-full max-w-lg">
+          <LoginForm 
+            esLogin={esLogin} 
+            setEsLogin={setEsLogin} 
+            manejarEnvio={manejarEnvio} 
+            manejarCambio={manejarCambio} 
+            
+            className="w-full"
+            cardClassName="bg-[#0f172a] border-slate-800 text-white shadow-2xl p-4 sm:p-8"
+            
+            titleClassName="text-4xl font-bold mb-2 tracking-tight"
+            descClassName="text-lg text-slate-400"
+            
+            labelClassName="text-slate-300 text-lg font-medium"
+            inputClassName="h-14 bg-[#1e293b] border-slate-700 text-white placeholder:text-slate-700 text-xl focus-visible:ring-indigo-500"
+            
+            submitBtnClassName="w-full bg-[#6366f1] hover:bg-[#4f46e5] text-white font-bold h-14 text-xl border-0 shadow-lg transition-all mt-4"
+          />
         </div>
-        
-      </div>
     </div>
   );
 }

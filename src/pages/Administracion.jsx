@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import {AdminTable} from "@/components/admin-table.jsx"
 
 export default function Administracion({ token, idUsuarioActual }) {
   const [listaUsuarios, setListaUsuarios] = useState([]);
@@ -140,124 +141,21 @@ export default function Administracion({ token, idUsuarioActual }) {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow p-6">
-      <h3 className="text-xl font-bold mb-4 text-gray-800">Panel de Administración</h3>
-      <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-slate-100 text-slate-600 text-sm">
-              <th className="p-3 border-b">ID</th>
-              <th className="p-3 border-b">Nombre</th>
-              <th className="p-3 border-b">Email</th>
-              <th className="p-3 border-b">Estado</th>
-              <th className="p-3 border-b">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {listaUsuarios.map(usuario => (
-              <tr key={usuario.id} className="hover:bg-slate-50 border-b text-sm">
-                <td className="p-3">{usuario.id}</td>
-                <td className="p-3 font-medium text-slate-900">{usuario.name}</td>
-                <td className="p-3 text-slate-500">{usuario.email}</td>
-                <td className="p-3">
-                  <span className={`px-2 py-1 rounded-full text-xs font-bold ${usuario.enabled ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                    {usuario.enabled ? 'Activo' : 'Inactivo'}
-                  </span>
-                </td>
-
-                <td className="p-3">
-                  <div className="flex flex-wrap gap-1">
-                    {usuario.roles && usuario.roles.length > 0 ? (
-                      usuario.roles.map((rol, index) => (
-                        <span key={index} className="px-2 py-1 bg-indigo-100 text-indigo-800 text-[10px] font-bold rounded">
-                          {obtenerNombreRol(rol)}
-                        </span>
-                      ))
-                    ) : (
-                      <span className="text-xs text-slate-400 italic">Sin rol</span>
-                    )}
-                  </div>
-                </td>
-                
-                <td className="p-3 flex gap-3 items-center">
-                  {/* Botón para gestionar los roles */}
-                  <button onClick={() => abrirModalRoles(usuario)} className="text-indigo-600 hover:text-indigo-800 font-semibold">
-                    Gestionar Roles
-                  </button>
-
-                  {/*  botón de deshabilitar */}
-                  {usuario.enabled && parseInt(idUsuarioActual) !== usuario.id && (
-                    <button onClick={() => manejarDeshabilitacion(usuario.id)} className="text-red-500 hover:text-red-700 font-semibold">
-                      Deshabilitar
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-    {/* MODAL PARA GESTIONAR ROLES  */}
-      {modalRolesAbierto && usuarioSeleccionado && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
-            <h2 className="text-xl font-bold mb-4 text-slate-800">
-              Roles de {usuarioSeleccionado.name}
-            </h2>
-
-            {/* roles que el usuario YA TIENE */}
-            <div className="mb-6">
-              <label className="block text-sm font-bold text-slate-700 mb-2">Roles Actuales (Clic para quitar):</label>
-              <div className="flex flex-wrap gap-2">
-                {usuarioSeleccionado.roles && usuarioSeleccionado.roles.length > 0 ? (
-                  usuarioSeleccionado.roles.map((rol, index) => (
-                    <button 
-                      key={index} 
-                      onClick={() => quitarRol(obtenerIdRolParaQuitar(rol))}
-                      title="Clic para quitar rol"
-                      className="px-3 py-1 bg-indigo-100 hover:bg-red-100 text-indigo-800 hover:text-red-700 text-sm font-bold rounded border border-indigo-200 hover:border-red-300 transition-colors"
-                    >
-                      {obtenerNombreRol(rol)} ✕
-                    </button>
-                  
-                  ))
-                ) : (
-                  <p className="text-sm text-slate-500 italic">Este usuario no tiene roles asignados.</p>
-                )}
-              </div>
-            </div>
-
-            {/* Agregar un rol NUEVO */}
-            <div className="mb-6 border-t pt-4">
-              <label className="block text-sm font-bold text-slate-700 mb-2">Asignar Nuevo Rol:</label>
-              <div className="flex gap-2">
-                {/* Usamos el ID  para saber qué rol eligió al hacer clic en Asignar */}
-                <select id="selector-roles" className="flex-1 bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2.5 outline-none">
-                  <option value="">Seleccione un rol...</option>
-                  {listaRoles.map(rol => (
-                    <option key={rol.id} value={rol.id}>{rol.name}</option>
-                  ))}
-                </select>
-                <button 
-                  onClick={() => asignarRol(document.getElementById('selector-roles').value)}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors"
-                >
-                  Asignar
-                </button>
-              </div>
-            </div>
-
-            {/* Botón de cerrar */}
-            <div className="flex justify-end mt-4">
-              <button onClick={() => setModalRolesAbierto(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-semibold transition-colors">
-                Cerrar Ventana
-              </button>
-            </div>
-            
-          </div>
-        </div>
-      )}
+    <div className="max-w-6xl mx-auto py-8 px-4 w-full">
+      <AdminTable 
+        listaUsuarios={listaUsuarios}
+        listaRoles={listaRoles}
+        idUsuarioActual={idUsuarioActual}
+        manejarDeshabilitacion={manejarDeshabilitacion}
+        abrirModalRoles={abrirModalRoles}
+        modalRolesAbierto={modalRolesAbierto}
+        setModalRolesAbierto={setModalRolesAbierto}
+        usuarioSeleccionado={usuarioSeleccionado}
+        asignarRol={asignarRol}
+        quitarRol={quitarRol}
+        obtenerNombreRol={obtenerNombreRol}
+        obtenerIdRolParaQuitar={obtenerIdRolParaQuitar}
+      />
     </div>
   );
 }

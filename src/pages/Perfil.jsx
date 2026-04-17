@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import {ProfileForm} from "@/components/profile-form.jsx"
 
 export default function Perfil({ token, idUsuario }) {
   const [datosPerfil, setDatosPerfil] = useState({ name: '', email: '' });
@@ -8,7 +9,7 @@ export default function Perfil({ token, idUsuario }) {
   useEffect(() => {
     const cargarDatosUsuario = async () => {
       try {
-        const respuesta = await fetch('/api/users/me', {
+        const respuesta = await fetch(`/api/users/${idUsuario}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (respuesta.ok) {
@@ -30,7 +31,7 @@ export default function Perfil({ token, idUsuario }) {
   const manejarActualizacionPerfil = async (e) => {
     e.preventDefault();
     try {
-      const respuesta = await fetch(`/api/users/me`, {
+      const respuesta = await fetch(`/api/users/${idUsuario}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify(datosPerfil)
@@ -47,7 +48,10 @@ export default function Perfil({ token, idUsuario }) {
     try {
       const respuesta = await fetch('/auth/change-password', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        headers: { 
+          'Content-Type': 'application/json', 
+          'Authorization': `Bearer ${token}` 
+        },
         body: JSON.stringify(datosPassword) 
       });
       if (respuesta.ok) {
@@ -64,36 +68,16 @@ export default function Perfil({ token, idUsuario }) {
   if (cargando) return <div className="text-center py-8">Cargando datos...</div>;
 
   return (
-    <div className="max-w-md space-y-6">
-      <div className="bg-white rounded-xl shadow p-8">
-        <h3 className="text-xl font-bold mb-6 text-gray-800">Actualizar Mis Datos</h3>
-        <form onSubmit={manejarActualizacionPerfil} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
-            <input type="text" name="name" value={datosPerfil.name} onChange={manejarCambioPerfil} required className="w-full px-4 py-2 bg-slate-50 border rounded-lg" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-            <input type="email" name="email" value={datosPerfil.email} onChange={manejarCambioPerfil} required className="w-full px-4 py-2 bg-slate-50 border rounded-lg" />
-          </div>
-          <button type="submit" className="w-full py-3 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 font-bold rounded-lg">Guardar Datos Básicos</button>
-        </form>
-      </div>
-
-      <div className="bg-white rounded-xl shadow p-8">
-        <h3 className="text-xl font-bold mb-6 text-gray-800">Cambiar Contraseña</h3>
-        <form onSubmit={manejarActualizacionPassword} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña Actual</label>
-            <input type="password" name="currentPassword" value={datosPassword.currentPassword} onChange={manejarCambioPassword} required className="w-full px-4 py-2 bg-slate-50 border rounded-lg" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nueva Contraseña</label>
-            <input type="password" name="newPassword" value={datosPassword.newPassword} onChange={manejarCambioPassword} required className="w-full px-4 py-2 bg-slate-50 border rounded-lg" />
-          </div>
-          <button type="submit" className="w-full py-3 bg-red-50 hover:bg-red-100 text-red-600 font-bold rounded-lg">Actualizar Contraseña</button>
-        </form>
-      </div>
+    <div className="max-w-xl mx-auto py-8">
+      <ProfileForm 
+        cargando={cargando}
+        datosPerfil={datosPerfil}
+        datosPassword={datosPassword}
+        manejarCambioPerfil={manejarCambioPerfil}
+        manejarCambioPassword={manejarCambioPassword}
+        manejarActualizacionPerfil={manejarActualizacionPerfil}
+        manejarActualizacionPassword={manejarActualizacionPassword}
+      />
     </div>
   );
 }
