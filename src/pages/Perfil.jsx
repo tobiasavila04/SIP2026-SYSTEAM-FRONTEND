@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import {ProfileForm} from "@/components/profile-form.jsx"
+import { API_ENDPOINTS } from "@/config/api.js";
 
 export default function Perfil({ token, idUsuario }) {
   const [datosPerfil, setDatosPerfil] = useState({ name: '', email: '' });
@@ -9,7 +10,7 @@ export default function Perfil({ token, idUsuario }) {
   useEffect(() => {
     const cargarDatosUsuario = async () => {
       try {
-        const respuesta = await fetch('/api/users/me', {
+        const respuesta = await fetch(API_ENDPOINTS.USER_ME, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (respuesta.ok) {
@@ -31,7 +32,7 @@ export default function Perfil({ token, idUsuario }) {
   const manejarActualizacionPerfil = async (e) => {
     e.preventDefault();
     try {
-      const respuesta = await fetch(`/api/users/${idUsuario}`, {
+      const respuesta = await fetch(API_ENDPOINTS.USER_BY_ID(idUsuario), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify(datosPerfil)
@@ -46,7 +47,7 @@ export default function Perfil({ token, idUsuario }) {
   const manejarActualizacionPassword = async (e) => {
     e.preventDefault();
     try {
-      const respuesta = await fetch('/auth/change-password', {
+      const respuesta = await fetch(API_ENDPOINTS.AUTH_CHANGE_PASSWORD, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json', 

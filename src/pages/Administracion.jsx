@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import {AdminTable} from "@/components/admin-table.jsx"
+import { API_ENDPOINTS } from "@/config/api.js";
 
 export default function Administracion({ token, idUsuarioActual }) {
   const [listaUsuarios, setListaUsuarios] = useState([]);
@@ -10,7 +11,7 @@ export default function Administracion({ token, idUsuarioActual }) {
 
   const obtenerUsuarios = async () => {
     try {
-      const respuesta = await fetch('/api/users', {
+      const respuesta = await fetch(API_ENDPOINTS.USERS, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (respuesta.ok) {
@@ -19,7 +20,7 @@ export default function Administracion({ token, idUsuarioActual }) {
       }
 
       // Pedimos la lista de roles (para mostrarlos en el menú desplegable del Modal)
-      const resRoles = await fetch('/api/roles', {
+      const resRoles = await fetch(API_ENDPOINTS.ROLES, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (resRoles.ok) {
@@ -42,7 +43,7 @@ export default function Administracion({ token, idUsuarioActual }) {
     if(!confirm('¿Seguro que querés deshabilitar este usuario?')) return;
     
     try {
-      const respuesta = await fetch(`/api/users/${idUsuario}`, {
+      const respuesta = await fetch(API_ENDPOINTS.USER_BY_ID(idUsuario), {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -73,14 +74,14 @@ export default function Administracion({ token, idUsuarioActual }) {
           for (const rolAntiguo of usuarioSeleccionado.roles) {
             const idRolAntiguo = obtenerIdRolParaQuitar(rolAntiguo);
             
-            await fetch(`/api/users/${usuarioSeleccionado.id}/roles/${idRolAntiguo}`, {
+            await fetch(API_ENDPOINTS.USER_ROLE(usuarioSeleccionado.id, idRolAntiguo), {
               method: 'DELETE',
               headers: { 'Authorization': `Bearer ${token}` }
             });
           }
         } 
 
-      const respuesta = await fetch(`/api/users/${usuarioSeleccionado.id}/roles/${idRol}`, {
+      const respuesta = await fetch(API_ENDPOINTS.USER_ROLE(usuarioSeleccionado.id, idRol), {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });

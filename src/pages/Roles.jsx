@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { RolesTable } from "@/components/roles-table.jsx"; 
+import { RolesTable } from "@/components/roles-table.jsx";
+import { API_ENDPOINTS } from "@/config/api.js";
 
 export default function Roles({ token }) {
   const [listaRoles, setListaRoles] = useState([]);
@@ -9,11 +10,11 @@ export default function Roles({ token }) {
 
   const cargarDatos = async () => {
     try {
-      const resRoles = await fetch('/api/roles', { headers: { 'Authorization': `Bearer ${token}` } });
+      const resRoles = await fetch(API_ENDPOINTS.ROLES, { headers: { 'Authorization': `Bearer ${token}` } });
       const datosRoles = await resRoles.json();
       setListaRoles(datosRoles.content || datosRoles || []);
 
-      const resPermisos = await fetch('/api/permissions', { headers: { 'Authorization': `Bearer ${token}` } });
+      const resPermisos = await fetch(API_ENDPOINTS.PERMISSIONS, { headers: { 'Authorization': `Bearer ${token}` } });
       const datosPermisos = await resPermisos.json();
       setListaPermisosDisponibles(datosPermisos.content || datosPermisos || []);
     } catch (error) {
@@ -54,7 +55,8 @@ export default function Roles({ token }) {
     
     try {
       // 1. Crear o actualizar el rol (sin permisos en el body)
-      const res = await fetch(esEdicion ? `/api/roles/${rolEditando.id}` : '/api/roles', {
+      const urlRol = esEdicion ? API_ENDPOINTS.ROLE_BY_ID(rolEditando.id) : API_ENDPOINTS.ROLES;
+      const res = await fetch(urlRol, {
         method: esEdicion ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify(payloadRol)
@@ -76,7 +78,7 @@ export default function Roles({ token }) {
         // Desasignar los permisos que se quitaron
         for (const idPermiso of permisosOriginales) {
           if (!permisosActuales.has(idPermiso)) {
-            await fetch(`/api/roles/${rolId}/permissions/${idPermiso}`, {
+            await fetch(API_ENDPOINTS.ROLE_PERMISSION(rolId, idPermiso), {
               method: 'DELETE',
               headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -86,7 +88,7 @@ export default function Roles({ token }) {
         // Asignar los permisos nuevos
         for (const idPermiso of permisosActuales) {
           if (!permisosOriginales.has(idPermiso)) {
-            await fetch(`/api/roles/${rolId}/permissions/${idPermiso}`, {
+            await fetch(API_ENDPOINTS.ROLE_PERMISSION(rolId, idPermiso), {
               method: 'POST',
               headers: { 'Authorization': `Bearer ${token}` }
             });

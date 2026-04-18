@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import {LoginForm} from "@/components/login-form.jsx"
+import { API_ENDPOINTS } from "@/config/api.js"
 
 const verificarServidorDisponible = async () => {
   try {
-    const respuesta = await fetch('/api/users', { method: 'HEAD' });
+    const respuesta = await fetch(API_ENDPOINTS.USERS, { method: 'HEAD' });
     return respuesta.ok || respuesta.status === 401;
   } catch {
     return false;
@@ -20,7 +21,7 @@ export default function Login({ alIniciarSesion }) {
 
   const manejarEnvio = async (e) => {
     e.preventDefault();
-    const urlPeticion = esLogin ? '/auth/login' : '/auth/register';
+    const urlPeticion = esLogin ? API_ENDPOINTS.AUTH_LOGIN : API_ENDPOINTS.AUTH_REGISTER;
     const payload = esLogin ? { email: DatosFormulario.email, password: DatosFormulario.password } : DatosFormulario;
     
     try {
