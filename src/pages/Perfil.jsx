@@ -9,7 +9,7 @@ export default function Perfil({ token, idUsuario }) {
   useEffect(() => {
     const cargarDatosUsuario = async () => {
       try {
-        const respuesta = await fetch(`/api/users/${idUsuario}`, {
+        const respuesta = await fetch('/api/users/me', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (respuesta.ok) {

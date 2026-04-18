@@ -24,13 +24,13 @@ export default function Roles({ token }) {
   useEffect(() => { cargarDatos(); }, [token]);
 
   const manejarAperturaCrear = () => {
-    setRolEditando({ name: '', description: '', permissions: [] });
+    setRolEditando({ name: '', description: '', permissions: [], permisosOriginales: [] });
     setModalAbierto(true);
   };
 
   const manejarAperturaEditar = (rol) => {
     const permisosIds = (rol.permissions || []).map(p => Number(typeof p === 'object' ? p.id : p));
-    setRolEditando({ ...rol, permissions: permisosIds });
+    setRolEditando({ ...rol, permissions: permisosIds, permisosOriginales: permisosIds });
     setModalAbierto(true);
   };
 
@@ -46,18 +46,60 @@ export default function Roles({ token }) {
   const manejarGuardar = async () => {
     if (!rolEditando.name.trim()) return alert("Nombre obligatorio");
     const esEdicion = !!rolEditando.id;
+    
+    // Payload sin permissions (se gestionan por separado)
+    const payloadRol = { name: rolEditando.name, description: rolEditando.description };
+    
+    let rolId;
+    
     try {
+      // 1. Crear o actualizar el rol (sin permisos en el body)
       const res = await fetch(esEdicion ? `/api/roles/${rolEditando.id}` : '/api/roles', {
         method: esEdicion ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify(rolEditando)
+        body: JSON.stringify(payloadRol)
       });
-      if (res.ok) {
-        setModalAbierto(false);
-        cargarDatos();
-        alert("¡Éxito!");
+      
+      if (!res.ok) {
+        alert("Error al guardar el rol");
+        return;
       }
-    } catch (e) { alert(e.message); }
+      
+      const datosRol = await res.json();
+      rolId = datosRol.id;
+      
+      // 2. Si es edición, sincronizar permisos (desasignar los que ya no están, asignar los nuevos)
+      if (esEdicion && rolEditando.permisosOriginales) {
+        const permisosActuales = new Set(rolEditando.permissions || []);
+        const permisosOriginales = new Set(rolEditando.permisosOriginales);
+        
+        // Desasignar los permisos que se quitaron
+        for (const idPermiso of permisosOriginales) {
+          if (!permisosActuales.has(idPermiso)) {
+            await fetch(`/api/roles/${rolId}/permissions/${idPermiso}`, {
+              method: 'DELETE',
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+          }
+        }
+        
+        // Asignar los permisos nuevos
+        for (const idPermiso of permisosActuales) {
+          if (!permisosOriginales.has(idPermiso)) {
+            await fetch(`/api/roles/${rolId}/permissions/${idPermiso}`, {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+          }
+        }
+      }
+      
+      setModalAbierto(false);
+      cargarDatos();
+      alert("¡Éxito!");
+    } catch (e) { 
+      alert(e.message); 
+    }
   };
 
   return (
