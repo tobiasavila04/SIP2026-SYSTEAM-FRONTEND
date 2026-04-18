@@ -14,7 +14,6 @@ export function LoginForm({
   labelClassName,
   inputClassName,
   submitBtnClassName,
-  googleBtnClassName,
   ...props
 }) {
   return (
@@ -46,11 +45,7 @@ export function LoginForm({
               <Field>
                 <div className="flex items-center">
                   <FieldLabel htmlFor="password" className={cn("", labelClassName)}>Contraseña</FieldLabel>
-                  {esLogin && (
-                    <a href="#" className="ml-auto inline-block text-sm underline-offset-4 hover:underline">
-                      ¿Olvidaste tu contraseña?
-                    </a>
-                  )}
+                  {esLogin}
                 </div>
                 <Input id="password" name="password" type="password" onChange={manejarCambio} required className={cn("", inputClassName)} />
               </Field>
@@ -58,9 +53,6 @@ export function LoginForm({
               <Field>
                 <Button type="submit" className={cn("", submitBtnClassName)}>
                   {esLogin ? 'Iniciar sesión' : 'Registrarme'}
-                </Button>
-                <Button variant="outline" type="button" className={cn("", googleBtnClassName)}>
-                  Iniciar sesión con Google
                 </Button>
                 <FieldDescription className="text-center mt-2">
                   {esLogin ? '¿No tienes una cuenta? ' : '¿Ya tienes una cuenta? '}

@@ -118,15 +118,13 @@ export default function Administracion({ token, idUsuarioActual }) {
   };
 
   const obtenerNombreRol = (rol) => {
-    if (typeof rol === 'string') return rol; // Si Ulises manda un texto ["ADMIN"]
-    return rol.name || rol.authority || `Rol ID: ${rol.id}`; // Si manda un objeto
+    if (typeof rol === 'string') return rol; 
+    return rol.name || rol.authority || `Rol ID: ${rol.id}`; 
   };
 
   const obtenerIdRolParaQuitar = (rolTexto) => {
     // Si es un string (ej: "ADMIN")
     if (typeof rolTexto === 'string') {
-      // Buscamos en la lista general de roles cuál es el que tiene este mismo nombre.
-      // Le agregamos la validación "ROLE_" por si Spring Boot le pone ese prefijo oculto.
       const rolEncontrado = listaRoles.find(r => 
         r.name === rolTexto || 
         r.name === `ROLE_${rolTexto}` || 
