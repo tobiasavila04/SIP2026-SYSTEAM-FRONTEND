@@ -1,116 +1,129 @@
-import { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
+import { Button } from "@/components/ui/button";
 
 import Login from './pages/Login';
 import Perfil from './pages/Perfil';
 import Administracion from './pages/Administracion';
 import Roles from './pages/Roles';
+import OAuth2Callback from './pages/OAuth2Callback';
 
-const decodificarToken = (token) => {
+function decodificarToken(token) {
   try {
-    const base64Url = token.split('.')[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-    }).join(''));
-    return JSON.parse(jsonPayload);
-  } catch (error) {
+    return JSON.parse(atob(token.split('.')[1]));
+  } catch {
     return null;
   }
-};
+}
+
+function Sidebar({ esAdmin, alCerrarSesion }) {
+  const location = useLocation();
+  
+  const links = [
+    { to: '/perfil', label: 'Mi Perfil' },
+    ...(esAdmin ? [
+      { to: '/admin', label: 'Usuarios' },
+      { to: '/roles', label: 'Roles' },
+    ] : [])
+  ];
+
+  return (
+    <aside className="w-60 min-h-screen bg-[#0f172a] border-r border-white/10 flex flex-col">
+      <div className="p-5 border-b border-white/10">
+        <h1 className="text-xl font-bold text-white">IDEAFY</h1>
+      </div>
+      
+      <nav className="flex-1 p-3 space-y-1">
+        {links.map(link => (
+          <Link
+            key={link.to}
+            to={link.to}
+            className={`block px-3 py-2 rounded text-sm ${
+              location.pathname === link.to
+                ? 'bg-blue-600/20 text-blue-400'
+                : 'text-slate-400 hover:bg-white/5 hover:text-white'
+            }`}
+          >
+            {link.label}
+          </Link>
+        ))}
+      </nav>
+
+      <div className="p-3 border-t border-white/10">
+        <Button variant="outline" onClick={alCerrarSesion} className="w-full">
+          Cerrar sesión
+        </Button>
+      </div>
+    </aside>
+  );
+}
+
+function Dashboard({ token, alCerrarSesion }) {
+  const payload = decodificarToken(token);
+  const esAdmin = payload?.roles?.includes('ADMIN');
+
+  return (
+    <div className="flex min-h-screen bg-[#030712]">
+      <Sidebar esAdmin={esAdmin} alCerrarSesion={alCerrarSesion} />
+      
+      <div className="flex-1 flex flex-col">
+        <header className="h-14 border-b border-white/10 bg-[#0f172a] flex items-center justify-between px-6">
+          <span className="text-sm text-slate-400">Panel de Control</span>
+          <Button variant="ghost" onClick={alCerrarSesion} className="text-slate-400 hover:text-white text-sm">
+            Cerrar sesión
+          </Button>
+        </header>
+
+        <main className="flex-1 p-6 overflow-auto">
+          <Routes>
+            <Route path="/" element={<Navigate to="/perfil" />} />
+            <Route path="/perfil" element={<Perfil token={token} idUsuario={payload?.userId} />} />
+            <Route path="/admin" element={esAdmin ? <Administracion token={token} idUsuarioActual={payload?.userId} /> : <Navigate to="/perfil" />} />
+            <Route path="/roles" element={esAdmin ? <Roles token={token} /> : <Navigate to="/perfil" />} />
+            <Route path="/oauth2/callback" element={<OAuth2Callback alIniciarSesion={(t, id) => {
+              sessionStorage.setItem('tokenIDEAFY', t);
+              sessionStorage.setItem('userIdIDEAFY', id);
+              window.location.href = '/perfil';
+            }} />} />
+            <Route path="*" element={<Navigate to="/perfil" />} />
+          </Routes>
+        </main>
+      </div>
+    </div>
+  );
+}
 
 export default function App() {
-  const [token, setToken] = useState(sessionStorage.getItem('tokenIDEAFY') || null);
-  const [userId, setUserId] = useState(sessionStorage.getItem('userIdIDEAFY') || null);
+  const [token, setToken] = useState(sessionStorage.getItem('tokenIDEAFY'));
 
-  // Verificamos si es ADMIN
-  let esAdmin = false;
-  if (token) {
-    const payload = decodificarToken(token);
-    if (payload && payload.roles) esAdmin = payload.roles.includes('ADMIN') || payload.roles.includes('ROLE_ADMIN');
-    else if (payload && payload.role) esAdmin = payload.role === 'ADMIN' || payload.role === 'ROLE_ADMIN';
-    else if (payload && payload.authorities) esAdmin = payload.authorities.includes('ADMIN') || payload.authorities.includes('ROLE_ADMIN');
-  }
-
-  const manejarInicioSesion = (nuevoToken, id) => {
-    sessionStorage.setItem('tokenIDEAFY', nuevoToken);
-    sessionStorage.setItem('userIdIDEAFY', id); 
-    setToken(nuevoToken);
-    setUserId(id); 
+  const alIniciarSesion = (newToken, id) => {
+    sessionStorage.setItem('tokenIDEAFY', newToken);
+    sessionStorage.setItem('userIdIDEAFY', id);
+    setToken(newToken);
   };
 
-  const manejarCierreSesion = () => {
+  const alCerrarSesion = () => {
     sessionStorage.removeItem('tokenIDEAFY');
     sessionStorage.removeItem('userIdIDEAFY');
     setToken(null);
-    setUserId(null); 
+    window.location.href = '/';
   };
 
-  // Si no hay token, mostramos solo la pantalla de Login (y le pasamos la función para loguearse)
-  if (!token) {
-    return <Login alIniciarSesion={manejarInicioSesion} />;
-  }
-
-  // Si hay token, cargamos el Router y la barra de navegación
   return (
     <Router>
-      <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
-        
-        {/* BARRA DE NAVEGACIÓN SUPERIOR */}
-        <nav className="bg-[#0b1121] px-10 py-6 flex items-center justify-between border-b border-slate-800 shadow-md">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-linear-to-tr from-indigo-500 to-purple-500 rounded-full flex items-center justify-center shadow-lg">
-              <span className="text-white font-bold text-xs">ID</span>
-            </div>
-            <span className="text-white font-bold text-xl tracking-widest">IDEAFY</span>
-          </div>
-
-          <div className="flex items-center gap-6">
-            {/* Usamos el componente <Link> de React Router en lugar de botones normales */}
-            <Link to="/perfil" className="text-sm font-semibold text-slate-300 hover:text-white transition-colors">
-              Mi Perfil
-            </Link>
-            
-            {/* El link de Admin solo se dibuja si esAdmin es verdadero */}
-            {esAdmin && (
-              <>
-                <Link to="/admin" className="text-sm font-semibold text-slate-300 hover:text-white transition-colors">
-                  Usuarios
-                </Link>
-                <Link to="/roles" className="text-sm font-semibold text-slate-300 hover:text-white transition-colors">
-                  Roles
-                </Link>
-              </>
-            )}
-            
-            <button onClick={manejarCierreSesion} className="text-sm font-semibold text-white flex items-center gap-2 hover:text-red-400 transition-colors ml-4 border-l border-slate-700 pl-4">
-              Cerrar sesión <span className="text-lg">&rarr;</span>
-            </button>
-          </div>
-        </nav>
-
-        {/* CONTENEDOR PRINCIPAL Y RUTAS */}
-        <main className="max-w-6xl mx-auto p-8">
-          <Routes>
-            {/* Si entra a localhost:3000/ lo redirigimos al perfil */}
-            <Route path="/" element={<Navigate to="/perfil" />} />
-            
-            {/* Ruta del perfil */}
-            <Route path="/perfil" element={<Perfil token={token} idUsuario={userId} />} />
-            
-            {/* RUTA PROTEGIDA: Si intenta entrar a /admin pero no esAdmin, lo mandamos al perfil de nuevo */}
-            <Route 
-              path="/admin" 
-              element={esAdmin ? <Administracion token={token} idUsuarioActual={userId} /> : <Navigate to="/perfil" />} 
-            />
-            <Route 
-              path="/roles" 
-              element={esAdmin ? <Roles token={token} /> : <Navigate to="/perfil" />} 
-            />
-          </Routes>
-        </main>
-
-      </div>
+      {!token ? (
+        <Routes>
+          <Route path="/" element={<Login alIniciarSesion={alIniciarSesion} />} />
+          <Route path="/oauth2/callback" element={<OAuth2Callback alIniciarSesion={(t, id) => {
+            sessionStorage.setItem('tokenIDEAFY', t);
+            sessionStorage.setItem('userIdIDEAFY', id);
+            window.location.href = '/';
+          }} />} />
+          <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
+      ) : (
+        <Dashboard token={token} alCerrarSesion={alCerrarSesion} />
+      )}
     </Router>
   );
 }

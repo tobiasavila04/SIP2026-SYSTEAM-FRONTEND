@@ -6,7 +6,7 @@ export default function Roles({ token }) {
   const [listaRoles, setListaRoles] = useState([]);
   const [listaPermisosDisponibles, setListaPermisosDisponibles] = useState([]);
   const [modalAbierto, setModalAbierto] = useState(false);
-  const [rolEditando, setRolEditando] = useState(null); // Empezamos en null
+  const [rolEditando, setRolEditando] = useState(null);
 
   const cargarDatos = async () => {
     try {
@@ -30,12 +30,18 @@ export default function Roles({ token }) {
   };
 
   const manejarAperturaEditar = (rol) => {
-    const permisosIds = (rol.permissions || []).map(p => Number(typeof p === 'object' ? p.id : p));
+    const permisosNombres = (rol.permissions || []).filter(p => typeof p === 'string');
+    
+    const permisosIds = permisosNombres.map(nombrePermiso => {
+      const permisoEncontrado = listaPermisosDisponibles.find(p => p.name === nombrePermiso);
+      return permisoEncontrado ? permisoEncontrado.id : null;
+    }).filter(id => id !== null);
+    
     setRolEditando({ ...rol, permissions: permisosIds, permisosOriginales: permisosIds });
     setModalAbierto(true);
   };
 
-  const manejarTogglePermiso = (idPermiso, tildado) => {
+  const manejarCambioPermiso = (idPermiso, tildado) => {
     setRolEditando(prev => {
       const actuales = new Set(prev.permissions);
       if (tildado) actuales.add(Number(idPermiso));
@@ -44,17 +50,33 @@ export default function Roles({ token }) {
     });
   };
 
+  const manejarEliminar = async (idRol) => {
+    if (!confirm('¿Seguro que querés eliminar este rol?')) return;
+    
+    try {
+      const respuesta = await fetch(API_ENDPOINTS.ROLE_BY_ID(idRol), {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (respuesta.ok) {
+        alert('Rol eliminado correctamente');
+        cargarDatos();
+      } else {
+        alert('Hubo un error al intentar eliminar el rol.');
+      }
+    } catch (error) {
+      alert(`Error de conexión: ${error.message}`);
+    }
+  };
+
   const manejarGuardar = async () => {
     if (!rolEditando.name.trim()) return alert("Nombre obligatorio");
     const esEdicion = !!rolEditando.id;
     
-    // Payload sin permissions (se gestionan por separado)
     const payloadRol = { name: rolEditando.name, description: rolEditando.description };
     
-    let rolId;
-    
     try {
-      // 1. Crear o actualizar el rol (sin permisos en el body)
       const urlRol = esEdicion ? API_ENDPOINTS.ROLE_BY_ID(rolEditando.id) : API_ENDPOINTS.ROLES;
       const res = await fetch(urlRol, {
         method: esEdicion ? 'PUT' : 'POST',
@@ -62,50 +84,46 @@ export default function Roles({ token }) {
         body: JSON.stringify(payloadRol)
       });
       
-      if (!res.ok) {
-        alert("Error al guardar el rol");
-        return;
-      }
+      if (!res.ok) throw new Error("Error al guardar los datos básicos del rol.");
       
       const datosRol = await res.json();
-      rolId = datosRol.id;
+      const rolId = datosRol.id;
       
-      // 2. Si es edición, sincronizar permisos (desasignar los que ya no están, asignar los nuevos)
-      if (esEdicion && rolEditando.permisosOriginales) {
-        const permisosActuales = new Set(rolEditando.permissions || []);
-        const permisosOriginales = new Set(rolEditando.permisosOriginales);
-        
-        // Desasignar los permisos que se quitaron
-        for (const idPermiso of permisosOriginales) {
-          if (!permisosActuales.has(idPermiso)) {
-            await fetch(API_ENDPOINTS.ROLE_PERMISSION(rolId, idPermiso), {
-              method: 'DELETE',
-              headers: { 'Authorization': `Bearer ${token}` }
-            });
-          }
+      const permisosActuales = new Set(rolEditando.permissions || []);
+      const permisosOriginales = new Set(rolEditando.permisosOriginales || []);
+      
+      for (const idPermiso of permisosOriginales) {
+        if (!permisosActuales.has(idPermiso)) {
+          const resDel = await fetch(API_ENDPOINTS.ROLE_PERMISSION(rolId, idPermiso), {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (!resDel.ok) console.error(`Error al quitar el permiso ${idPermiso}`);
         }
-        
-        // Asignar los permisos nuevos
-        for (const idPermiso of permisosActuales) {
-          if (!permisosOriginales.has(idPermiso)) {
-            await fetch(API_ENDPOINTS.ROLE_PERMISSION(rolId, idPermiso), {
-              method: 'POST',
-              headers: { 'Authorization': `Bearer ${token}` }
-            });
+      }
+      
+      for (const idPermiso of permisosActuales) {
+        if (!permisosOriginales.has(idPermiso)) {
+          const resAdd = await fetch(API_ENDPOINTS.ROLE_PERMISSION(rolId, idPermiso), {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (!resAdd.ok) {
+             throw new Error("El rol se guardó, pero falló la asignación de permisos. ¿Existe la ruta en el backend?");
           }
         }
       }
       
       setModalAbierto(false);
       cargarDatos();
-      alert("¡Éxito!");
+      alert("¡Rol y permisos guardados con éxito!");
     } catch (e) { 
       alert(e.message); 
     }
   };
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4 w-full">
+    <div className="max-w-5xl mx-auto py-8 px-4 w-full text-slate-50">
       <RolesTable 
         key={rolEditando?.id || 'nuevo'} 
         listaRoles={listaRoles}
@@ -115,10 +133,10 @@ export default function Roles({ token }) {
         rolEditando={rolEditando}
         manejarAperturaCrear={manejarAperturaCrear}
         manejarAperturaEditar={manejarAperturaEditar}
-        manejarEliminar={(id) => {/* tu funcion eliminar */}}
+        manejarEliminar={manejarEliminar}
         manejarGuardar={manejarGuardar}
         manejarCambioNombre={(n) => setRolEditando({...rolEditando, name: n})}
-        manejarTogglePermiso={manejarTogglePermiso}
+        manejarCambioPermiso={manejarCambioPermiso}
       />
     </div>
   );

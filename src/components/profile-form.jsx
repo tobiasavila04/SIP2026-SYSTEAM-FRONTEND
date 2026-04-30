@@ -1,10 +1,19 @@
+import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Label } from "@/components/ui/label";
+
+const containerAnim = {
+  hidden: { opacity: 0 },
+  show: { opacity: 1, transition: { staggerChildren: 0.15 } }
+}
+
+const itemAnim = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
+}
 
 export function ProfileForm({
-  cargando,
   datosPerfil,
   datosPassword,
   manejarCambioPerfil,
@@ -12,57 +21,109 @@ export function ProfileForm({
   manejarActualizacionPerfil,
   manejarActualizacionPassword
 }) {
-  if (cargando) return <div className="text-center py-8 text-slate-500">Cargando datos...</div>;
-
   return (
-    <div className="space-y-8 w-full">
-      <Card className="shadow-lg border-slate-200">
-        <CardHeader>
-          <CardTitle className="text-2xl text-slate-800">Actualizar Mis Datos</CardTitle>
-          <CardDescription>Modificá tu información personal y de contacto.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={manejarActualizacionPerfil}>
-            <FieldGroup className="gap-5">
-              <Field>
-                <FieldLabel htmlFor="name" className="text-slate-700">Nombre</FieldLabel>
-                <Input id="name" name="name" type="text" value={datosPerfil.name} onChange={manejarCambioPerfil} required className="h-11 bg-slate-50" />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="email" className="text-slate-700">Email</FieldLabel>
-                <Input id="email" name="email" type="email" value={datosPerfil.email} onChange={manejarCambioPerfil} required className="h-11 bg-slate-50" />
-              </Field>
-              <Field className="pt-2">
-                <Button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-11 px-8">Guardar Datos</Button>
-              </Field>
-            </FieldGroup>
-          </form>
-        </CardContent>
-      </Card>
+    <motion.div 
+      variants={containerAnim} 
+      initial="hidden" 
+      animate="show" 
+      className="space-y-8 w-full text-slate-50"
+    >
+      
+      {/* Encabezado del Perfil */}
+      <motion.div variants={itemAnim} className="space-y-2 mb-8">
+        <div className="etiqueta-seccion">
+          <span className="etiqueta-seccion-texto">Área Personal</span>
+        </div>
+        <h2 className="titulo">Mi Perfil</h2>
+        <p className="text-slate-400 text-lg">
+          Gestioná tu información personal y la seguridad de tu cuenta.
+        </p>
+      </motion.div>
 
-      <Card className="shadow-lg border-slate-200">
-        <CardHeader>
-          <CardTitle className="text-2xl text-slate-800">Cambiar Contraseña</CardTitle>
-          <CardDescription>Asegurate de usar una contraseña segura.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={manejarActualizacionPassword}>
-            <FieldGroup className="gap-5">
-              <Field>
-                <FieldLabel htmlFor="currentPassword" className="text-slate-700">Contraseña Actual</FieldLabel>
-                <Input id="currentPassword" name="currentPassword" type="password" value={datosPassword.currentPassword} onChange={manejarCambioPassword} required className="h-11 bg-slate-50" />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="newPassword" className="text-slate-700">Nueva Contraseña</FieldLabel>
-                <Input id="newPassword" name="newPassword" type="password" value={datosPassword.newPassword} onChange={manejarCambioPassword} required className="h-11 bg-slate-50" />
-              </Field>
-              <Field className="pt-2">
-                <Button type="submit" variant="destructive" className="font-bold h-11 px-8">Actualizar Contraseña</Button>
-              </Field>
-            </FieldGroup>
+      {/* Información Personal */}
+      <motion.div variants={itemAnim}>
+        <div className="tarjeta">
+          
+          <div className="linea-brillante"></div>
+          
+          <div className="mb-6">
+            <h3 className="titulo-tarjeta">Información Personal</h3>
+            <p className="desc-tarjeta">Actualizá tu nombre público y correo de contacto.</p>
+          </div>
+
+          <form onSubmit={manejarActualizacionPerfil} className="space-y-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              
+              <div className="space-y-2">
+                <Label htmlFor="name" className="etiqueta">Nombre Completo</Label>
+                <Input 
+                  id="name" name="name" type="text" 
+                  value={datosPerfil.name} onChange={manejarCambioPerfil} required 
+                  className="campo"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="email" className="etiqueta">Correo Electrónico</Label>
+                <Input 
+                  id="email" name="email" type="email" 
+                  value={datosPerfil.email} onChange={manejarCambioPerfil} required 
+                  className="campo"
+                />
+              </div>
+            </div>
+
+            <div className="pt-4">
+              <Button type="submit" className="boton-primario">
+                Guardar Cambios
+              </Button>
+            </div>
           </form>
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+      </motion.div>
+
+      {/* Contraseña */}
+      <motion.div variants={itemAnim}>
+        <div className="tarjeta">
+          
+          <div className="linea-brillante"></div>
+          
+          <div className="mb-6">
+            <h3 className="titulo-tarjeta">Seguridad</h3>
+            <p className="desc-tarjeta">Protegé tu cuenta actualizando tu contraseña regularmente.</p>
+          </div>
+
+          <form onSubmit={manejarActualizacionPassword} className="space-y-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              
+              <div className="space-y-2">
+                <Label htmlFor="currentPassword" className="etiqueta">Contraseña Actual</Label>
+                <Input 
+                  id="currentPassword" name="currentPassword" type="password" placeholder="••••••••"
+                  value={datosPassword.currentPassword} onChange={manejarCambioPassword} required 
+                  className="campo"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="newPassword" className="etiqueta">Nueva Contraseña</Label>
+                <Input 
+                  id="newPassword" name="newPassword" type="password" placeholder="••••••••"
+                  value={datosPassword.newPassword} onChange={manejarCambioPassword} required 
+                  className="campo"
+                />
+              </div>
+            </div>
+
+            <div className="pt-4">
+              <Button type="submit" variant="outline" className="boton-secundario">
+                Actualizar Contraseña
+              </Button>
+            </div>
+          </form>
+        </div>
+      </motion.div>
+
+    </motion.div>
   );
 }

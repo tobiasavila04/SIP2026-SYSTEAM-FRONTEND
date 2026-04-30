@@ -1,96 +1,133 @@
-import { useState } from 'react';
-import {LoginForm} from "@/components/login-form.jsx"
-import { API_ENDPOINTS } from "@/config/api.js"
+import { useState } from "react";
+import { LoginForm } from "@/components/login-form.jsx";
+import { API_ENDPOINTS } from "@/config/api.js";
 
-const verificarServidorDisponible = async () => {
-  try {
-    const respuesta = await fetch(API_ENDPOINTS.USERS, { method: 'HEAD' });
-    return respuesta.ok || respuesta.status === 401;
-  } catch {
-    return false;
-  }
-};
+const beneficios = [
+  { icon: "🚀", titulo: "Escalabilidad Global", desc: "Infraestructura cloud de alto rendimiento preparada para crecer." },
+  { icon: "🔐", titulo: "Seguridad Bancaria", desc: "Encriptación avanzada y protección de activos digitales." },
+  { icon: "📊", titulo: "Gestión Inteligente", desc: "Panel de control y analíticas de inversión en tiempo real." }
+];
 
 export default function Login({ alIniciarSesion }) {
   const [esLogin, setEsLogin] = useState(true);
-  const [DatosFormulario, setDatosFormulario] = useState({ name: '', email: '', password: '' });
+  const [datos, setDatos] = useState({ name: "", email: "", password: "" });
 
   const manejarCambio = (e) => {
-    setDatosFormulario({ ...DatosFormulario, [e.target.name]: e.target.value });
+    setDatos({ ...datos, [e.target.name]: e.target.value });
   };
 
   const manejarEnvio = async (e) => {
     e.preventDefault();
-    const urlPeticion = esLogin ? API_ENDPOINTS.AUTH_LOGIN : API_ENDPOINTS.AUTH_REGISTER;
-    const payload = esLogin ? { email: DatosFormulario.email, password: DatosFormulario.password } : DatosFormulario;
-    
+    const url = esLogin ? API_ENDPOINTS.AUTH_LOGIN : API_ENDPOINTS.AUTH_REGISTER;
+    const payload = esLogin 
+      ? { email: datos.email, password: datos.password } 
+      : datos;
+
     try {
-      const servidorDisponible = await verificarServidorDisponible();
-      if (!servidorDisponible) {
-        alert(`❌ Servidor no disponible.\nVerifica que el backend esté corriendo en http://localhost:8080`);
-        return;
-      }
-      
-      const respuesta = await fetch(urlPeticion, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       });
 
-      if (respuesta.ok) {
+      if (res.ok) {
         if (esLogin) {
-          const datos = await respuesta.json();
-          alIniciarSesion(datos.accessToken, datos.userId);
+          const data = await res.json();
+          alIniciarSesion(data.accessToken, data.userId);
         } else {
-          alert('¡Usuario registrado con éxito! Ahora iniciá sesión.');
+          alert("Usuario registrado con éxito");
           setEsLogin(true);
-          setDatosFormulario({ name: '', email: '', password: '' });
+          setDatos({ name: "", email: "", password: "" });
         }
       } else {
-        const errorData = await respuesta.json().catch(() => ({}));
-        alert(`Error: ${errorData.message || 'Credenciales incorrectas'}`);
+        alert("Credenciales incorrectas");
       }
-    } catch (error) {
-      alert(`❌ Error de conexión: ${error.message}`);
+    } catch {
+      alert("Error de conexión");
     }
   };
 
-const ESTILO_LOGO_NEON = {
-  fontSize: 'clamp(4rem, 15vw, 10rem)', 
-  lineHeight: '1', 
-  letterSpacing: '-0.04em', 
-  background: 'linear-gradient(90deg, #6366f1 0%, #a855f7 40%, #2dd4bf 100%)', 
-  WebkitTextFillColor: 'transparent',  
-  backgroundClip: 'text'
-};
+  const manejarRecuperarPassword = async (email) => {
+    try {
+      const res = await fetch(API_ENDPOINTS.AUTH_CHANGE_PASSWORD, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      if (res.ok) {
+        alert("Si el correo está registrado, te enviaremos las instrucciones.");
+        return true;
+      }
+      return false;
+    } catch {
+      alert("Error de conexión");
+      return false;
+    }
+  };
 
- return (
-    <div className="min-h-screen bg-[#0b1121] flex flex-col items-center justify-center p-6 font-sans">
-      <div className="mb-10 md:mb-14 w-full flex justify-center">
-        <h1 className="font-black tracking-tighter text-center select-none" style={ESTILO_LOGO_NEON}>
-          IDEAFY
-        </h1>
+  return (
+    <div className="login-layout">
+      
+      {/* Logo */}
+      <div className="login-logo">
+        <div className="login-logo-icono">
+          <svg className="login-logo-svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+        </div>
+        <span className="login-logo-texto">IDEAFY</span>
       </div>
 
-     <div className="w-full max-w-lg">
-          <LoginForm 
-            esLogin={esLogin} 
-            setEsLogin={setEsLogin} 
-            manejarEnvio={manejarEnvio} 
-            manejarCambio={manejarCambio} 
-            
-            className="w-full"
-            cardClassName="bg-[#0f172a] border-slate-800 text-white shadow-2xl p-4 sm:p-8"
-            
-            titleClassName="text-4xl font-bold mb-2 tracking-tight"
-            descClassName="text-lg text-slate-400"
-            
-            labelClassName="text-slate-300 text-lg font-medium"
-            inputClassName="h-14 bg-[#1e293b] border-slate-700 text-white placeholder:text-slate-700 text-xl focus-visible:ring-indigo-500"
-            
-            submitBtnClassName="w-full bg-[#6366f1] hover:bg-[#4f46e5] text-white font-bold h-14 text-xl border-0 shadow-lg transition-all mt-4"
+      {/* Fondo */}
+      <div className="login-fondo">
+        <div className="blur-glow-indigo" />
+        <div className="blur-glow-blue" />
+      </div>
+
+      {/* Beneficios - solo en PC */}
+      <div className="login-beneficios">
+        <div className="max-w-xl"> 
+          <div className="login-badge-top">
+            <span className="login-badge-punto" />
+            <span>Plataforma de Tokenización</span>
+          </div>
+
+          <h1 className="login-titulo">
+            <span className="gradient-text">
+              Convertí ideas en <br/>inversión real.
+            </span>
+          </h1>
+
+          <p className="login-descripcion">
+            La infraestructura moderna para tokenizar proyectos, gestionar inversores y escalar tu startup con seguridad blockchain.
+          </p>
+
+          <div className="grid grid-cols-1 gap-5">
+            {beneficios.map((item, i) => (
+              <div key={i} className="login-beneficio-item">
+                <div className="login-beneficio-icono">{item.icon}</div>
+                <div>
+                  <h3>{item.titulo}</h3>
+                  <p>{item.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Formulario */}
+      <div className="login-form-container">
+        <div className="w-full max-w-[420px]">
+          <LoginForm
+            esLogin={esLogin}
+            setEsLogin={setEsLogin}
+            manejarEnvio={manejarEnvio}
+            manejarCambio={manejarCambio}
+            manejarRecuperarPassword={manejarRecuperarPassword} 
           />
         </div>
+      </div>
     </div>
   );
 }

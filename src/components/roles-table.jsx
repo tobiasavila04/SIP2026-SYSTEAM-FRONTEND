@@ -1,4 +1,3 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,10 +6,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 
 export function RolesTable({
   listaRoles,
@@ -23,63 +21,91 @@ export function RolesTable({
   manejarEliminar,
   manejarGuardar,
   manejarCambioNombre,
-  manejarTogglePermiso, 
+  manejarCambioPermiso, 
 }) {
+  const esEdicion = !!rolEditando?.id;
+
   return (
     <>
-      <Card className="w-full shadow-lg border-slate-200">
-        {/* CABECERA CON TÍTULO Y BOTÓN DE CREAR */}
-        <CardHeader className="flex flex-row items-center justify-between pb-6">
-          <CardTitle className="text-2xl text-slate-800">Gestión de Roles y Permisos</CardTitle>
+      <div className="space-y-6">
+        
+        {/* Encabezado */}
+        <div className="flex items-center justify-between mb-8">
+          <div className="space-y-1">
+            <div className="etiqueta-seccion">
+              <span className="etiqueta-seccion-texto">Control de Acceso</span>
+            </div>
+            <h2 className="titulo">Roles y Permisos</h2>
+            <p className="subtitulo">
+              Administrá los niveles de acceso del sistema y sus permisos asociados.
+            </p>
+          </div>
+          
           <Button 
             onClick={manejarAperturaCrear}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold"
+            className="boton-primario"
           >
-            + Crear Nuevo Rol
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+              <path d="M12 5v14M5 12h14"/>
+            </svg>
+            Nuevo Rol
           </Button>
-        </CardHeader>
-        
-        <CardContent>
-          <div className="rounded-md border border-slate-100 overflow-hidden">
+        </div>
+
+        {/* Tarjeta de la Tabla */}
+        <div className="tarjeta">
+          
+          <div className="linea-brillante"></div>
+
+          <div className="w-full overflow-auto">
             <Table>
-              <TableHeader className="bg-slate-50/80">
-                <TableRow>
-                  <TableHead className="font-bold text-slate-700 w-[100px] py-4">ID</TableHead>
-                  <TableHead className="font-bold text-slate-700 py-4">Nombre del Rol</TableHead>
-                  <TableHead className="font-bold text-slate-700 py-4">Acciones</TableHead>
+              <TableHeader>
+                <TableRow className="border-b border-white/10 hover:bg-transparent">
+                  <TableHead className="w-[80px] text-slate-400 font-semibold py-5 pl-6">ID</TableHead>
+                  <TableHead className="text-slate-400 font-semibold py-5">Nombre del Rol</TableHead>
+                  <TableHead className="w-[200px] text-right text-slate-400 font-semibold py-5 pr-8">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {listaRoles.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={3} className="h-24 text-center text-slate-500">
+                  <TableRow className="border-b border-white/5">
+                    <TableCell colSpan={3} className="h-32 text-center text-slate-500">
                       No hay roles configurados.
                     </TableCell>
                   </TableRow>
                 ) : (
                   listaRoles.map((rol) => (
-                    <TableRow key={rol.id} className="hover:bg-slate-50/50 transition-colors">
-                      <TableCell className="font-medium py-4 text-slate-600">{rol.id}</TableCell>
-                      <TableCell className="font-bold text-slate-900 py-4">{rol.name}</TableCell>
-                      
-                      {/* ACCIONES (Editar y Eliminar) */}
+                    <TableRow key={rol.id} className="border-b border-white/5 hover:bg-white/[0.03] transition-colors group">
+                      <TableCell className="font-medium text-slate-300 py-4 pl-6">{rol.id}</TableCell>
                       <TableCell className="py-4">
-                        <div className="flex justify-start gap-4 items-center">
-                          <button 
+                        <Badge variant="outline" className="badge-rol px-3 py-1">
+                          {rol.name}
+                        </Badge>
+                      </TableCell>
+                      
+                      <TableCell className="text-right py-4 pr-8">
+                        <div className="flex justify-end gap-3 opacity-100 sm:opacity-60 group-hover:opacity-100 transition-opacity">
+                          
+                          <Button 
+                            variant="ghost"
+                            size="sm"
                             onClick={() => manejarAperturaEditar(rol)} 
-                            className="text-indigo-600 hover:text-indigo-800 font-bold bg-transparent border-0 outline-none shadow-none cursor-pointer p-0 m-0 text-sm transition-colors"
+                            className="boton-accion"
                           >
                             Editar
-                          </button>
+                          </Button>
                           
-                          {/* Evitamos que borren el rol ADMIN principal si querés */}
-                          {rol.name !== 'ADMIN' && (
-                            <button 
+                          {rol.name !== 'ADMIN' ? (
+                            <Button 
+                              variant="ghost"
+                              size="sm"
                               onClick={() => manejarEliminar(rol.id)} 
-                              className="text-red-500 hover:text-red-700 font-bold bg-transparent border-0 outline-none shadow-none cursor-pointer p-0 m-0 text-sm transition-colors"
+                              className="boton-peligro w-[90px]"
                             >
                               Eliminar
-                            </button>
+                            </Button>
+                          ) : (
+                            <div className="w-[90px]"></div>
                           )}
                         </div>
                       </TableCell>
@@ -89,42 +115,72 @@ export function RolesTable({
               </TableBody>
             </Table>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      {/* MODAL PARA CREAR / EDITAR ROL */}
+      {/* MODAL DE EDICIÓN */}
       <Dialog open={modalAbierto} onOpenChange={setModalAbierto}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>{rolEditando?.id ? 'Editar Rol' : 'Crear Rol'}</DialogTitle>
-          </DialogHeader>
+        <DialogContent className="dialogo">
+          <div className="space-y-1 mb-2">
+            <DialogTitle className="dialogo-titulo">
+              {esEdicion ? 'Editar Configuración' : 'Crear Nuevo Rol'}
+            </DialogTitle>
+            <p className="text-sm text-slate-400">
+              {esEdicion ? 'Modificá los permisos de este grupo.' : 'Definí un nuevo nivel jerárquico.'}
+            </p>
+          </div>
           
-          <div className="space-y-4 py-4">
-            <Label>Nombre del Rol</Label>
-            <Input value={rolEditando?.name || ''} onChange={(e) => manejarCambioNombre(e.target.value)} />
+          <div className="space-y-6 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="role-name" className="etiqueta text-slate-400">Nombre del Rol</Label>
+              <Input 
+                id="role-name"
+                value={rolEditando?.name || ''} 
+                onChange={(e) => manejarCambioNombre(e.target.value)} 
+                placeholder="Ej: MODERATOR"
+                className="campo"
+              />
+            </div>
 
-            <Label>Permisos</Label>
-            <div className="border rounded-lg p-4 max-h-60 overflow-y-auto bg-slate-50">
-              <div className="grid grid-cols-2 gap-4">
-                {listaPermisosDisponibles.map((permiso) => (
-                  <div key={permiso.id} className="flex items-center space-x-2">
-                    <Checkbox 
-                      id={`p-${permiso.id}`}
-                      // COMPARACIÓN SIMPLE: ¿El ID del permiso está en mi array de números?
-                      checked={rolEditando?.permissions?.includes(Number(permiso.id))}
-                      onCheckedChange={(tildado) => manejarTogglePermiso(permiso.id, tildado)}
-                    />
-                    <Label htmlFor={`p-${permiso.id}`} className="text-sm cursor-pointer">
-                      {permiso.name}
-                    </Label>
-                  </div>
-                ))}
+            <div className="space-y-2">
+              <Label className="etiqueta text-slate-400">Permisos Asociados</Label>
+              
+              <div className="permiso-lista scrollbar-propio">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {listaPermisosDisponibles.map((permiso) => (
+                    <div key={permiso.id} className="permiso-item">
+                      <Checkbox 
+                        id={`p-${permiso.id}`}
+                        checked={rolEditando?.permissions?.includes(Number(permiso.id))}
+                        onCheckedChange={(tildado) => manejarCambioPermiso(permiso.id, tildado)}
+                        className="border-slate-500 h-5 w-5 rounded-[4px] data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600"
+                      />
+                      <Label htmlFor={`p-${permiso.id}`} className="text-sm cursor-pointer font-medium text-slate-300 select-none">
+                        {permiso.name}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
-          <DialogFooter>
-            <Button onClick={manejarGuardar}>Guardar</Button>
-          </DialogFooter>
+          
+          {/* Footer */}
+          <div className="flex justify-end gap-3 pt-6 border-t border-white/10 mt-2">
+            <Button 
+              variant="ghost" 
+              onClick={() => setModalAbierto(false)}
+              className="rounded-full px-5 text-slate-300 hover:text-white hover:bg-white/10 transition-colors"
+            >
+              Cancelar
+            </Button>
+            <Button 
+              onClick={manejarGuardar}
+              className="boton-primario"
+            >
+              {esEdicion ? 'Guardar Cambios' : 'Crear Rol'}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </>

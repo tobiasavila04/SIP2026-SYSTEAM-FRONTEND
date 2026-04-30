@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import {ProfileForm} from "@/components/profile-form.jsx"
+import { ProfileForm } from "@/components/profile-form.jsx"
 import { API_ENDPOINTS } from "@/config/api.js";
 
 export default function Perfil({ token, idUsuario }) {
@@ -66,12 +66,18 @@ export default function Perfil({ token, idUsuario }) {
     }
   };
 
-  if (cargando) return <div className="text-center py-8">Cargando datos...</div>;
+  if (cargando) return (
+    <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="flex flex-col items-center gap-4">
+        <span className="h-10 w-10 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></span>
+        <p className="text-slate-400 font-medium animate-pulse">Cargando perfil...</p>
+      </div>
+    </div>
+  );
 
   return (
-    <div className="max-w-xl mx-auto py-8">
+    <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8 w-full font-sans">
       <ProfileForm 
-        cargando={cargando}
         datosPerfil={datosPerfil}
         datosPassword={datosPassword}
         manejarCambioPerfil={manejarCambioPerfil}

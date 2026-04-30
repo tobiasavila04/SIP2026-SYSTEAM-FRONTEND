@@ -1,4 +1,3 @@
-
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
@@ -116,16 +115,270 @@
     --sidebar-accent-foreground: oklch(0.985 0 0);
     --sidebar-border: oklch(1 0 0 / 10%);
     --sidebar-ring: oklch(0.556 0 0);
+
+    /* IDEAFY brand colors */
+    --ideafy-bg: #030712;
+    --ideafy-sidebar: #0f172a;
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
-    }
+  }
   body {
     @apply bg-background text-foreground;
-    }
+  }
   html {
     @apply font-sans;
-    }
+  }
+}
+
+.bg-ideafy { background-color: var(--ideafy-bg, #030712); }
+.bg-ideafy-sidebar { background-color: var(--ideafy-sidebar, #0f172a); }
+.border-white\/10 { border-color: rgba(255,255,255,0.1); }
+.border-white\/20 { border-color: rgba(255,255,255,0.2); }
+.bg-white\/5 { background-color: rgba(255,255,255,0.05); }
+.bg-white\/10 { background-color: rgba(255,255,255,0.1); }
+.hover\:bg-white\/5:hover { background-color: rgba(255,255,255,0.05); }
+.text-slate-400 { color: rgb(148 163 184); }
+.text-slate-500 { color: rgb(100 116 139); }
+.bg-blue-600\/10 { background-color: rgba(37, 99, 235, 0.1); }
+.bg-blue-600\/20 { background-color: rgba(37, 99, 235, 0.2); }
+.text-blue-400 { color: rgb(96 165 250); }
+.border-blue-500\/20 { border-color: rgba(59, 130, 246, 0.2); }
+.drop-shadow-\[0_0_8px_rgba\(59\,130\,246\,0\.5\)\] { filter: drop-shadow(0 0 8px rgba(59,130,246,0.5)); }
+
+.gradient-text {
+    background: linear-gradient(to right, #60a5fa, #a855f7, #2dd4bf);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Tarjetas contenedoras */
+.tarjeta {
+    @apply rounded-[2rem] border border-white/10 bg-[#0f172a]/60 backdrop-blur-xl shadow-2xl overflow-hidden relative p-8;
+}
+
+.tarjeta-compacta {
+    @apply rounded-lg border border-white/10 bg-[#0f172a] overflow-hidden;
+}
+
+/* Línea decorativa brillante arriba de las tarjetas */
+.linea-brillante {
+    @apply absolute top-0 left-1/4 w-1/2 h-[1px] bg-gradient-to-r from-transparent via-blue-500/50 to-transparent;
+}
+
+/* Campos de formulario (inputs) */
+.campo {
+    @apply h-12 bg-white/5 border-white/10 text-white focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-all rounded-xl px-4;
+}
+
+.campo-compacto {
+    @apply h-10 bg-white/5 border-white/10 text-white focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-all rounded-xl px-4;
+}
+
+/* Etiqueta de sección (ej: "Área Administrativa") */
+.etiqueta-seccion {
+    @apply inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 mb-2;
+}
+
+.etiqueta-seccion-texto {
+    @apply text-xs font-semibold text-blue-400 tracking-wide uppercase;
+}
+
+/* Títulos */
+.titulo {
+    @apply text-3xl md:text-4xl font-extrabold tracking-tight text-white;
+}
+
+.titulo-sm {
+    @apply text-2xl font-bold tracking-tight text-white;
+}
+
+.subtitulo {
+    @apply text-slate-400 text-sm;
+}
+
+.titulo-tarjeta {
+    @apply text-xl font-bold text-white mb-1;
+}
+
+.desc-tarjeta {
+    @apply text-sm text-slate-400;
+}
+
+.texto-encabezado {
+    @apply text-slate-300 font-semibold py-5;
+}
+
+/* Etiquetas de formulario */
+.etiqueta {
+    @apply text-slate-300 text-xs uppercase tracking-wider font-semibold;
+}
+
+/* Botones */
+.boton-primario {
+    @apply h-11 px-8 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold rounded-xl transition-all shadow-[0_0_20px_-5px_rgba(37,99,235,0.4)] hover:shadow-[0_0_25px_-5px_rgba(37,99,235,0.6)];
+}
+
+.boton-accion {
+    @apply h-8 px-4 rounded-full bg-indigo-500/10 text-indigo-300 hover:bg-indigo-500/20 hover:text-indigo-100 border border-indigo-500/20 shadow-[0_0_10px_-3px_rgba(99,102,241,0.2)] transition-all font-medium tracking-wide;
+}
+
+.boton-peligro {
+    @apply h-8 rounded-full bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 hover:text-rose-200 border border-rose-500/20 shadow-[0_0_10px_-3px_rgba(244,63,94,0.2)] transition-all font-medium tracking-wide;
+}
+
+.boton-secundario {
+    @apply h-11 px-8 bg-white/5 border-white/10 text-slate-300 hover:bg-white/10 hover:text-white rounded-xl transition-all font-medium;
+}
+
+/* Estados (Activo/Inactivo) */
+.estado-activo {
+    @apply px-2.5 py-0.5 font-medium border text-xs bg-emerald-500/10 text-emerald-400 border-emerald-500/20;
+}
+
+.estado-inactivo {
+    @apply px-2.5 py-0.5 font-medium border text-xs bg-rose-500/10 text-rose-400 border-rose-500/20;
+}
+
+/* Badge de rol */
+.badge-rol {
+    @apply bg-blue-500/10 text-blue-300 border-blue-500/20 text-[10px] tracking-wider uppercase;
+}
+
+/* Diálogos / Modales */
+.dialogo {
+    @apply sm:max-w-md bg-[#0f172a] border-white/10 text-white shadow-2xl rounded-2xl;
+}
+
+.dialogo-titulo {
+    @apply text-2xl font-bold tracking-tight text-white;
+}
+
+/* Item de permiso (checkbox + texto) */
+.permiso-item {
+    @apply flex items-center space-x-3 p-3 rounded-lg hover:bg-white/5 border border-transparent hover:border-white/5 transition-all;
+}
+
+/* Lista de permisos con scroll */
+.permiso-lista {
+    @apply border border-white/10 rounded-xl p-3 max-h-56 overflow-y-auto bg-black/20 shadow-inner;
+}
+
+/* Scrollbar personalizada */
+.scrollbar-propio::-webkit-scrollbar {
+    width: 6px;
+}
+.scrollbar-propio::-webkit-scrollbar-track {
+    background: transparent;
+}
+.scrollbar-propio::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+.scrollbar-propio::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Separador horizontal */
+.separador {
+    @apply relative flex items-center py-4;
+}
+
+.separador-texto {
+    @apply mx-4 text-xs text-slate-500 uppercase font-semibold;
+}
+
+/* Blur effects */
+.blur-glow-indigo {
+    position: absolute;
+    top: -10%;
+    left: -10%;
+    width: 40%;
+    height: 40%;
+    background: rgba(99, 102, 241, 0.2);
+    border-radius: 9999px;
+    filter: blur(120px);
+}
+
+.blur-glow-blue {
+    position: absolute;
+    bottom: -10%;
+    right: -10%;
+    width: 40%;
+    height: 40%;
+    background: rgba(37, 99, 235, 0.2);
+    border-radius: 9999px;
+    filter: blur(120px);
+}
+
+/* ==========================================
+   Login - Layout
+   ========================================== */
+
+.login-layout {
+    @apply min-h-screen grid grid-cols-1 lg:grid-cols-2 relative overflow-hidden font-sans text-slate-50;
+    background-color: var(--ideafy-bg, #030712);
+}
+
+.login-logo {
+    @apply absolute top-8 left-1/2 -translate-x-1/2 lg:top-10 z-50 flex items-center gap-4 lg:gap-5 select-none;
+}
+
+.login-logo-icono {
+    @apply w-14 h-14 lg:w-20 lg:h-20 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-[0_0_30px_-5px_rgba(59,130,246,0.6)];
+}
+
+.login-logo-svg {
+    @apply w-8 h-8 lg:w-12 lg:h-12 text-white;
+}
+
+.login-logo-texto {
+    @apply text-5xl lg:text-8xl font-black tracking-tighter text-white;
+}
+
+.login-fondo {
+    @apply absolute inset-0 z-0 pointer-events-none;
+}
+
+.login-beneficios {
+    @apply hidden lg:flex flex-col justify-center px-16 xl:px-24 relative z-10 pt-16;
+}
+
+.login-badge-top {
+    @apply inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 mb-8 backdrop-blur-md;
+}
+
+.login-badge-punto {
+    @apply flex h-2 w-2 rounded-full bg-blue-500 animate-pulse;
+}
+
+.login-titulo {
+    @apply text-5xl xl:text-6xl font-extrabold mb-6 tracking-tight leading-[1.1];
+}
+
+.login-descripcion {
+    @apply text-lg text-slate-400 mb-10 leading-relaxed font-light;
+}
+
+.login-beneficio-item {
+    @apply flex items-start gap-4 p-4 rounded-2xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.04] transition-colors;
+}
+
+.login-beneficio-item h3 {
+    @apply font-semibold text-slate-200;
+}
+
+.login-beneficio-item p {
+    @apply text-sm text-slate-500 mt-1;
+}
+
+.login-beneficio-icono {
+    @apply text-2xl bg-white/5 p-3 rounded-xl border border-white/10 shadow-inner;
+}
+
+.login-form-container {
+    @apply flex items-center justify-center p-6 lg:p-12 relative z-10 pt-20 lg:pt-12;
 }
