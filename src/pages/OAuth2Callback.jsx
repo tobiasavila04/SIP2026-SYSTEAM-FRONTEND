@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
-export default function OAuth2Callback() {
+export default function OAuth2Callback({ alIniciarSesion }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
@@ -10,28 +10,31 @@ export default function OAuth2Callback() {
     const error = searchParams.get("error");
 
     if (error) {
-      console.error("Error en OAuth2:", error);
       navigate("/?error=" + error);
       return;
     }
 
     if (!token) {
-      console.error("No se recibió el token");
       navigate("/?error=no_token");
       return;
     }
 
-    sessionStorage.setItem("tokenIDEAFY", token);
-
+    let userId;
     try {
       const payload = JSON.parse(atob(token.split(".")[1]));
-      sessionStorage.setItem("userIdIDEAFY", payload.userId || payload.sub);
-    } catch (e) {
+      userId = payload.userId || payload.sub;
+    } catch {
       console.warn("No se pudo decodificar el token");
     }
 
-    navigate("/perfil");
-  }, [navigate, searchParams]);
+    if (alIniciarSesion) {
+      alIniciarSesion(token, userId);
+    } else {
+      sessionStorage.setItem("tokenIDEAFY", token);
+      if (userId) sessionStorage.setItem("userIdIDEAFY", userId);
+      window.location.href = "/perfil";
+    }
+  }, [navigate, searchParams, alIniciarSesion]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
