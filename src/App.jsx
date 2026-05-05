@@ -7,6 +7,10 @@ import Perfil from './pages/Perfil';
 import Administracion from './pages/Administracion';
 import Roles from './pages/Roles';
 import OAuth2Callback from './pages/OAuth2Callback';
+import ProjectCatalog from './pages/ProjectCatalog';
+import CreateProject from './pages/CreateProject';
+import EditProject from './pages/EditProject';
+import CompleteProfile from './pages/CompleteProfile';
 
 function decodificarToken(token) {
   try {
@@ -21,6 +25,7 @@ function Sidebar({ esAdmin, alCerrarSesion }) {
   
   const links = [
     { to: '/perfil', label: 'Mi Perfil' },
+    { to: '/proyectos', label: 'Proyectos' },
     ...(esAdmin ? [
       { to: '/admin', label: 'Usuarios' },
       { to: '/roles', label: 'Roles' },
@@ -60,24 +65,33 @@ function Sidebar({ esAdmin, alCerrarSesion }) {
 
 function Dashboard({ token, alCerrarSesion }) {
   const payload = decodificarToken(token);
-  const esAdmin = payload?.roles?.includes('ADMIN');
+  const roles = payload?.roles || [];
+  const esAdmin = roles.includes('ADMIN');
+  const tienePerfil = roles.includes('INVESTOR') || roles.includes('CREATOR') || esAdmin;
 
   return (
     <div className="flex min-h-screen bg-[#030712]">
-      <Sidebar esAdmin={esAdmin} alCerrarSesion={alCerrarSesion} />
+      {tienePerfil && <Sidebar esAdmin={esAdmin} alCerrarSesion={alCerrarSesion} />}
       
-      <div className="flex-1 flex flex-col">
-        <header className="h-14 border-b border-white/10 bg-[#0f172a] flex items-center justify-between px-6">
-          <span className="text-sm text-slate-400">Panel de Control</span>
-          <Button variant="ghost" onClick={alCerrarSesion} className="text-slate-400 hover:text-white text-sm">
-            Cerrar sesión
-          </Button>
-        </header>
+      <div className={`flex-1 flex flex-col ${!tienePerfil ? '' : ''}`}>
+        {tienePerfil && (
+          <header className="h-14 border-b border-white/10 bg-[#0f172a] flex items-center justify-between px-6">
+            <span className="text-sm text-slate-400">Panel de Control</span>
+            <Button variant="ghost" onClick={alCerrarSesion} className="text-slate-400 hover:text-white text-sm">
+              Cerrar sesión
+            </Button>
+          </header>
+        )}
 
-        <main className="flex-1 p-6 overflow-auto">
+        <main className={`flex-1 p-6 overflow-auto ${!tienePerfil ? 'p-0 flex items-center justify-center' : ''}`}>
           <Routes>
-            <Route path="/" element={<Navigate to="/perfil" />} />
-            <Route path="/perfil" element={<Perfil token={token} idUsuario={payload?.userId} />} />
+            {!tienePerfil && <Route path="*" element={<Navigate to="/completar-perfil" />} />}
+            <Route path="/" element={<Navigate to={tienePerfil ? "/perfil" : "/completar-perfil"} />} />
+            <Route path="/completar-perfil" element={<CompleteProfile token={token} userId={payload?.userId} />} />
+            <Route path="/perfil" element={tienePerfil ? <Perfil token={token} idUsuario={payload?.userId} /> : <Navigate to="/completar-perfil" />} />
+            <Route path="/proyectos" element={<ProjectCatalog token={token} />} />
+            <Route path="/proyectos/crear" element={<CreateProject token={token} />} />
+            <Route path="/proyectos/:id/editar" element={<EditProject token={token} />} />
             <Route path="/admin" element={esAdmin ? <Administracion token={token} idUsuarioActual={payload?.userId} /> : <Navigate to="/perfil" />} />
             <Route path="/roles" element={esAdmin ? <Roles token={token} /> : <Navigate to="/perfil" />} />
             <Route path="/oauth2/callback" element={<OAuth2Callback alIniciarSesion={(t, id) => {
@@ -85,7 +99,6 @@ function Dashboard({ token, alCerrarSesion }) {
               sessionStorage.setItem('userIdIDEAFY', id);
               window.location.href = '/perfil';
             }} />} />
-            <Route path="*" element={<Navigate to="/perfil" />} />
           </Routes>
         </main>
       </div>

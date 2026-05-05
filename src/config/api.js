@@ -19,6 +19,9 @@ export const API_ENDPOINTS = {
   ROLE_PERMISSION: (roleId, permissionId) => buildUrl(`/api/roles/${roleId}/permissions/${permissionId}`),
   
   PERMISSIONS: buildUrl('/api/permissions'),
+  
+  PROJECTS: buildUrl('/api/projects'),
+  PROJECT_BY_ID: (id) => buildUrl(`/api/projects/${id}`),
 };
 
 export const API_BASE = API_BASE_URL;
