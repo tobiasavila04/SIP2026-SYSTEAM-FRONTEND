@@ -11,6 +11,7 @@ import ProjectCatalog from './pages/ProjectCatalog';
 import CreateProject from './pages/CreateProject';
 import EditProject from './pages/EditProject';
 import CompleteProfile from './pages/CompleteProfile';
+import { saveTokens, getAccessToken, clearTokens } from './config/api';
 
 function decodificarToken(token) {
   try {
@@ -94,9 +95,9 @@ function Dashboard({ token, alCerrarSesion }) {
             <Route path="/proyectos/:id/editar" element={<EditProject token={token} />} />
             <Route path="/admin" element={esAdmin ? <Administracion token={token} idUsuarioActual={payload?.userId} /> : <Navigate to="/perfil" />} />
             <Route path="/roles" element={esAdmin ? <Roles token={token} /> : <Navigate to="/perfil" />} />
-            <Route path="/oauth2/callback" element={<OAuth2Callback alIniciarSesion={(t, id) => {
-              sessionStorage.setItem('tokenIDEAFY', t);
-              sessionStorage.setItem('userIdIDEAFY', id);
+            <Route path="/oauth2/callback" element={<OAuth2Callback alIniciarSesion={(accessToken, refreshToken, id) => {
+              saveTokens(accessToken, refreshToken);
+              if (id) localStorage.setItem('userIdIDEAFY', id);
               window.location.href = '/perfil';
             }} />} />
           </Routes>
@@ -107,17 +108,16 @@ function Dashboard({ token, alCerrarSesion }) {
 }
 
 export default function App() {
-  const [token, setToken] = useState(sessionStorage.getItem('tokenIDEAFY'));
+  const [token, setToken] = useState(getAccessToken());
 
-  const alIniciarSesion = (newToken, id) => {
-    sessionStorage.setItem('tokenIDEAFY', newToken);
-    sessionStorage.setItem('userIdIDEAFY', id);
-    setToken(newToken);
+  const alIniciarSesion = (accessToken, refreshToken, id) => {
+    saveTokens(accessToken, refreshToken);
+    if (id) localStorage.setItem('userIdIDEAFY', id);
+    setToken(accessToken);
   };
 
   const alCerrarSesion = () => {
-    sessionStorage.removeItem('tokenIDEAFY');
-    sessionStorage.removeItem('userIdIDEAFY');
+    clearTokens();
     setToken(null);
     window.location.href = '/';
   };
@@ -127,9 +127,9 @@ export default function App() {
       {!token ? (
         <Routes>
           <Route path="/" element={<Login alIniciarSesion={alIniciarSesion} />} />
-          <Route path="/oauth2/callback" element={<OAuth2Callback alIniciarSesion={(t, id) => {
-            sessionStorage.setItem('tokenIDEAFY', t);
-            sessionStorage.setItem('userIdIDEAFY', id);
+          <Route path="/oauth2/callback" element={<OAuth2Callback alIniciarSesion={(accessToken, refreshToken, id) => {
+            saveTokens(accessToken, refreshToken);
+            if (id) localStorage.setItem('userIdIDEAFY', id);
             window.location.href = '/';
           }} />} />
           <Route path="*" element={<Navigate to="/" />} />

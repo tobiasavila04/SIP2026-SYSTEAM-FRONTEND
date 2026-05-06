@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { apiRequest, API_ENDPOINTS } from "@/config/api.js";
+import { apiRequest, API_ENDPOINTS, clearTokens } from "@/config/api.js";
 
 export default function CompleteProfile({ token, userId }) {
   const navigate = useNavigate();
@@ -72,9 +72,8 @@ export default function CompleteProfile({ token, userId }) {
     });
 
     if (respuesta) {
-      sessionStorage.removeItem('tokenIDEAFY');
-      sessionStorage.removeItem('userIdIDEAFY');
-      window.location.href = '/login?setup=complete';
+      clearTokens();
+      window.location.href = '/';
     }
   };
 

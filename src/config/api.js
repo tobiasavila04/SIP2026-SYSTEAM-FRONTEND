@@ -4,57 +4,98 @@ const API_BASE_URL = isDev ? '' : (import.meta.env.VITE_API_URL || 'http://local
 
 const buildUrl = (endpoint) => `${API_BASE_URL}${endpoint}`;
 
+// --- Token Storage ---
+const ACCESS_TOKEN_KEY = 'systeam_access_token';
+const REFRESH_TOKEN_KEY = 'systeam_refresh_token';
+
+export const saveTokens = (accessToken, refreshToken) => {
+  localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
+  localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+};
+
+export const getAccessToken = () => localStorage.getItem(ACCESS_TOKEN_KEY);
+export const getRefreshToken = () => localStorage.getItem(REFRESH_TOKEN_KEY);
+
+export const clearTokens = () => {
+  localStorage.removeItem(ACCESS_TOKEN_KEY);
+  localStorage.removeItem(REFRESH_TOKEN_KEY);
+  localStorage.removeItem('userIdIDEAFY');
+};
+
+// --- Endpoints ---
 export const API_ENDPOINTS = {
   AUTH_LOGIN: buildUrl('/auth/login'),
   AUTH_REGISTER: buildUrl('/auth/register'),
+  AUTH_REFRESH: buildUrl('/auth/refresh'),
   AUTH_CHANGE_PASSWORD: buildUrl('/auth/change-password'),
-  
+
   USERS: buildUrl('/api/users'),
   USER_ME: buildUrl('/api/users/me'),
   USER_BY_ID: (id) => buildUrl(`/api/users/${id}`),
   USER_ROLE: (userId, roleId) => buildUrl(`/api/users/${userId}/roles/${roleId}`),
-  
+
   ROLES: buildUrl('/api/roles'),
   ROLE_BY_ID: (id) => buildUrl(`/api/roles/${id}`),
   ROLE_PERMISSION: (roleId, permissionId) => buildUrl(`/api/roles/${roleId}/permissions/${permissionId}`),
-  
+
   PERMISSIONS: buildUrl('/api/permissions'),
-  
+
   PROJECTS: buildUrl('/api/projects'),
   PROJECT_BY_ID: (id) => buildUrl(`/api/projects/${id}`),
 };
 
 export const API_BASE = API_BASE_URL;
 
-export const apiRequest = async (url, options = {}) => {
-  // 1. Buscamos el token
-  const token = sessionStorage.getItem('tokenIDEAFY');
-  
-  // 2. Preparamos los headers
+// --- Refresh interno (no exportado) ---
+async function doRefresh() {
+  const refreshToken = getRefreshToken();
+  if (!refreshToken) return null;
+
+  try {
+    const response = await fetch(API_ENDPOINTS.AUTH_REFRESH, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken }),
+    });
+
+    if (!response.ok) {
+      clearTokens();
+      return null;
+    }
+
+    const data = await response.json();
+    saveTokens(data.accessToken, data.refreshToken);
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+// --- Cliente HTTP central ---
+export const apiRequest = async (url, options = {}, _retry = false) => {
+  const token = getAccessToken();
+
   const headers = {
     'Content-Type': 'application/json',
     ...options.headers,
   };
-  
-  // 3. Si hay token, lo metemos
+
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
-  
-  // 4. Hacemos el fetch (usamos "url" directo porque tus API_ENDPOINTS ya traen la url completa)
-  const response = await fetch(url, {
-    ...options,
-    headers,
-  });
-  
-  // 5. Atajamos el error de Token Vencido
-  if (response.status === 401) {
-    console.warn('Sesión expirada o token inválido');
-    sessionStorage.removeItem('tokenIDEAFY');
-    window.location.href = '/';
-    return null;
+
+  const response = await fetch(url, { ...options, headers });
+
+  if (response.status === 401 && !_retry) {
+    const newTokens = await doRefresh();
+
+    if (!newTokens) {
+      window.location.href = '/';
+      return null;
+    }
+
+    return apiRequest(url, options, true);
   }
-  
-  // Retornamos la respuesta en JSON
+
   return response.json();
 };

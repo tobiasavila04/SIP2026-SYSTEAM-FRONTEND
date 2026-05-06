@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl *)",
+      "Bash(docker exec flamboyant_wilbur *)",
+      "Bash(wait)",
+      "Bash(docker run *)",
+      "Bash(docker cp *)"
+    ]
+  }
+}

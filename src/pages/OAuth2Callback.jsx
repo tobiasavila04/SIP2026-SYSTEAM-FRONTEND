@@ -1,12 +1,14 @@
 import { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { saveTokens } from "@/config/api.js";
 
 export default function OAuth2Callback({ alIniciarSesion }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
-    const token = searchParams.get("token");
+    const accessToken = searchParams.get("accessToken");
+    const refreshToken = searchParams.get("refreshToken");
     const error = searchParams.get("error");
 
     if (error) {
@@ -14,24 +16,24 @@ export default function OAuth2Callback({ alIniciarSesion }) {
       return;
     }
 
-    if (!token) {
-      navigate("/?error=no_token");
+    if (!accessToken || !refreshToken) {
+      navigate("/?error=no_tokens");
       return;
     }
 
     let userId;
     try {
-      const payload = JSON.parse(atob(token.split(".")[1]));
+      const payload = JSON.parse(atob(accessToken.split(".")[1]));
       userId = payload.userId || payload.sub;
     } catch {
       console.warn("No se pudo decodificar el token");
     }
 
     if (alIniciarSesion) {
-      alIniciarSesion(token, userId);
+      alIniciarSesion(accessToken, refreshToken, userId);
     } else {
-      sessionStorage.setItem("tokenIDEAFY", token);
-      if (userId) sessionStorage.setItem("userIdIDEAFY", userId);
+      saveTokens(accessToken, refreshToken);
+      if (userId) localStorage.setItem("userIdIDEAFY", userId);
       window.location.href = "/perfil";
     }
   }, [navigate, searchParams, alIniciarSesion]);

@@ -33,7 +33,7 @@ export default function Login({ alIniciarSesion }) {
       if (res.ok) {
         if (esLogin) {
           const data = await res.json();
-          alIniciarSesion(data.accessToken, data.userId);
+          alIniciarSesion(data.accessToken, data.refreshToken, data.userId);
         } else {
           alert("Usuario registrado con éxito");
           setEsLogin(true);
