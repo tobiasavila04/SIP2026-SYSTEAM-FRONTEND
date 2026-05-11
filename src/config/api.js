@@ -1,8 +1,10 @@
 // Configuración centralizada de endpoints del API
 const isDev = import.meta.env.DEV;
 const API_BASE_URL = isDev ? '' : (import.meta.env.VITE_API_URL || 'http://localhost:8080');
+const PROJECT_API_BASE = isDev ? '' : (import.meta.env.VITE_PROJECT_API_URL || 'http://localhost:8081');
 
 const buildUrl = (endpoint) => `${API_BASE_URL}${endpoint}`;
+const buildProjectUrl = (endpoint) => `${PROJECT_API_BASE}${endpoint}`;
 
 export const API_ENDPOINTS = {
   AUTH_LOGIN: buildUrl('/auth/login'),
@@ -19,42 +21,20 @@ export const API_ENDPOINTS = {
   ROLE_PERMISSION: (roleId, permissionId) => buildUrl(`/api/roles/${roleId}/permissions/${permissionId}`),
   
   PERMISSIONS: buildUrl('/api/permissions'),
+  PERMISSION_BY_ID: (id) => buildUrl(`/api/permissions/${id}`),
   
-  PROJECTS: buildUrl('/api/projects'),
-  PROJECT_BY_ID: (id) => buildUrl(`/api/projects/${id}`),
+  PROJECTS: buildProjectUrl('/api/projects'),
+  PROJECT_BY_ID: (id) => buildProjectUrl(`/api/projects/${id}`),
+  PROJECTS_CATALOG: buildProjectUrl('/api/projects/catalog'),
+  PROJECTS_MY: buildProjectUrl('/api/projects/my-projects'),
+  PROJECT_INVEST: (id) => buildProjectUrl(`/api/projects/${id}/invest`),
+  PROJECT_STATUS: (id) => buildProjectUrl(`/api/projects/${id}/status`),
+  PROJECT_FINANCING_PROGRESS: (id) => buildProjectUrl(`/api/projects/${id}/financing-progress`),
+  PROJECT_SMART_CONTRACT: (id) => buildProjectUrl(`/api/projects/${id}/smart-contract`),
+  PROJECT_EVALUATE_STATES: buildProjectUrl('/api/projects/evaluate-states'),
+
+  WALLET_SUMMARY: buildUrl('/api/wallet/summary'),
+
+  DASHBOARD_STATS: buildProjectUrl('/api/dashboard/stats'),
 };
 
-export const API_BASE = API_BASE_URL;
-
-export const apiRequest = async (url, options = {}) => {
-  // 1. Buscamos el token
-  const token = sessionStorage.getItem('tokenIDEAFY');
-  
-  // 2. Preparamos los headers
-  const headers = {
-    'Content-Type': 'application/json',
-    ...options.headers,
-  };
-  
-  // 3. Si hay token, lo metemos
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-  
-  // 4. Hacemos el fetch (usamos "url" directo porque tus API_ENDPOINTS ya traen la url completa)
-  const response = await fetch(url, {
-    ...options,
-    headers,
-  });
-  
-  // 5. Atajamos el error de Token Vencido
-  if (response.status === 401) {
-    console.warn('Sesión expirada o token inválido');
-    sessionStorage.removeItem('tokenIDEAFY');
-    window.location.href = '/';
-    return null;
-  }
-  
-  // Retornamos la respuesta en JSON
-  return response.json();
-};
