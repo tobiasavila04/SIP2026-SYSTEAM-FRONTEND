@@ -6,23 +6,43 @@ const PROJECT_API_BASE = isDev ? '' : (import.meta.env.VITE_PROJECT_API_URL || '
 const buildUrl = (endpoint) => `${API_BASE_URL}${endpoint}`;
 const buildProjectUrl = (endpoint) => `${PROJECT_API_BASE}${endpoint}`;
 
+// --- Token Storage (usado por refresh en api.js, app usa api-client.js) ---
+const ACCESS_TOKEN_KEY = 'systeam_access_token';
+const REFRESH_TOKEN_KEY = 'systeam_refresh_token';
+
+export const saveTokens = (accessToken, refreshToken) => {
+  localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
+  localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+};
+
+export const getAccessToken = () => localStorage.getItem(ACCESS_TOKEN_KEY);
+export const getRefreshToken = () => localStorage.getItem(REFRESH_TOKEN_KEY);
+
+export const clearTokens = () => {
+  localStorage.removeItem(ACCESS_TOKEN_KEY);
+  localStorage.removeItem(REFRESH_TOKEN_KEY);
+  localStorage.removeItem('userIdIDEAFY');
+};
+
+// --- Endpoints ---
 export const API_ENDPOINTS = {
   AUTH_LOGIN: buildUrl('/auth/login'),
   AUTH_REGISTER: buildUrl('/auth/register'),
+  AUTH_REFRESH: buildUrl('/auth/refresh'),
   AUTH_CHANGE_PASSWORD: buildUrl('/auth/change-password'),
-  
+
   USERS: buildUrl('/api/users'),
   USER_ME: buildUrl('/api/users/me'),
   USER_BY_ID: (id) => buildUrl(`/api/users/${id}`),
   USER_ROLE: (userId, roleId) => buildUrl(`/api/users/${userId}/roles/${roleId}`),
-  
+
   ROLES: buildUrl('/api/roles'),
   ROLE_BY_ID: (id) => buildUrl(`/api/roles/${id}`),
   ROLE_PERMISSION: (roleId, permissionId) => buildUrl(`/api/roles/${roleId}/permissions/${permissionId}`),
-  
+
   PERMISSIONS: buildUrl('/api/permissions'),
   PERMISSION_BY_ID: (id) => buildUrl(`/api/permissions/${id}`),
-  
+
   PROJECTS: buildProjectUrl('/api/projects'),
   PROJECT_BY_ID: (id) => buildProjectUrl(`/api/projects/${id}`),
   PROJECTS_CATALOG: buildProjectUrl('/api/projects/catalog'),
@@ -33,8 +53,63 @@ export const API_ENDPOINTS = {
   PROJECT_SMART_CONTRACT: (id) => buildProjectUrl(`/api/projects/${id}/smart-contract`),
   PROJECT_EVALUATE_STATES: buildProjectUrl('/api/projects/evaluate-states'),
 
-  WALLET_SUMMARY: buildUrl('/api/wallet/summary'),
+  WALLET_SUMMARY: buildProjectUrl('/api/wallet/summary'),
 
   DASHBOARD_STATS: buildProjectUrl('/api/dashboard/stats'),
 };
 
+export const API_BASE = API_BASE_URL;
+
+// --- Refresh interno (no exportado) ---
+async function doRefresh() {
+  const refreshToken = getRefreshToken();
+  if (!refreshToken) return null;
+
+  try {
+    const response = await fetch(API_ENDPOINTS.AUTH_REFRESH, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken }),
+    });
+
+    if (!response.ok) {
+      clearTokens();
+      return null;
+    }
+
+    const data = await response.json();
+    saveTokens(data.accessToken, data.refreshToken);
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+// --- Cliente HTTP central ---
+export const apiRequest = async (url, options = {}, _retry = false) => {
+  const token = getAccessToken();
+
+  const headers = {
+    'Content-Type': 'application/json',
+    ...options.headers,
+  };
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const response = await fetch(url, { ...options, headers });
+
+  if (response.status === 401 && !_retry) {
+    const newTokens = await doRefresh();
+
+    if (!newTokens) {
+      window.location.href = '/';
+      return null;
+    }
+
+    return apiRequest(url, options, true);
+  }
+
+  return response.json();
+};
