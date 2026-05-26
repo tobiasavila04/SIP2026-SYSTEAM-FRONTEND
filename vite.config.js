@@ -53,6 +53,11 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      '/api/investments': {
+        target: 'http://localhost:8081',
+        changeOrigin: true,
+        secure: false,
+      },
       '/api/dashboard': {
         target: 'http://localhost:8081',
         changeOrigin: true,

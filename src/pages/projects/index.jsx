@@ -137,20 +137,23 @@ export default function ProjectCatalogPage() {
         )}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {stats.map((s) => (
-          <div key={s.label} className="rounded-lg border border-white/5 bg-card p-4">
-            <div className="flex items-center gap-2 mb-1.5">
-              <s.icon className="w-3.5 h-3.5 text-slate-500" />
-              <span className="text-[11px] text-slate-500 uppercase tracking-wider">{s.label}</span>
-            </div>
-            <p className="text-xl font-bold text-white">{s.value}</p>
-          </div>
-        ))}
-      </div>
+      <section aria-label="Estadísticas de proyectos">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {stats.map((s) => (
+            <article key={s.label} className="rounded-lg border border-white/5 bg-card p-4">
+              <div className="flex items-center gap-2 mb-1.5">
+                <s.icon className="w-3.5 h-3.5 text-slate-500" />
+                <span className="text-[11px] text-slate-500 uppercase tracking-wider">{s.label}</span>
+              </div>
+              <p className="text-xl font-bold text-white">{s.value}</p>
+            </article>
+          ))}
+        </div>
+      </section>
 
-      <div className="rounded-xl border border-white/5 bg-card p-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+      <section aria-label="Filtros de búsqueda">
+        <div className="rounded-xl border border-white/5 bg-card p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             {puedeCrear && (
               <div className="flex gap-1 p-1 rounded-lg bg-white/5">
@@ -227,8 +230,9 @@ export default function ProjectCatalogPage() {
               </button>
             )}
           </div>
+          </div>
         </div>
-      </div>
+      </section>
 
       {isError ? (
         <ErrorState onRetry={() => refetch()} />
@@ -249,15 +253,17 @@ export default function ProjectCatalogPage() {
           action={vista === 'mis-proyectos' && puedeCrear ? { label: 'Crear proyecto', to: '/proyectos/crear' } : undefined}
         />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {proyectosFiltrados.map((p) => (
-            <ProjectCard
-              key={p.id}
-              project={p}
-              isCreator={p.creadorId === usuarioId}
-            />
-          ))}
-        </div>
+        <section aria-label="Listado de proyectos">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {proyectosFiltrados.map((p) => (
+              <ProjectCard
+                key={p.id}
+                project={p}
+                isCreator={p.creadorId === usuarioId}
+              />
+            ))}
+          </div>
+        </section>
       )}
     </div>
   )

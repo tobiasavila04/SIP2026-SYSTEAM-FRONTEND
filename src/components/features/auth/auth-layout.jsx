@@ -2,7 +2,7 @@ import { motion } from 'framer-motion'
 
 export function AuthLayout({ error, children }) {
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden">
+    <main className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden">
       <div
         className="fixed inset-0 pointer-events-none"
         style={{ backgroundImage: 'radial-gradient(rgba(255,255,255,0.015) 1px, transparent 1px)', backgroundSize: '24px 24px' }}
@@ -38,6 +38,6 @@ export function AuthLayout({ error, children }) {
           {children}
         </div>
       </motion.div>
-    </div>
+    </main>
   )
 }

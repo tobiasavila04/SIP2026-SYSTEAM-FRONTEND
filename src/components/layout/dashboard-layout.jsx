@@ -26,10 +26,13 @@ export function DashboardLayout() {
       <div className="flex-1 flex flex-col min-w-0">
         <Header onLogout={handleLogout} />
 
-        <main className={cn(
-          'flex-1 overflow-auto p-6',
-          'scrollbar-thin scrollbar-thumb-white/5 scrollbar-track-transparent'
-        )}>
+        <main
+          id="main-content"
+          className={cn(
+            'flex-1 overflow-auto p-6',
+            'scrollbar-thin scrollbar-thumb-white/5 scrollbar-track-transparent'
+          )}
+        >
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}

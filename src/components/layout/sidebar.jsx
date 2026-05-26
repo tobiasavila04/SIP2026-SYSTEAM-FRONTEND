@@ -3,18 +3,22 @@ import { useAuthStore } from '@/stores/auth-store'
 import {
   LayoutDashboard,
   FolderKanban,
-  UserCircle,
+  TrendingUp,
   Settings,
   Users,
   KeyRound,
   ChevronLeft,
   Menu,
 } from 'lucide-react'
+import { useAccount, useReadContract, useBalance } from 'wagmi'
+import { formatUnits } from 'viem'
 import { cn } from '@/lib/utils'
+import { ERC20_ABI } from '@/lib/abis'
 
 const mainNav = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/proyectos', label: 'Proyectos', icon: FolderKanban },
+  { to: '/inversiones', label: 'Inversiones', icon: TrendingUp },
   { to: '/configuracion', label: 'Configuración', icon: Settings },
 ]
 
@@ -23,6 +27,56 @@ const adminNav = [
   { to: '/admin/roles', label: 'Roles', icon: KeyRound },
   // Permisos gestionados desde Roles
 ]
+
+const IDEA_TOKEN_ADDRESS = import.meta.env.VITE_IDEA_TOKEN_ADDRESS
+
+function WalletInfo({ collapsed }) {
+  const { address, isConnected, chain } = useAccount()
+  const { data: ideaBalance } = useReadContract({
+    address: IDEA_TOKEN_ADDRESS,
+    abi: ERC20_ABI,
+    functionName: 'balanceOf',
+    args: address ? [address] : undefined,
+    query: { enabled: isConnected && !!address },
+  })
+  const { data: decimals } = useReadContract({
+    address: IDEA_TOKEN_ADDRESS,
+    abi: ERC20_ABI,
+    functionName: 'decimals',
+    query: { enabled: isConnected },
+  })
+  const { data: ethBalance } = useBalance({ address })
+
+  if (!isConnected || !address) return null
+
+  const formattedIdea = ideaBalance && decimals
+    ? Number(formatUnits(ideaBalance, decimals)).toLocaleString(undefined, { maximumFractionDigits: 2 })
+    : '—'
+  const formattedEth = ethBalance
+    ? Number(formatUnits(ethBalance.value, ethBalance.decimals)).toLocaleString(undefined, { maximumFractionDigits: 4 })
+    : '—'
+
+  if (collapsed) return null
+
+  return (
+    <div className="mx-2 mb-2 px-3 py-2.5 rounded-lg bg-white/[0.03] border border-white/[0.06] space-y-1.5">
+      <div className="flex items-center gap-2">
+        <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
+        <span className="text-xs text-slate-400 font-mono truncate">
+          {address.slice(0, 6)}...{address.slice(-4)}
+        </span>
+      </div>
+      <div className="flex items-center justify-between">
+        <span className="text-[11px] text-slate-500 uppercase tracking-wider">$IDEA</span>
+        <span className="text-sm font-semibold text-white">{formattedIdea}</span>
+      </div>
+      <div className="flex items-center justify-between">
+        <span className="text-[11px] text-slate-500 uppercase tracking-wider">{chain?.nativeCurrency?.symbol || 'ETH'}</span>
+        <span className="text-sm font-semibold text-white">{formattedEth}</span>
+      </div>
+    </div>
+  )
+}
 
 export function Sidebar({ collapsed, onToggle }) {
   const roles = useAuthStore((s) => s.roles)
@@ -40,6 +94,7 @@ export function Sidebar({ collapsed, onToggle }) {
 
       {/* Sidebar */}
       <aside
+        aria-label="Menú de navegación"
         className={cn(
           'h-screen bg-sidebar border-r border-sidebar-border flex flex-col shrink-0 z-50',
           'transition-all duration-300 ease-in-out',
@@ -63,12 +118,13 @@ export function Sidebar({ collapsed, onToggle }) {
               'p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-white/5 transition-colors',
               collapsed && 'mx-auto',
             )}
+            aria-label={collapsed ? 'Abrir menú' : 'Cerrar menú'}
           >
             {collapsed ? <Menu className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
           </button>
         </div>
 
-        <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
+        <nav aria-label="Secciones" className="flex-1 p-2 space-y-1 overflow-y-auto">
           <NavSection label={collapsed ? undefined : 'Principal'}>
             {mainNav.map(({ to, label, icon: Icon }) => (
               <NavItem key={to} to={to} icon={Icon} label={label} collapsed={collapsed} />
@@ -83,6 +139,8 @@ export function Sidebar({ collapsed, onToggle }) {
             </NavSection>
           )}
         </nav>
+
+        <WalletInfo collapsed={collapsed} />
       </aside>
     </>
   )

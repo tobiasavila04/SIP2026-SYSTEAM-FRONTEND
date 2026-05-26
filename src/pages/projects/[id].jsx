@@ -1,5 +1,11 @@
 import { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
+import { useAccount, useReadContract, useWriteContract } from 'wagmi'
+import { waitForTransactionReceipt } from '@wagmi/core'
+import { parseUnits, formatUnits } from 'viem'
+import { wagmiConfig } from '@/lib/web3'
+import { ERC20_ABI, INVESTMENT_SWAP_ABI } from '@/lib/abis'
+import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { useProject, useUpdateProjectStatus } from '@/hooks/use-projects'
 import { useAuthStore } from '@/stores/auth-store'
 import { usePermissions } from '@/stores/auth-store'
@@ -15,64 +21,309 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { statusVariants, statusLabels, FundingProgress } from '@/lib/project-constants'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { toast } from 'sonner'
-import { ArrowLeft, Target, Calendar, Coins, Wallet, Loader2, TrendingUp, Rocket, CheckCircle2, Ban, SquarePen } from 'lucide-react'
+import { ArrowLeft, Target, Calendar, Coins, Wallet, Loader2, TrendingUp, Rocket, CheckCircle2, Ban, SquarePen, ExternalLink, RefreshCw, AlertTriangle } from 'lucide-react'
+
+const VITE_IDEA_TOKEN_ADDRESS = import.meta.env.VITE_IDEA_TOKEN_ADDRESS
+const VITE_INVESTMENT_SWAP_ADDRESS = import.meta.env.VITE_INVESTMENT_SWAP_ADDRESS
 
 function InvestDialog({ open, onOpenChange, projectId, projectTitle, onSuccess }) {
   const [amount, setAmount] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [step, setStep] = useState('idle') // idle | approving | investing | backend | done
+  const [investHash, setInvestHash] = useState(null)
+
+  const { address, isConnected } = useAccount()
+  const { writeContractAsync } = useWriteContract()
+
+  const { data: allowance, refetch: refetchAllowance } = useReadContract({
+    address: VITE_IDEA_TOKEN_ADDRESS,
+    abi: ERC20_ABI,
+    functionName: 'allowance',
+    args: address ? [address, VITE_INVESTMENT_SWAP_ADDRESS] : undefined,
+    query: { enabled: isConnected && !!address },
+  })
+
+  const { data: userBalance } = useReadContract({
+    address: VITE_IDEA_TOKEN_ADDRESS,
+    abi: ERC20_ABI,
+    functionName: 'balanceOf',
+    args: address ? [address] : undefined,
+    query: { enabled: isConnected && !!address },
+  })
+
+  const { data: decimals } = useReadContract({
+    address: VITE_IDEA_TOKEN_ADDRESS,
+    abi: ERC20_ABI,
+    functionName: 'decimals',
+    query: { enabled: isConnected },
+  })
+
+  const investAmountWei = amount && decimals ? parseUnits(amount, decimals) : 0n
+  const needsApproval = allowance !== undefined && investAmountWei > 0n && allowance < investAmountWei
+  const formattedBalance = userBalance && decimals
+    ? Number(formatUnits(userBalance, decimals)).toLocaleString(undefined, { maximumFractionDigits: 2 })
+    : null
+
+  const reset = () => {
+    setAmount('')
+    setStep('idle')
+    setInvestHash(null)
+  }
 
   const handleInvest = async () => {
     if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
       toast.error('Ingresá un monto válido')
       return
     }
-    setLoading(true)
+    if (!isConnected || !address) {
+      toast.error('Conectá tu wallet primero')
+      return
+    }
+
     try {
-      await apiRequest(API_ENDPOINTS.PROJECT_INVEST(projectId), {
-        method: 'POST',
-        params: { amount: Number(amount) },
+      if (needsApproval) {
+        setStep('approving')
+        const approveHash = await writeContractAsync({
+          address: VITE_IDEA_TOKEN_ADDRESS,
+          abi: ERC20_ABI,
+          functionName: 'approve',
+          args: [VITE_INVESTMENT_SWAP_ADDRESS, investAmountWei],
+        })
+        await waitForTransactionReceipt(wagmiConfig, { hash: approveHash })
+        refetchAllowance()
+      }
+
+      setStep('investing')
+      const hash = await writeContractAsync({
+        address: VITE_INVESTMENT_SWAP_ADDRESS,
+        abi: INVESTMENT_SWAP_ABI,
+        functionName: 'invest',
+        args: [BigInt(projectId), investAmountWei],
       })
-      toast.success('Inversión realizada con éxito')
-      setAmount('')
-      onOpenChange(false)
+      setInvestHash(hash)
+      await waitForTransactionReceipt(wagmiConfig, { hash })
+
+      setStep('backend')
+      await apiRequest(API_ENDPOINTS.INVESTMENTS, {
+        method: 'POST',
+        body: { proyectoId: projectId, montoIdea: Number(amount), txHash: hash },
+      })
+
+      setStep('done')
+      toast.success('Inversión realizada con éxito en la blockchain')
       onSuccess?.()
     } catch (e) {
       toast.error(e?.message || 'Error al procesar la inversión')
-    } finally {
-      setLoading(false)
+      setStep('idle')
     }
   }
 
+  const isProcessing = step !== 'idle'
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(v) => { if (!v && !isProcessing) reset(); onOpenChange(v) }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <TrendingUp className="w-5 h-5 text-violet-400" />
             Invertir en {projectTitle}
           </DialogTitle>
-          <DialogDescription>Ingresá el monto que deseas invertir en este proyecto.</DialogDescription>
+          <DialogDescription>
+            {step === 'done'
+              ? 'Tu inversión se registró correctamente en la blockchain.'
+              : isConnected
+                ? 'Ingresá el monto en $IDEA que deseas invertir.'
+                : 'Conectá tu wallet para invertir.'}
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
-          <div>
-            <Label>Monto a invertir</Label>
-            <div className="relative mt-1.5">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
-              <Input type="number" min="1" step="0.01" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)} className="pl-7" />
-            </div>
-          </div>
-          <Button onClick={handleInvest} disabled={!amount || loading} className="w-full bg-violet-600 hover:bg-violet-500 text-white gap-2 h-10 rounded-lg">
-            {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-            {loading ? 'Procesando...' : 'Confirmar inversión'}
-          </Button>
+          {step === 'done' && investHash ? (
+            <>
+              <div className="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-center space-y-3">
+                <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto" />
+                <p className="text-sm text-emerald-300 font-medium">Inversión confirmada</p>
+                <a
+                  href={`https://sepolia.etherscan.io/tx/${investHash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-xs text-violet-400 hover:text-violet-300 transition-colors font-mono"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  {investHash.slice(0, 10)}...{investHash.slice(-8)}
+                </a>
+              </div>
+              <Button
+                onClick={() => { reset(); onOpenChange(false) }}
+                className="w-full bg-violet-600 hover:bg-violet-500 text-white h-10 rounded-lg"
+              >
+                Cerrar
+              </Button>
+            </>
+          ) : (
+            <>
+              {isConnected && (
+                <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06] text-xs">
+                  <span className="text-slate-400">Balance $IDEA</span>
+                  <span className="text-white font-medium">{formattedBalance ?? '—'}</span>
+                </div>
+              )}
+
+              <div>
+                <Label>Monto a invertir ($IDEA)</Label>
+                <div className="relative mt-1.5">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
+                  <Input
+                    type="number" min="0" step="any" placeholder="0.00"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    className="pl-7"
+                    disabled={isProcessing}
+                  />
+                </div>
+              </div>
+
+              {isProcessing && (
+                <div className="space-y-2 text-xs text-slate-400">
+                  {step === 'approving' && (
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-violet-400" />
+                      <span>Paso 1/2: Aprobando gasto de tokens...</span>
+                    </div>
+                  )}
+                  {step === 'investing' && (
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-violet-400" />
+                      <span>Paso 2/2: Ejecutando inversión en la blockchain...</span>
+                    </div>
+                  )}
+                  {step === 'backend' && (
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-violet-400" />
+                      <span>Confirmando inversión en el servidor...</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {!isConnected ? (
+                <ConnectButton />
+              ) : (
+                <Button
+                  onClick={handleInvest}
+                  disabled={!amount || isProcessing}
+                  className="w-full bg-violet-600 hover:bg-violet-500 text-white gap-2 h-10 rounded-lg"
+                >
+                  {isProcessing && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {step === 'idle' ? 'Confirmar inversión' :
+                   step === 'approving' ? 'Aprobando...' :
+                   step === 'investing' ? 'Invirtiendo...' :
+                   'Procesando...'}
+                </Button>
+              )}
+            </>
+          )}
         </div>
       </DialogContent>
     </Dialog>
   )
 }
 
-function StatusActions({ project, isCreator, canInvest, onInvest, onTransition, transitioning }) {
-  if (!isCreator && !canInvest) return null
+function RefundDialog({ open, onOpenChange, projectId, onSuccess }) {
+  const [step, setStep] = useState('idle')
+  const [refundHash, setRefundHash] = useState(null)
+
+  const { address, isConnected } = useAccount()
+  const { writeContractAsync } = useWriteContract()
+
+  const handleRefund = async () => {
+    if (!isConnected || !address) {
+      toast.error('Conectá tu wallet primero')
+      return
+    }
+
+    try {
+      setStep('refunding')
+      const hash = await writeContractAsync({
+        address: VITE_INVESTMENT_SWAP_ADDRESS,
+        abi: INVESTMENT_SWAP_ABI,
+        functionName: 'refund',
+        args: [BigInt(projectId)],
+      })
+      setRefundHash(hash)
+      await waitForTransactionReceipt(wagmiConfig, { hash })
+
+      toast.success('Reembolso procesado exitosamente en la blockchain')
+      setStep('done')
+      onSuccess?.()
+    } catch (e) {
+      toast.error(e?.message || 'Error al procesar el reembolso')
+      setStep('idle')
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => { if (!v && step !== 'refunding') { setStep('idle'); setRefundHash(null); onOpenChange(v) } else onOpenChange(v) }}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <RefreshCw className="w-5 h-5 text-amber-400" />
+            Solicitar Reembolso
+          </DialogTitle>
+          <DialogDescription>
+            {step === 'done'
+              ? 'Tu reembolso se procesó correctamente.'
+              : 'El proyecto no alcanzó su meta de financiamiento. Podés solicitar el reembolso de tu inversión.'}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          {step === 'done' && refundHash ? (
+            <>
+              <div className="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-center space-y-3">
+                <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto" />
+                <p className="text-sm text-emerald-300 font-medium">Reembolso confirmado</p>
+                <a
+                  href={`https://sepolia.etherscan.io/tx/${refundHash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-xs text-violet-400 hover:text-violet-300 transition-colors font-mono"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  {refundHash.slice(0, 10)}...{refundHash.slice(-8)}
+                </a>
+              </div>
+              <Button onClick={() => { setStep('idle'); setRefundHash(null); onOpenChange(false) }} className="w-full bg-violet-600 hover:bg-violet-500 text-white h-10 rounded-lg">
+                Cerrar
+              </Button>
+            </>
+          ) : (
+            <>
+              <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300 flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>Al solicitar el reembolso, los tokens invertidos serán devueltos a tu wallet. Esta acción ejecuta una transacción on-chain.</span>
+              </div>
+              {!isConnected ? (
+                <ConnectButton />
+              ) : (
+                <Button
+                  onClick={handleRefund}
+                  disabled={step === 'refunding'}
+                  className="w-full bg-amber-600 hover:bg-amber-500 text-white gap-2 h-10 rounded-lg"
+                >
+                  {step === 'refunding' && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {step === 'refunding' ? 'Procesando reembolso...' : 'Solicitar Reembolso'}
+                </Button>
+              )}
+            </>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function StatusActions({ project, isCreator, canInvest, onInvest, onRefund, onTransition, transitioning }) {
+  const failed = project.estado === 'CANCELADO' || project.estado === 'RECHAZADO' || (project.estado === 'FINALIZADO' && project.montoRecaudado < project.montoRequerido)
+
+  if (!isCreator && !canInvest && !failed) return null
 
   return (
     <div className="flex items-center gap-2 flex-wrap">
@@ -80,6 +331,12 @@ function StatusActions({ project, isCreator, canInvest, onInvest, onTransition, 
         <Button onClick={onInvest} className="bg-violet-600 hover:bg-violet-500 text-white gap-2 h-9 px-5 text-sm rounded-lg shadow-lg shadow-violet-600/20">
           <TrendingUp className="w-4 h-4" />
           Invertir
+        </Button>
+      )}
+      {failed && (
+        <Button onClick={onRefund} variant="outline" size="sm" className="gap-2 border-amber-500/20 text-amber-400 hover:bg-amber-500/10">
+          <RefreshCw className="w-3.5 h-3.5" />
+          Solicitar Reembolso
         </Button>
       )}
       {isCreator && project.estado === 'PREPARACION' && (
@@ -128,6 +385,7 @@ export default function ProjectDetailPage() {
   const updateStatus = useUpdateProjectStatus()
 
   const [showInvestDialog, setShowInvestDialog] = useState(false)
+  const [showRefundDialog, setShowRefundDialog] = useState(false)
   const [transitioning, setTransitioning] = useState(false)
 
   const transitionTo = async (status) => {
@@ -193,6 +451,7 @@ export default function ProjectDetailPage() {
             isCreator={isCreator}
             canInvest={canInvest}
             onInvest={() => setShowInvestDialog(true)}
+            onRefund={() => setShowRefundDialog(true)}
             onTransition={transitionTo}
             transitioning={transitioning}
           />
@@ -213,12 +472,24 @@ export default function ProjectDetailPage() {
         </div>
 
         {project.montoRecaudado != null && (
-          <div className="pt-2">
+          <section aria-label="Progreso de financiamiento" className="pt-2">
             <FundingProgress raised={project.montoRecaudado} required={project.montoRequerido} />
+          </section>
+        )}
+
+        {(project.estado === 'CANCELADO' || project.estado === 'RECHAZADO' || (project.estado === 'FINALIZADO' && project.montoRecaudado < project.montoRequerido)) && (
+          <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-amber-300">Proyecto sin financiamiento completo</p>
+              <p className="text-xs text-amber-400/70 mt-0.5">
+                Este proyecto no alcanzó su meta de financiamiento. Si invertiste, podés solicitar un reembolso.
+              </p>
+            </div>
           </div>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t border-white/5">
+        <section aria-label="Métricas del proyecto" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t border-white/5">
           <MetricCard icon={Target} label="Monto requerido" value={formatCurrency(project.montoRequerido)} valueClass="text-emerald-300" />
           <MetricCard
             icon={Calendar}
@@ -227,7 +498,7 @@ export default function ProjectDetailPage() {
           />
           <MetricCard icon={Coins} label="Cupo máximo tokens" value={project.cupoMaximoTokens?.toLocaleString() ?? 'No definido'} />
           <MetricCard icon={Wallet} label="Valor nominal token" value={project.valorNominalToken ? formatCurrency(project.valorNominalToken) : 'No definido'} />
-        </div>
+        </section>
 
         <div className="pt-4 border-t border-white/5">
           <div className="flex items-center gap-2 text-xs text-slate-500">
@@ -247,6 +518,13 @@ export default function ProjectDetailPage() {
         onOpenChange={setShowInvestDialog}
         projectId={projectId}
         projectTitle={project.titulo}
+        onSuccess={refetch}
+      />
+
+      <RefundDialog
+        open={showRefundDialog}
+        onOpenChange={setShowRefundDialog}
+        projectId={projectId}
         onSuccess={refetch}
       />
     </div>

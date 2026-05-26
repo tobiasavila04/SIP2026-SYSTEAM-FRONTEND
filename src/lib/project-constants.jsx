@@ -6,6 +6,7 @@ export const statusVariants = {
   EJECUCION: 'warning',
   FINALIZADO: 'default',
   CANCELADO: 'error',
+  RECHAZADO: 'error',
 }
 
 export const statusLabels = {
@@ -14,6 +15,7 @@ export const statusLabels = {
   EJECUCION: 'En Ejecución',
   FINALIZADO: 'Finalizado',
   CANCELADO: 'Cancelado',
+  RECHAZADO: 'Rechazado',
 }
 
 export function FundingProgress({ raised, required, compact }) {

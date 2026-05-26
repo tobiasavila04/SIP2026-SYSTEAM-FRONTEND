@@ -178,9 +178,10 @@ export default function AdminRolesPage() {
       {isError ? (
         <ErrorState onRetry={() => refetch()} />
       ) : isLoading ? (
-        <div className="space-y-2">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="rounded-xl border border-white/5 bg-card p-4 animate-pulse">
+        <section aria-label="Cargando roles">
+          <div className="space-y-2">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="rounded-xl border border-white/5 bg-card p-4 animate-pulse">
               <div className="flex items-center gap-3">
                 <div className="w-2 h-2 rounded-full bg-white/5" />
                 <div className="h-5 w-24 bg-white/5 rounded" />
@@ -188,15 +189,16 @@ export default function AdminRolesPage() {
               </div>
             </div>
           ))}
-        </div>
+          </div>
+        </section>
       ) : filteredRoles.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mb-4">
             <Shield className="w-8 h-8 text-slate-500" />
           </div>
-          <h3 className="text-lg font-medium text-white mb-1">
+          <h2 className="text-lg font-medium text-white mb-1">
             {search ? 'Sin resultados' : 'No hay roles creados'}
-          </h3>
+          </h2>
           <p className="text-sm text-slate-400 max-w-sm mb-6">
             {search ? `No se encontraron roles que coincidan con "${search}"` : 'Los roles definen los permisos de los usuarios en el sistema.'}
           </p>
@@ -207,21 +209,23 @@ export default function AdminRolesPage() {
           )}
         </div>
       ) : (
-        <div className="space-y-2">
-          {filteredRoles.map((role) => (
-            <RoleCard
-              key={role.id}
-              role={role}
-              permissions={allPermissions}
-              expanded={expandedId === role.id}
-              onToggle={toggleExpand}
-              onEdit={setEditingRole}
-              onDelete={setDeleteId}
-              onTogglePermission={togglePermission}
-              isPending={isPending}
-            />
-          ))}
-        </div>
+        <section aria-label="Roles del sistema">
+          <div className="space-y-2">
+            {filteredRoles.map((role) => (
+              <RoleCard
+                key={role.id}
+                role={role}
+                permissions={allPermissions}
+                expanded={expandedId === role.id}
+                onToggle={toggleExpand}
+                onEdit={setEditingRole}
+                onDelete={setDeleteId}
+                onTogglePermission={togglePermission}
+                isPending={isPending}
+              />
+            ))}
+          </div>
+        </section>
       )}
 
       <Dialog open={showCreate} onOpenChange={setShowCreate}>

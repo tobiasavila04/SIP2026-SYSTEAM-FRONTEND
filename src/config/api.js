@@ -47,13 +47,17 @@ export const API_ENDPOINTS = {
   PROJECT_BY_ID: (id) => buildProjectUrl(`/api/projects/${id}`),
   PROJECTS_CATALOG: buildProjectUrl('/api/projects/catalog'),
   PROJECTS_MY: buildProjectUrl('/api/projects/my-projects'),
-  PROJECT_INVEST: (id) => buildProjectUrl(`/api/projects/${id}/invest`),
   PROJECT_STATUS: (id) => buildProjectUrl(`/api/projects/${id}/status`),
   PROJECT_FINANCING_PROGRESS: (id) => buildProjectUrl(`/api/projects/${id}/financing-progress`),
   PROJECT_SMART_CONTRACT: (id) => buildProjectUrl(`/api/projects/${id}/smart-contract`),
   PROJECT_EVALUATE_STATES: buildProjectUrl('/api/projects/evaluate-states'),
 
+  INVESTMENTS: buildProjectUrl('/api/investments'),
+  INVESTMENTS_VALIDATE: buildProjectUrl('/api/investments/validate'),
+  INVESTMENT_BY_ID: (id) => buildProjectUrl(`/api/investments/${id}`),
+
   WALLET_SUMMARY: buildProjectUrl('/api/wallet/summary'),
+  WALLET_HISTORY: buildProjectUrl('/api/investments/history'),
 
   DASHBOARD_STATS: buildProjectUrl('/api/dashboard/stats'),
 };

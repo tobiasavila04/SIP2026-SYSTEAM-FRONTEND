@@ -66,7 +66,7 @@ function BalanceCard({ currency, balance, icon: Icon, index }) {
   )
 }
 
-function PortfolioItem({ subtoken, cantidad, precioActual, index }) {
+function PortfolioItem({ proyectoTitulo, cantidad, precioActual, index }) {
   return (
     <motion.div
       initial={{ opacity: 0, x: -8 }}
@@ -76,7 +76,7 @@ function PortfolioItem({ subtoken, cantidad, precioActual, index }) {
     >
       <div className="flex items-center gap-2.5 min-w-0">
         <div className="w-2 h-2 rounded-full bg-violet-500/40 shrink-0" />
-        <span className="text-sm text-slate-300 truncate">{subtoken}</span>
+        <span className="text-sm text-slate-300 truncate">{proyectoTitulo}</span>
       </div>
       <div className="text-right shrink-0 ml-4">
         <p className="text-sm font-medium text-white">{Number(cantidad).toLocaleString('es-AR')}</p>
@@ -90,7 +90,7 @@ function PortfolioItem({ subtoken, cantidad, precioActual, index }) {
 
 function WalletPanel() {
   const { data, isLoading, isError, dataUpdatedAt } = useWalletSummary()
-  const balances = data?.balances ?? {}
+  const saldoIdea = data?.saldoIdea ?? 0
   const portfolio = data?.portfolio ?? []
 
   return (
@@ -134,8 +134,7 @@ function WalletPanel() {
       ) : (
         <div className="space-y-5">
           <div className="flex gap-3">
-            <BalanceCard currency="IDEA" balance={balances.idea ?? 0} icon={TrendingUp} index={0} />
-            <BalanceCard currency="USDT" balance={balances.usdt ?? 0} icon={TrendingUp} index={1} />
+            <BalanceCard currency="IDEA" balance={saldoIdea} icon={TrendingUp} index={0} />
           </div>
           {portfolio.length > 0 && (
             <div>
@@ -145,7 +144,7 @@ function WalletPanel() {
               </div>
               <div className="bg-black/10 rounded-lg px-3">
                 {portfolio.map((item, i) => (
-                  <PortfolioItem key={item.subtoken + i} {...item} index={i} />
+                  <PortfolioItem key={item.subtokenId ?? i} {...item} index={i} />
                 ))}
               </div>
             </div>
@@ -257,7 +256,7 @@ export default function SettingsPage() {
 
           {/* Profile Section */}
           {activeSection === 'profile' && (
-            <div className="space-y-6">
+            <section aria-label="Perfil" className="space-y-6">
               <div className="rounded-xl border border-white/5 bg-card p-6 space-y-6">
                 <div className="flex items-center justify-between pb-6 border-b border-white/5">
                   <div className="flex items-center gap-4">
@@ -360,12 +359,12 @@ export default function SettingsPage() {
               </div>
 
               <WalletPanel />
-            </div>
+            </section>
           )}
 
           {/* Security Section */}
           {activeSection === 'security' && (
-            <div className="space-y-6">
+            <section aria-label="Seguridad" className="space-y-6">
               <div className="rounded-xl border border-white/5 bg-card p-6 space-y-6">
                 <div className="flex items-center gap-3 pb-4 border-b border-white/5">
                   <div className="w-9 h-9 rounded-lg bg-amber-500/10 flex items-center justify-center">
@@ -456,61 +455,64 @@ export default function SettingsPage() {
                   </Button>
                 </div>
               </div>
-            </div>
+            </section>
           )}
 
           {/* Notifications Section */}
           {activeSection === 'notifications' && (
-            <div className="rounded-xl border border-white/5 bg-card p-6 space-y-6">
-              <div className="flex items-center gap-3 pb-4 border-b border-white/5">
-                <div className="w-9 h-9 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                  <Bell className="w-4 h-4 text-blue-400" />
-                </div>
-                <div>
-                  <h2 className="text-sm font-semibold text-white">Notificaciones</h2>
-                  <p className="text-xs text-slate-500">Configurá cómo y cuándo recibir notificaciones</p>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                {[
-                  { key: 'email', label: 'Notificaciones por email', desc: 'Recibí emails sobre actividad en tu cuenta' },
-                  { key: 'push', label: 'Notificaciones push', desc: 'Recibí notificaciones en tu navegador' },
-                  { key: 'marketing', label: 'Comunicaciones comerciales', desc: 'Novedades y actualizaciones de la plataforma' },
-                ].map((item) => (
-                  <div key={item.key} className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-white">{item.label}</p>
-                      <p className="text-xs text-slate-500">{item.desc}</p>
-                    </div>
-                    <Switch
-                      checked={notifications[item.key]}
-                      onCheckedChange={(v) => setNotifications({ ...notifications, [item.key]: v })}
-                    />
+            <section aria-label="Notificaciones">
+              <div className="rounded-xl border border-white/5 bg-card p-6 space-y-6">
+                <div className="flex items-center gap-3 pb-4 border-b border-white/5">
+                  <div className="w-9 h-9 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                    <Bell className="w-4 h-4 text-blue-400" />
                   </div>
-                ))}
+                  <div>
+                    <h2 className="text-sm font-semibold text-white">Notificaciones</h2>
+                    <p className="text-xs text-slate-500">Configurá cómo y cuándo recibir notificaciones</p>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  {[
+                    { key: 'email', label: 'Notificaciones por email', desc: 'Recibí emails sobre actividad en tu cuenta' },
+                    { key: 'push', label: 'Notificaciones push', desc: 'Recibí notificaciones en tu navegador' },
+                    { key: 'marketing', label: 'Comunicaciones comerciales', desc: 'Novedades y actualizaciones de la plataforma' },
+                  ].map((item) => (
+                    <div key={item.key} className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-white">{item.label}</p>
+                        <p className="text-xs text-slate-500">{item.desc}</p>
+                      </div>
+                      <Switch
+                        checked={notifications[item.key]}
+                        onCheckedChange={(v) => setNotifications({ ...notifications, [item.key]: v })}
+                      />
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            </section>
           )}
 
           {/* API Keys Section */}
           {activeSection === 'api' && (
-            <div className="rounded-xl border border-white/5 bg-card p-6 space-y-6">
-              <div className="flex items-center gap-3 pb-4 border-b border-white/5">
-                <div className="w-9 h-9 rounded-lg bg-violet-500/10 flex items-center justify-center">
-                  <Key className="w-4 h-4 text-violet-400" />
+            <section aria-label="API Keys">
+              <div className="rounded-xl border border-white/5 bg-card p-6 space-y-6">
+                <div className="flex items-center gap-3 pb-4 border-b border-white/5">
+                  <div className="w-9 h-9 rounded-lg bg-violet-500/10 flex items-center justify-center">
+                    <Key className="w-4 h-4 text-violet-400" />
+                  </div>
+                  <div>
+                    <h2 className="text-sm font-semibold text-white">API Keys</h2>
+                    <p className="text-xs text-slate-500">Gestioná tus claves de API para integraciones</p>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="text-sm font-semibold text-white">API Keys</h2>
-                  <p className="text-xs text-slate-500">Gestioná tus claves de API para integraciones</p>
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <Key className="w-8 h-8 text-slate-500 mb-3" />
+                  <p className="text-sm text-white mb-1">Próximamente</p>
+                  <p className="text-xs text-slate-500">Las API keys te permitirán integrar la plataforma con tus herramientas</p>
                 </div>
               </div>
-              <div className="flex flex-col items-center justify-center py-8 text-center">
-                <Key className="w-8 h-8 text-slate-500 mb-3" />
-                <p className="text-sm text-white mb-1">Próximamente</p>
-                <p className="text-xs text-slate-500">Las API keys te permitirán integrar la plataforma con tus herramientas</p>
-              </div>
-            </div>
+            </section>
           )}
         </div>
       </div>

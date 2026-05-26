@@ -95,6 +95,7 @@ function MobileUserCard({ user, roles, onToggle, onEdit, assignRole, revokeRole,
               ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/30'
               : 'bg-red-500/20 text-red-300 border-red-500/30 hover:bg-red-500/30'
           }`}
+          aria-label={user.enabled ? 'Deshabilitar usuario' : 'Habilitar usuario'}
         >
           <Power className="w-3.5 h-3.5" />
         </button>
@@ -104,6 +105,7 @@ function MobileUserCard({ user, roles, onToggle, onEdit, assignRole, revokeRole,
           size="icon"
           className="h-8 w-8 text-slate-500 hover:text-white"
           onClick={() => onEdit()}
+          aria-label="Editar usuario"
         >
           <Pencil className="w-3.5 h-3.5" />
         </Button>
@@ -219,6 +221,7 @@ export default function AdminUsersPage() {
                     ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/30'
                     : 'bg-red-500/20 text-red-300 border-red-500/30 hover:bg-red-500/30'
                 }`}
+                aria-label={user?.enabled ? 'Deshabilitar usuario' : 'Habilitar usuario'}
               >
                 <Power className="w-3.5 h-3.5" />
               </button>
@@ -230,6 +233,7 @@ export default function AdminUsersPage() {
                 onClick={() => {
                   setEditingUser(user)
                 }}
+                aria-label="Editar usuario"
               >
                 <Pencil className="w-3.5 h-3.5" />
               </Button>
@@ -322,7 +326,7 @@ export default function AdminUsersPage() {
       ) : isLoading ? (
         <TableSkeleton rows={8} />
       ) : (
-        <>
+        <section aria-label="Usuarios de la plataforma">
           {/* Desktop table */}
           <div className="hidden md:block">
             <DataTable table={table} columns={columns.length} />
@@ -362,7 +366,7 @@ export default function AdminUsersPage() {
               </div>
             )}
           </div>
-        </>
+        </section>
       )}
 
       <UserFormDialog

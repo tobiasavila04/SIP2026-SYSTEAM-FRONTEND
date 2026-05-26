@@ -158,22 +158,24 @@ export default function DashboardPage() {
         )}
       </PageHeader>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {statsLoading
-          ? Array.from({ length: 4 }).map((_, i) => <StatSkeleton key={i} />)
-          : statCards.map((stat, i) => (
-              <StatCard key={stat.title} {...stat} index={i} />
-            ))
-        }
-      </div>
+      <section aria-label="Métricas principales">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {statsLoading
+            ? Array.from({ length: 4 }).map((_, i) => <StatSkeleton key={i} />)
+            : statCards.map((stat, i) => (
+                <StatCard key={stat.title} {...stat} index={i} />
+              ))
+          }
+        </div>
+      </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 rounded-xl border border-white/5 bg-card p-6">
+        <section aria-label="Actividad reciente" className="lg:col-span-2 rounded-xl border border-white/5 bg-card p-6">
           <h2 className="text-sm font-semibold text-white mb-4">Proyectos recientes</h2>
           <ActivityTimeline activities={recentActivity} />
-        </div>
+        </section>
 
-        <div className="rounded-xl border border-white/5 bg-card p-6">
+        <aside aria-label="Acceso rápido" className="rounded-xl border border-white/5 bg-card p-6">
           <h2 className="text-sm font-semibold text-white mb-4">Acceso rápido</h2>
           <div className="space-y-2">
             <Link to="/proyectos" className="group flex items-center justify-between px-3 py-2.5 rounded-lg text-sm text-slate-400 hover:text-white hover:bg-white/5 transition-colors">
@@ -195,7 +197,7 @@ export default function DashboardPage() {
               <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
             </Link>
           </div>
-        </div>
+        </aside>
       </div>
     </div>
   )
