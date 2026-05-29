@@ -18,6 +18,7 @@ import {
   Plus,
   ArrowUpDown,
   Users,
+  Sparkles,
 } from 'lucide-react'
 
 const STATUS_OPTIONS = [
@@ -100,6 +101,10 @@ export default function ProjectCatalogPage() {
     }
 
     result = [...result].sort((a, b) => {
+      // Destacados primero
+      if (a.esDestacado && !b.esDestacado) return -1
+      if (!a.esDestacado && b.esDestacado) return 1
+      // Luego por el criterio de orden seleccionado
       switch (sortBy) {
         case 'antiguo':
           return new Date(a.createdAt || 0) - new Date(b.createdAt || 0)
@@ -115,13 +120,16 @@ export default function ProjectCatalogPage() {
     return result
   }, [proyectos, vista, usuarioId, montoRange, gobernanzaOnly, sortBy])
 
+  const destacados = useMemo(() => proyectosFiltrados.filter((p) => p.esDestacado), [proyectosFiltrados])
+  const noDestacados = useMemo(() => proyectosFiltrados.filter((p) => !p.esDestacado), [proyectosFiltrados])
+
   useEffect(() => { setPage(0) }, [search, statusFilter, vista, montoRange, gobernanzaOnly, sortBy])
 
-  const totalFilteredPages = Math.max(1, Math.ceil(proyectosFiltrados.length / PAGE_SIZE))
+  const totalFilteredPages = Math.max(1, Math.ceil(noDestacados.length / PAGE_SIZE))
   const paginatedProyectos = useMemo(() => {
     const start = page * PAGE_SIZE
-    return proyectosFiltrados.slice(start, start + PAGE_SIZE)
-  }, [proyectosFiltrados, page])
+    return noDestacados.slice(start, start + PAGE_SIZE)
+  }, [noDestacados, page])
 
   const stats = useMemo(() => [
     { label: 'Total proyectos', value: data?.totalElements ?? 0, icon: FolderKanban },
@@ -265,20 +273,47 @@ export default function ProjectCatalogPage() {
           action={vista === 'mis-proyectos' && puedeCrear ? { label: 'Crear proyecto', to: '/proyectos/crear' } : undefined}
         />
       ) : (
-        <section aria-label="Listado de proyectos">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {paginatedProyectos.map((p) => (
-              <ProjectCard
-                key={p.id}
-                project={p}
-                isCreator={p.creadorId === usuarioId}
-              />
-            ))}
-          </div>
-          <div className="mt-8">
-            <Pagination page={page} totalPages={totalFilteredPages} onPageChange={setPage} />
-          </div>
-        </section>
+        <>
+          {destacados.length > 0 && (
+            <section aria-label="Proyectos destacados" className="mb-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Sparkles className="w-4 h-4 text-amber-400" />
+                <h2 className="text-sm font-semibold text-amber-300 uppercase tracking-wider">Destacados</h2>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {destacados.map((p) => (
+                  <ProjectCard
+                    key={p.id}
+                    project={p}
+                    isCreator={p.creadorId === usuarioId}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+
+          <section aria-label="Listado de proyectos">
+            {destacados.length > 0 && (
+              <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-4">
+                Todos los proyectos
+              </h2>
+            )}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {paginatedProyectos.map((p) => (
+                <ProjectCard
+                  key={p.id}
+                  project={p}
+                  isCreator={p.creadorId === usuarioId}
+                />
+              ))}
+            </div>
+            {noDestacados.length > PAGE_SIZE && (
+              <div className="mt-8">
+                <Pagination page={page} totalPages={totalFilteredPages} onPageChange={setPage} />
+              </div>
+            )}
+          </section>
+        </>
       )}
     </div>
   )

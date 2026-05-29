@@ -1,22 +1,21 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { useAccount, useReadContract, useWriteContract } from 'wagmi'
+import { useAccount, useWriteContract } from 'wagmi'
 import { waitForTransactionReceipt } from '@wagmi/core'
-import { parseUnits, formatUnits } from 'viem'
 import { wagmiConfig } from '@/lib/web3'
-import { ERC20_ABI, INVESTMENT_SWAP_ABI } from '@/lib/abis'
+import { INVESTMENT_SWAP_ABI } from '@/lib/abis'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { useProject, useUpdateProjectStatus, useBoostProject, useDesboostProject, useEvaluateStates, useCloseProject } from '@/hooks/use-projects'
 import { useAuthStore } from '@/stores/auth-store'
 import { usePermissions } from '@/stores/auth-store'
 import { apiRequest } from '@/lib/api-client'
 import { API_ENDPOINTS } from '@/config/api'
+import { InvestmentModal } from '@/components/features/investment/investment-modal'
+import { TxHashLink } from '@/components/shared/tx-hash-link'
 import { ErrorState } from '@/components/shared/error-state'
 import { StatusBadge } from '@/components/shared/status-badge'
 import { Skeleton } from '@/components/shared/loading-skeleton'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { statusVariants, statusLabels, FundingProgress } from '@/lib/project-constants'
 import { formatCurrency, formatDate } from '@/lib/utils'
@@ -24,209 +23,7 @@ import { toast } from 'sonner'
 import { differenceInDays } from 'date-fns'
 import { ArrowLeft, Target, Calendar, Coins, Wallet, Loader2, TrendingUp, Rocket, CheckCircle2, Ban, SquarePen, ExternalLink, RefreshCw, AlertTriangle, Star, Sparkles, ShieldCheck } from 'lucide-react'
 
-const VITE_IDEA_TOKEN_ADDRESS = import.meta.env.VITE_IDEA_TOKEN_ADDRESS
 const VITE_INVESTMENT_SWAP_ADDRESS = import.meta.env.VITE_INVESTMENT_SWAP_ADDRESS
-
-function InvestDialog({ open, onOpenChange, projectId, projectTitle, onSuccess }) {
-  const [amount, setAmount] = useState('')
-  const [step, setStep] = useState('idle') // idle | approving | investing | backend | done
-  const [investHash, setInvestHash] = useState(null)
-
-  const { address, isConnected } = useAccount()
-  const { writeContractAsync } = useWriteContract()
-
-  const { data: allowance, refetch: refetchAllowance } = useReadContract({
-    address: VITE_IDEA_TOKEN_ADDRESS,
-    abi: ERC20_ABI,
-    functionName: 'allowance',
-    args: address ? [address, VITE_INVESTMENT_SWAP_ADDRESS] : undefined,
-    query: { enabled: isConnected && !!address },
-  })
-
-  const { data: userBalance } = useReadContract({
-    address: VITE_IDEA_TOKEN_ADDRESS,
-    abi: ERC20_ABI,
-    functionName: 'balanceOf',
-    args: address ? [address] : undefined,
-    query: { enabled: isConnected && !!address },
-  })
-
-  const { data: decimals } = useReadContract({
-    address: VITE_IDEA_TOKEN_ADDRESS,
-    abi: ERC20_ABI,
-    functionName: 'decimals',
-    query: { enabled: isConnected },
-  })
-
-  const investAmountWei = amount && decimals ? parseUnits(amount, decimals) : 0n
-  const needsApproval = allowance !== undefined && investAmountWei > 0n && allowance < investAmountWei
-  const formattedBalance = userBalance && decimals
-    ? Number(formatUnits(userBalance, decimals)).toLocaleString(undefined, { maximumFractionDigits: 2 })
-    : null
-
-  const reset = () => {
-    setAmount('')
-    setStep('idle')
-    setInvestHash(null)
-  }
-
-  const handleInvest = async () => {
-    if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
-      toast.error('Ingresá un monto válido')
-      return
-    }
-    if (!isConnected || !address) {
-      toast.error('Conectá tu wallet primero')
-      return
-    }
-
-    try {
-      if (needsApproval) {
-        setStep('approving')
-        const approveHash = await writeContractAsync({
-          address: VITE_IDEA_TOKEN_ADDRESS,
-          abi: ERC20_ABI,
-          functionName: 'approve',
-          args: [VITE_INVESTMENT_SWAP_ADDRESS, investAmountWei],
-        })
-        await waitForTransactionReceipt(wagmiConfig, { hash: approveHash })
-        refetchAllowance()
-      }
-
-      setStep('investing')
-      const hash = await writeContractAsync({
-        address: VITE_INVESTMENT_SWAP_ADDRESS,
-        abi: INVESTMENT_SWAP_ABI,
-        functionName: 'invest',
-        args: [BigInt(projectId), investAmountWei],
-      })
-      setInvestHash(hash)
-      await waitForTransactionReceipt(wagmiConfig, { hash })
-
-      setStep('backend')
-      await apiRequest(API_ENDPOINTS.INVESTMENTS, {
-        method: 'POST',
-        body: { proyectoId: projectId, montoIdea: Number(amount), txHash: hash },
-      })
-
-      setStep('done')
-      toast.success('Inversión realizada con éxito en la blockchain')
-      onSuccess?.()
-    } catch (e) {
-      toast.error(e?.message || 'Error al procesar la inversión')
-      setStep('idle')
-    }
-  }
-
-  const isProcessing = step !== 'idle'
-
-  return (
-    <Dialog open={open} onOpenChange={(v) => { if (!v && !isProcessing) reset(); onOpenChange(v) }}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-violet-400" />
-            Invertir en {projectTitle}
-          </DialogTitle>
-          <DialogDescription>
-            {step === 'done'
-              ? 'Tu inversión se registró correctamente en la blockchain.'
-              : isConnected
-                ? 'Ingresá el monto en $IDEA que deseas invertir.'
-                : 'Conectá tu wallet para invertir.'}
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4">
-          {step === 'done' && investHash ? (
-            <>
-              <div className="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-center space-y-3">
-                <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto" />
-                <p className="text-sm text-emerald-300 font-medium">Inversión confirmada</p>
-                <a
-                  href={`https://sepolia.etherscan.io/tx/${investHash}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-xs text-violet-400 hover:text-violet-300 transition-colors font-mono"
-                >
-                  <ExternalLink className="w-3.5 h-3.5" />
-                  {investHash.slice(0, 10)}...{investHash.slice(-8)}
-                </a>
-              </div>
-              <Button
-                onClick={() => { reset(); onOpenChange(false) }}
-                className="w-full bg-violet-600 hover:bg-violet-500 text-white h-10 rounded-lg"
-              >
-                Cerrar
-              </Button>
-            </>
-          ) : (
-            <>
-              {isConnected && (
-                <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06] text-xs">
-                  <span className="text-slate-400">Balance $IDEA</span>
-                  <span className="text-white font-medium">{formattedBalance ?? '—'}</span>
-                </div>
-              )}
-
-              <div>
-                <Label>Monto a invertir ($IDEA)</Label>
-                <div className="relative mt-1.5">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
-                  <Input
-                    type="number" min="0" step="any" placeholder="0.00"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    className="pl-7"
-                    disabled={isProcessing}
-                  />
-                </div>
-              </div>
-
-              {isProcessing && (
-                <div className="space-y-2 text-xs text-slate-400">
-                  {step === 'approving' && (
-                    <div className="flex items-center gap-2">
-                      <Loader2 className="w-3.5 h-3.5 animate-spin text-violet-400" />
-                      <span>Paso 1/2: Aprobando gasto de tokens...</span>
-                    </div>
-                  )}
-                  {step === 'investing' && (
-                    <div className="flex items-center gap-2">
-                      <Loader2 className="w-3.5 h-3.5 animate-spin text-violet-400" />
-                      <span>Paso 2/2: Ejecutando inversión en la blockchain...</span>
-                    </div>
-                  )}
-                  {step === 'backend' && (
-                    <div className="flex items-center gap-2">
-                      <Loader2 className="w-3.5 h-3.5 animate-spin text-violet-400" />
-                      <span>Confirmando inversión en el servidor...</span>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {!isConnected ? (
-                <ConnectButton />
-              ) : (
-                <Button
-                  onClick={handleInvest}
-                  disabled={!amount || isProcessing}
-                  className="w-full bg-violet-600 hover:bg-violet-500 text-white gap-2 h-10 rounded-lg"
-                >
-                  {isProcessing && <Loader2 className="w-4 h-4 animate-spin" />}
-                  {step === 'idle' ? 'Confirmar inversión' :
-                   step === 'approving' ? 'Aprobando...' :
-                   step === 'investing' ? 'Invirtiendo...' :
-                   'Procesando...'}
-                </Button>
-              )}
-            </>
-          )}
-        </div>
-      </DialogContent>
-    </Dialog>
-  )
-}
 
 function RefundDialog({ open, onOpenChange, projectId, onSuccess }) {
   const [step, setStep] = useState('idle')
@@ -281,15 +78,7 @@ function RefundDialog({ open, onOpenChange, projectId, onSuccess }) {
               <div className="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-center space-y-3">
                 <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto" />
                 <p className="text-sm text-emerald-300 font-medium">Reembolso confirmado</p>
-                <a
-                  href={`https://sepolia.etherscan.io/tx/${refundHash}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-xs text-violet-400 hover:text-violet-300 transition-colors font-mono"
-                >
-                  <ExternalLink className="w-3.5 h-3.5" />
-                  {refundHash.slice(0, 10)}...{refundHash.slice(-8)}
-                </a>
+                <TxHashLink hash={refundHash} />
               </div>
               <Button onClick={() => { setStep('idle'); setRefundHash(null); onOpenChange(false) }} className="w-full bg-violet-600 hover:bg-violet-500 text-white h-10 rounded-lg">
                 Cerrar
@@ -617,7 +406,7 @@ export default function ProjectDetailPage() {
         </div>
       </div>
 
-      <InvestDialog
+      <InvestmentModal
         open={showInvestDialog}
         onOpenChange={setShowInvestDialog}
         projectId={projectId}

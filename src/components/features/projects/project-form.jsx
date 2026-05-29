@@ -21,10 +21,10 @@ const projectSchema = z.object({
   titulo: z.string().min(1, 'El nombre del proyecto es obligatorio'),
   descripcion: z.string().min(1, 'La descripción es obligatoria'),
   montoRequerido: z.coerce.number().min(0.01, 'La meta debe ser mayor a 0'),
-  plazo: z.string().optional().or(z.literal('')).transform(v => v === '' ? undefined : v),
+  plazo: z.string().min(1, 'La fecha límite es obligatoria'),
   gobernanzaComunidad: z.boolean().optional(),
-  cupoMaximoTokens: z.coerce.number().int().min(1, 'Debe emitirse al menos 1 token').optional().or(z.literal('')).transform(v => v === '' ? undefined : v),
-  valorNominalToken: z.coerce.number().min(0.01, 'El valor nominal debe ser mayor a 0').optional().or(z.literal('')).transform(v => v === '' ? undefined : v),
+  cupoMaximoTokens: z.coerce.number().int().min(1, 'Debe emitirse al menos 1 token'),
+  valorNominalToken: z.coerce.number().min(0.01, 'El valor nominal debe ser mayor a 0'),
 })
 
 function Card({ icon: Icon, title, description, children }) {
@@ -145,10 +145,10 @@ export function ProjectForm({ defaultValues, onSubmit, isEdit }) {
                 control={form.control}
                 name="plazo"
                 render={({ field }) => (
-                  <FormItem>
+                    <FormItem>
                     <FormLabel>Fecha límite</FormLabel>
                     <FormControl>
-                      <Input type="datetime-local" {...field} />
+                      <Input type="datetime-local" required {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -172,6 +172,7 @@ export function ProjectForm({ defaultValues, onSubmit, isEdit }) {
                         min="1"
                         step="1"
                         placeholder="ej: 10000"
+                        required
                         {...field}
                         onChange={(e) => { field.onChange(e); setSupply(e.target.value) }}
                       />
@@ -192,6 +193,7 @@ export function ProjectForm({ defaultValues, onSubmit, isEdit }) {
                         step="0.01"
                         min="0.01"
                         placeholder="ej: 10.00"
+                        required
                         {...field}
                         onChange={(e) => { field.onChange(e); setPrice(e.target.value) }}
                       />
