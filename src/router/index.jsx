@@ -9,6 +9,7 @@ const RegisterPage = lazy(() => import('@/pages/auth/register'))
 const OAuth2CallbackPage = lazy(() => import('@/pages/auth/callback'))
 const CompleteProfilePage = lazy(() => import('@/pages/auth/complete-profile'))
 const DashboardPage = lazy(() => import('@/pages/dashboard/dashboard'))
+const PublicCatalogPage = lazy(() => import('@/pages/projects/public-catalog'))
 const ProjectCatalogPage = lazy(() => import('@/pages/projects/index'))
 const ProjectDetailPage = lazy(() => import('@/pages/projects/project-detail'))
 const ProjectEditorPage = lazy(() => import('@/pages/projects/project-editor'))
@@ -57,6 +58,7 @@ export function AppRouter() {
       <Route path="/registro" element={<GuestRoute><RegisterPage /></GuestRoute>} />
       <Route path="/oauth2/callback" element={<OAuth2CallbackPage />} />
       <Route path="/completar-perfil" element={<ProtectedRoute><CompleteProfilePage /></ProtectedRoute>} />
+      <Route path="/explorar" element={<LazyPage Component={PublicCatalogPage} />} />
 
       <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
         <Route path="/dashboard" element={<LazyPage Component={DashboardPage} />} />

@@ -37,7 +37,7 @@ export default function InvestmentHistoryPage() {
   }
 
   const portfolio = walletSummary?.portfolio ?? []
-  const saldoIdea = walletSummary?.saldoIdea ?? 0
+  const saldoIdea = walletSummary?.balances?.idea ?? 0
   const rawInvestments = Array.isArray(history) ? history : history?.content ?? []
 
   return (

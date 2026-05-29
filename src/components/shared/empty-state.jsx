@@ -14,7 +14,7 @@ export function EmptyState({ icon: Icon = PackageOpen, title, description, actio
       )}
       {action && (
         <Link to={action.to}>
-          <Button className="bg-indigo-500 hover:bg-indigo-400 text-white">{action.label}</Button>
+          <Button className="bg-violet-600 hover:bg-violet-500 text-white">{action.label}</Button>
         </Link>
       )}
     </div>

@@ -108,6 +108,15 @@ export default function LoginPage() {
           Registrate
         </Link>
       </p>
+
+      <div className="text-center">
+        <Link
+          to="/explorar"
+          className="text-sm text-slate-500 hover:text-violet-400 transition-colors"
+        >
+          Explorar proyectos sin cuenta →
+        </Link>
+      </div>
     </AuthLayout>
   )
 }

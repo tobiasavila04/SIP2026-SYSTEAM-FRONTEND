@@ -51,15 +51,39 @@ export const API_ENDPOINTS = {
   PROJECT_FINANCING_PROGRESS: (id) => buildProjectUrl(`/api/projects/${id}/financing-progress`),
   PROJECT_SMART_CONTRACT: (id) => buildProjectUrl(`/api/projects/${id}/smart-contract`),
   PROJECT_EVALUATE_STATES: buildProjectUrl('/api/projects/evaluate-states'),
+  PROJECT_CLOSE: (id) => buildProjectUrl(`/api/projects/${id}/close`),
+  PROJECT_BOOST: (id) => buildProjectUrl(`/api/projects/${id}/boost`),
+  PROJECT_DESBOOST: (id) => buildProjectUrl(`/api/projects/${id}/desboost`),
 
   INVESTMENTS: buildProjectUrl('/api/investments'),
   INVESTMENTS_VALIDATE: buildProjectUrl('/api/investments/validate'),
   INVESTMENT_BY_ID: (id) => buildProjectUrl(`/api/investments/${id}`),
+  INVESTMENTS_HISTORY: buildProjectUrl('/api/investments/history'),
+  INVESTMENTS_PROJECT: (id) => buildProjectUrl(`/api/investments/project/${id}`),
+  INVESTMENT_REFUND: (id) => buildProjectUrl(`/api/investments/${id}/refund`),
+
+  TOKENS: buildProjectUrl('/api/tokens'),
+  TOKEN_BY_PROJECT: (id) => buildProjectUrl(`/api/tokens/${id}`),
+  TOKEN_PRICE: (id) => buildProjectUrl(`/api/tokens/${id}/precio`),
 
   WALLET_SUMMARY: buildProjectUrl('/api/wallet/summary'),
   WALLET_HISTORY: buildProjectUrl('/api/investments/history'),
 
+  GOVERNANCE_PROPOSALS: buildProjectUrl('/api/governance/proposals'),
+  GOVERNANCE_PROPOSAL: (id) => buildProjectUrl(`/api/governance/proposals/${id}`),
+  GOVERNANCE_VOTE: buildProjectUrl('/api/governance/vote'),
+  GOVERNANCE_COUNT: buildProjectUrl('/api/governance/count'),
+
+  MARKETPLACE_LISTINGS: buildProjectUrl('/api/marketplace/listings'),
+  MARKETPLACE_LISTING: (id) => buildProjectUrl(`/api/marketplace/listings/${id}`),
+  MARKETPLACE_LISTINGS_BY_SUBTOKEN: (id) => buildProjectUrl(`/api/marketplace/listings/by-subtoken/${id}`),
+  MARKETPLACE_QUOTE: buildProjectUrl('/api/marketplace/quote'),
+
+  DIVIDENDOS_PROYECTO: (id) => buildProjectUrl(`/api/dividendos/proyecto/${id}`),
+  DIVIDENDOS_MIS_RECLAMOS: buildProjectUrl('/api/dividendos/mis-reclamos'),
+
   DASHBOARD_STATS: buildProjectUrl('/api/dashboard/stats'),
+  MODULES_STATUS: buildProjectUrl('/api/modules/status'),
 };
 
 export const API_BASE = API_BASE_URL;

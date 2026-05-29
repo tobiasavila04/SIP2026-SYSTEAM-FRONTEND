@@ -28,38 +28,8 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
-      '/api/users': {
-        target: 'http://localhost:8080',
-        changeOrigin: true,
-        secure: false,
-      },
-      '/api/roles': {
-        target: 'http://localhost:8080',
-        changeOrigin: true,
-        secure: false,
-      },
-      '/api/permissions': {
-        target: 'http://localhost:8080',
-        changeOrigin: true,
-        secure: false,
-      },
-      '/api/projects': {
-        target: 'http://localhost:8081',
-        changeOrigin: true,
-        secure: false,
-      },
-      '/api/wallet': {
-        target: 'http://localhost:8081',
-        changeOrigin: true,
-        secure: false,
-      },
-      '/api/investments': {
-        target: 'http://localhost:8081',
-        changeOrigin: true,
-        secure: false,
-      },
-      '/api/dashboard': {
-        target: 'http://localhost:8081',
+      '/api': {
+        target: 'http://localhost:8989',
         changeOrigin: true,
         secure: false,
       },

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useProjects } from '@/hooks/use-projects'
 import { useAuthStore } from '@/stores/auth-store'
@@ -9,6 +9,7 @@ import { EmptyState } from '@/components/shared/empty-state'
 import { ErrorState } from '@/components/shared/error-state'
 import { CardSkeleton } from '@/components/shared/loading-skeleton'
 import { Button } from '@/components/ui/button'
+import { Pagination } from '@/components/shared/pagination'
 import { cn } from '@/lib/utils'
 import {
   FolderKanban,
@@ -58,6 +59,8 @@ function FilterSelect({ value, onChange, children }) {
   )
 }
 
+const PAGE_SIZE = 6
+
 export default function ProjectCatalogPage() {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
@@ -65,6 +68,7 @@ export default function ProjectCatalogPage() {
   const [montoRange, setMontoRange] = useState('')
   const [gobernanzaOnly, setGobernanzaOnly] = useState(false)
   const [sortBy, setSortBy] = useState('reciente')
+  const [page, setPage] = useState(0)
   const usuarioId = useAuthStore((s) => s.user?.id)
   const { isCreator, isAdmin } = usePermissions()
   const puedeCrear = isCreator || isAdmin
@@ -110,6 +114,14 @@ export default function ProjectCatalogPage() {
 
     return result
   }, [proyectos, vista, usuarioId, montoRange, gobernanzaOnly, sortBy])
+
+  useEffect(() => { setPage(0) }, [search, statusFilter, vista, montoRange, gobernanzaOnly, sortBy])
+
+  const totalFilteredPages = Math.max(1, Math.ceil(proyectosFiltrados.length / PAGE_SIZE))
+  const paginatedProyectos = useMemo(() => {
+    const start = page * PAGE_SIZE
+    return proyectosFiltrados.slice(start, start + PAGE_SIZE)
+  }, [proyectosFiltrados, page])
 
   const stats = useMemo(() => [
     { label: 'Total proyectos', value: data?.totalElements ?? 0, icon: FolderKanban },
@@ -255,13 +267,16 @@ export default function ProjectCatalogPage() {
       ) : (
         <section aria-label="Listado de proyectos">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {proyectosFiltrados.map((p) => (
+            {paginatedProyectos.map((p) => (
               <ProjectCard
                 key={p.id}
                 project={p}
                 isCreator={p.creadorId === usuarioId}
               />
             ))}
+          </div>
+          <div className="mt-8">
+            <Pagination page={page} totalPages={totalFilteredPages} onPageChange={setPage} />
           </div>
         </section>
       )}

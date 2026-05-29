@@ -108,3 +108,49 @@ export function useUpdateProjectStatus() {
     },
   })
 }
+
+export function useCloseProject() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id) =>
+      apiRequest(API_ENDPOINTS.PROJECT_CLOSE(id), { method: 'POST' }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: projectKeys.all })
+      toast.success('Proyecto cerrado exitosamente')
+    },
+  })
+}
+
+export function useBoostProject() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id) =>
+      apiRequest(API_ENDPOINTS.PROJECT_BOOST(id), { method: 'POST' }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: projectKeys.all })
+      toast.success('Proyecto destacado por 7 días')
+    },
+  })
+}
+
+export function useDesboostProject() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id) =>
+      apiRequest(API_ENDPOINTS.PROJECT_DESBOOST(id), { method: 'POST' }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: projectKeys.all })
+      toast.success('Proyecto ya no está destacado')
+    },
+  })
+}
+
+export function useEvaluateStates() {
+  return useMutation({
+    mutationFn: () =>
+      apiRequest(API_ENDPOINTS.PROJECT_EVALUATE_STATES, { method: 'POST' }),
+    onSuccess: () => {
+      toast.success('Vencimientos evaluados')
+    },
+  })
+}

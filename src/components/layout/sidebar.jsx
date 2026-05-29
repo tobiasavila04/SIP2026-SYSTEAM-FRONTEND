@@ -9,6 +9,8 @@ import {
   KeyRound,
   ChevronLeft,
   Menu,
+  Wallet,
+  Vote,
 } from 'lucide-react'
 import { useAccount, useReadContract, useBalance } from 'wagmi'
 import { formatUnits } from 'viem'
@@ -19,6 +21,8 @@ const mainNav = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/proyectos', label: 'Proyectos', icon: FolderKanban },
   { to: '/inversiones', label: 'Inversiones', icon: TrendingUp },
+  { to: '/billetera', label: 'Billetera', icon: Wallet },
+  { to: '/gobernanza', label: 'Gobernanza', icon: Vote },
   { to: '/configuracion', label: 'Configuración', icon: Settings },
 ]
 

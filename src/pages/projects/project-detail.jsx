@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useAccount, useReadContract, useWriteContract } from 'wagmi'
 import { waitForTransactionReceipt } from '@wagmi/core'
@@ -6,7 +6,7 @@ import { parseUnits, formatUnits } from 'viem'
 import { wagmiConfig } from '@/lib/web3'
 import { ERC20_ABI, INVESTMENT_SWAP_ABI } from '@/lib/abis'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
-import { useProject, useUpdateProjectStatus } from '@/hooks/use-projects'
+import { useProject, useUpdateProjectStatus, useBoostProject, useDesboostProject, useEvaluateStates, useCloseProject } from '@/hooks/use-projects'
 import { useAuthStore } from '@/stores/auth-store'
 import { usePermissions } from '@/stores/auth-store'
 import { apiRequest } from '@/lib/api-client'
@@ -21,7 +21,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { statusVariants, statusLabels, FundingProgress } from '@/lib/project-constants'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { toast } from 'sonner'
-import { ArrowLeft, Target, Calendar, Coins, Wallet, Loader2, TrendingUp, Rocket, CheckCircle2, Ban, SquarePen, ExternalLink, RefreshCw, AlertTriangle } from 'lucide-react'
+import { differenceInDays } from 'date-fns'
+import { ArrowLeft, Target, Calendar, Coins, Wallet, Loader2, TrendingUp, Rocket, CheckCircle2, Ban, SquarePen, ExternalLink, RefreshCw, AlertTriangle, Star, Sparkles, ShieldCheck } from 'lucide-react'
 
 const VITE_IDEA_TOKEN_ADDRESS = import.meta.env.VITE_IDEA_TOKEN_ADDRESS
 const VITE_INVESTMENT_SWAP_ADDRESS = import.meta.env.VITE_INVESTMENT_SWAP_ADDRESS
@@ -320,10 +321,8 @@ function RefundDialog({ open, onOpenChange, projectId, onSuccess }) {
   )
 }
 
-function StatusActions({ project, isCreator, canInvest, onInvest, onRefund, onTransition, transitioning }) {
+function StatusActions({ project, isCreator, isAdmin, canInvest, onInvest, onRefund, onBoost, onDesboost, onTransition, onClose, onEvaluateStates, transitioning, closing }) {
   const failed = project.estado === 'CANCELADO' || project.estado === 'RECHAZADO' || (project.estado === 'FINALIZADO' && project.montoRecaudado < project.montoRequerido)
-
-  if (!isCreator && !canInvest && !failed) return null
 
   return (
     <div className="flex items-center gap-2 flex-wrap">
@@ -339,22 +338,31 @@ function StatusActions({ project, isCreator, canInvest, onInvest, onRefund, onTr
           Solicitar Reembolso
         </Button>
       )}
+
+      {isCreator && !project.esDestacado && project.estado !== 'FINALIZADO' && project.estado !== 'RECHAZADO' && project.estado !== 'CANCELADO' && (
+        <Button onClick={onBoost} variant="outline" size="sm" className="gap-2 border-amber-500/20 text-amber-400 hover:bg-amber-500/10">
+          <Star className="w-3.5 h-3.5" />
+          Destacar (100 $IDEA)
+        </Button>
+      )}
+      {isCreator && project.esDestacado && (
+        <Button onClick={onDesboost} variant="outline" size="sm" className="gap-2 border-amber-500/20 text-amber-400 hover:bg-amber-500/10">
+          <Star className="w-3.5 h-3.5 fill-amber-400" />
+          Quitar destacado
+        </Button>
+      )}
+
+      {/* Creator state transitions */}
       {isCreator && project.estado === 'PREPARACION' && (
         <Button onClick={() => onTransition('FINANCIAMIENTO')} disabled={transitioning} className="bg-emerald-600 hover:bg-emerald-500 text-white gap-2 h-9 px-5 text-sm rounded-lg shadow-lg shadow-emerald-600/20">
           {transitioning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Rocket className="w-4 h-4" />}
           {transitioning ? 'Publicando...' : 'Publicar'}
         </Button>
       )}
-      {isCreator && project.estado === 'FINANCIAMIENTO' && (
-        <Button onClick={() => onTransition('EJECUCION')} disabled={transitioning} className="bg-amber-600 hover:bg-amber-500 text-white gap-2 h-9 px-5 text-sm rounded-lg">
-          {transitioning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Rocket className="w-4 h-4" />}
-          {transitioning ? 'Iniciando...' : 'Iniciar ejecución'}
-        </Button>
-      )}
       {isCreator && project.estado === 'EJECUCION' && (
-        <Button onClick={() => onTransition('FINALIZADO')} disabled={transitioning} className="bg-emerald-600 hover:bg-emerald-500 text-white gap-2 h-9 px-5 text-sm rounded-lg">
-          {transitioning ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-          {transitioning ? 'Finalizando...' : 'Finalizar'}
+        <Button onClick={onClose} disabled={closing} className="bg-emerald-600 hover:bg-emerald-500 text-white gap-2 h-9 px-5 text-sm rounded-lg">
+          {closing ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+          {closing ? 'Cerrando...' : 'Cerrar proyecto'}
         </Button>
       )}
       {isCreator && project.estado !== 'CANCELADO' && project.estado !== 'FINALIZADO' && (
@@ -371,6 +379,17 @@ function StatusActions({ project, isCreator, canInvest, onInvest, onRefund, onTr
           </Button>
         </Link>
       )}
+
+      {/* Admin actions */}
+      {isAdmin && (
+        <>
+          <div className="w-px h-6 bg-white/10 mx-1" />
+          <Button onClick={onEvaluateStates} variant="outline" size="sm" className="gap-2 border-white/10 text-slate-400">
+            <RefreshCw className="w-3.5 h-3.5" />
+            Evaluar vencimientos
+          </Button>
+        </>
+      )}
     </div>
   )
 }
@@ -379,14 +398,21 @@ export default function ProjectDetailPage() {
   const { id } = useParams()
   const projectId = Number(id)
   const user = useAuthStore((s) => s.user)
-  const { isInvestor } = usePermissions()
+  const { isInvestor, isAdmin } = usePermissions()
 
   const { data: project, isLoading, isError, refetch } = useProject(projectId)
   const updateStatus = useUpdateProjectStatus()
+  const boostProject = useBoostProject()
+  const desboostProject = useDesboostProject()
+  const evaluateStates = useEvaluateStates()
+  const closeProject = useCloseProject()
 
   const [showInvestDialog, setShowInvestDialog] = useState(false)
   const [showRefundDialog, setShowRefundDialog] = useState(false)
   const [transitioning, setTransitioning] = useState(false)
+
+  const [tokenInfo, setTokenInfo] = useState(null)
+  const [loadingToken, setLoadingToken] = useState(false)
 
   const transitionTo = async (status) => {
     setTransitioning(true)
@@ -406,6 +432,26 @@ export default function ProjectDetailPage() {
       setTransitioning(false)
     }
   }
+
+  const [loadingTokenFetch, setLoadingTokenFetch] = useState(false)
+
+  const fetchTokenInfo = async () => {
+    setLoadingTokenFetch(true)
+    try {
+      const res = await apiRequest(API_ENDPOINTS.TOKENS_BY_PROJECT(projectId))
+      setTokenInfo(res)
+    } catch {
+      setTokenInfo(null)
+    } finally {
+      setLoadingTokenFetch(false)
+    }
+  }
+
+  useEffect(() => {
+    if (project?.estado === 'FINANCIAMIENTO' || project?.estado === 'EJECUCION' || project?.estado === 'FINALIZADO') {
+      fetchTokenInfo()
+    }
+  }, [project?.id, project?.estado])
 
   if (isLoading) {
     return (
@@ -427,6 +473,7 @@ export default function ProjectDetailPage() {
 
   const isCreator = project.creadorId === user?.id
   const canInvest = isInvestor && project.estado === 'FINANCIAMIENTO'
+  const daysRemaining = project.financingEndDate ? differenceInDays(new Date(project.financingEndDate), new Date()) : null
 
   return (
     <div className="max-w-4xl space-y-6">
@@ -441,19 +488,40 @@ export default function ProjectDetailPage() {
       <div className="rounded-xl border border-white/5 bg-card p-6 space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
           <div className="space-y-2">
-            <h1 className="text-2xl font-bold text-white">{project.titulo}</h1>
-            <StatusBadge variant={statusVariants[project.estado] || 'default'}>
-              {statusLabels[project.estado] || project.estado}
-            </StatusBadge>
+            <div className="flex items-center gap-3 flex-wrap">
+              <h1 className="text-2xl font-bold text-white">{project.titulo}</h1>
+              {project.esDestacado && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-500/15 text-amber-300 border border-amber-500/25">
+                  <Star className="w-3 h-3 fill-amber-400" />
+                  DESTACADO
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <StatusBadge variant={statusVariants[project.estado] || 'default'}>
+                {statusLabels[project.estado] || project.estado}
+              </StatusBadge>
+              {daysRemaining !== null && daysRemaining > 0 && project.estado === 'FINANCIAMIENTO' && (
+                <span className="text-xs text-slate-500">
+                  {daysRemaining} {daysRemaining === 1 ? 'día restante' : 'días restantes'}
+                </span>
+              )}
+            </div>
           </div>
           <StatusActions
             project={project}
             isCreator={isCreator}
+            isAdmin={isAdmin}
             canInvest={canInvest}
             onInvest={() => setShowInvestDialog(true)}
             onRefund={() => setShowRefundDialog(true)}
+            onBoost={() => boostProject.mutateAsync(projectId).then(refetch)}
+            onDesboost={() => desboostProject.mutateAsync(projectId).then(refetch)}
             onTransition={transitionTo}
+            onClose={() => closeProject.mutateAsync(projectId).then(refetch)}
+            onEvaluateStates={() => evaluateStates.mutateAsync().then(refetch)}
             transitioning={transitioning}
+            closing={closeProject.isPending}
           />
         </div>
 
@@ -499,6 +567,42 @@ export default function ProjectDetailPage() {
           <MetricCard icon={Coins} label="Cupo máximo tokens" value={project.cupoMaximoTokens?.toLocaleString() ?? 'No definido'} />
           <MetricCard icon={Wallet} label="Valor nominal token" value={project.valorNominalToken ? formatCurrency(project.valorNominalToken) : 'No definido'} />
         </section>
+
+        {/* Token info section */}
+        {(project.estado === 'FINANCIAMIENTO' || project.estado === 'EJECUCION' || project.estado === 'FINALIZADO') && (
+          <section className="pt-4 border-t border-white/5 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-medium text-slate-500 uppercase tracking-wider">Información del token</h3>
+              <button onClick={fetchTokenInfo} disabled={loadingTokenFetch} className="text-xs text-violet-400 hover:text-violet-300 transition-colors">
+                {loadingTokenFetch ? 'Cargando...' : 'Actualizar'}
+              </button>
+            </div>
+            {tokenInfo ? (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <MetricCard icon={Coins} label="Supply total" value={Number(tokenInfo.totalSupply ?? 0).toLocaleString()} valueClass="text-violet-300" />
+                <MetricCard icon={Wallet} label="Tokens emitidos" value={Number(tokenInfo.emitidos ?? 0).toLocaleString()} valueClass="text-violet-300" />
+                <MetricCard icon={TrendingUp} label="Tokens restantes" value={Number(tokenInfo.disponibles ?? 0).toLocaleString()} valueClass="text-emerald-300" />
+              </div>
+            ) : (
+              <p className="text-xs text-slate-500">No hay información de tokens disponible.</p>
+            )}
+            {project.tokenAddress && (
+              <div className="flex items-center gap-2 text-xs text-slate-500">
+                <ShieldCheck className="w-3.5 h-3.5 text-violet-400" />
+                <span>Token contract:</span>
+                <a
+                  href={`https://sepolia.basescan.org/token/${project.tokenAddress}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-violet-400 hover:text-violet-300 transition-colors font-mono"
+                >
+                  {project.tokenAddress.slice(0, 8)}...{project.tokenAddress.slice(-6)}
+                  <ExternalLink className="w-3 h-3 inline ml-1" />
+                </a>
+              </div>
+            )}
+          </section>
+        )}
 
         <div className="pt-4 border-t border-white/5">
           <div className="flex items-center gap-2 text-xs text-slate-500">

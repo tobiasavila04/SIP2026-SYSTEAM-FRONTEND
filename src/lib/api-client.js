@@ -36,6 +36,8 @@ class ApiClientError extends Error {
   }
 }
 
+import { API_ENDPOINTS } from '@/config/api'
+
 let isRefreshing = false
 let refreshPromise = null
 
@@ -44,7 +46,7 @@ async function refreshAccessToken() {
   if (!refreshToken) return null
 
   try {
-    const response = await fetch('/auth/refresh', {
+    const response = await fetch(API_ENDPOINTS.AUTH_REFRESH, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refreshToken }),
@@ -111,11 +113,10 @@ export async function apiRequest(url, options = {}) {
         throw retryError
       }
 
-      return retryResponse.json()
+      return parseJsonResponse(retryResponse)
     }
 
     clearStoredAuth()
-    window.location.href = '/'
     throw new ApiClientError('Sesión expirada', 401)
   }
 
@@ -124,8 +125,14 @@ export async function apiRequest(url, options = {}) {
     throw error
   }
 
+  return parseJsonResponse(response)
+}
+
+async function parseJsonResponse(response) {
   if (response.status === 204) return undefined
-  return response.json()
+  const text = await response.text()
+  if (!text) return undefined
+  return JSON.parse(text)
 }
 
 async function parseErrorResponse(response) {

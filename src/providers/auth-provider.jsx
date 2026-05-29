@@ -1,4 +1,4 @@
-import { useEffect, createContext, useContext, useCallback, useState } from 'react'
+import { useEffect, createContext, useContext, useCallback, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/auth-store'
 import { apiRequest, clearStoredAuth, getStoredToken, setStoredTokens, setStoredUserId } from '@/lib/api-client'
@@ -20,9 +20,13 @@ export function AuthProvider({ children }) {
 
   const needsProfile = isAuthenticated && !roles.some(r => ['INVESTOR', 'CREATOR', 'ADMIN'].includes(r))
 
+  const fetchUserRef = useRef(0)
+
   const fetchUser = useCallback(async () => {
+    const version = ++fetchUserRef.current
     try {
       const user = await apiRequest(API_ENDPOINTS.USER_ME)
+      if (version !== fetchUserRef.current) return null
       useAuthStore.setState({
         user,
         roles: user.roles || [],
@@ -30,11 +34,14 @@ export function AuthProvider({ children }) {
       })
       return user
     } catch {
+      if (version !== fetchUserRef.current) return null
       storeLogout()
       navigate('/')
       return null
     } finally {
-      setIsLoading(false)
+      if (version === fetchUserRef.current) {
+        setIsLoading(false)
+      }
     }
   }, [storeLogout, navigate])
 
@@ -61,6 +68,9 @@ export function AuthProvider({ children }) {
   }, [isAuthenticated, fetchUser])
 
   const login = async (data) => {
+    // Invalidate any in-flight fetchUser calls
+    ++fetchUserRef.current
+
     const res = await apiRequest(API_ENDPOINTS.AUTH_LOGIN, {
       method: 'POST',
       body: data,
@@ -69,15 +79,21 @@ export function AuthProvider({ children }) {
     setStoredTokens(res.accessToken, res.refreshToken)
     setStoredUserId(res.userId)
 
+    let userData
+    try {
+      userData = await apiRequest(API_ENDPOINTS.USER_ME)
+    } catch {
+      userData = { id: res.userId, email: res.email, name: res.email.split('@')[0], roles: res.roles, permissions: res.permissions, enabled: true }
+    }
+
     useAuthStore.setState({
       token: res.accessToken,
       refreshToken: res.refreshToken,
       isAuthenticated: true,
-      roles: res.roles,
-      permissions: res.permissions,
+      user: userData,
+      roles: userData.roles || [],
+      permissions: userData.permissions || [],
     })
-
-    await fetchUser()
   }
 
   const register = async (data) => {

@@ -153,7 +153,7 @@ export default function DashboardPage() {
       >
         {isCreator && (
           <Link to="/proyectos/crear">
-            <Button className="bg-indigo-500 hover:bg-indigo-400 text-white">+ Nuevo proyecto</Button>
+            <Button className="bg-violet-600 hover:bg-violet-500 text-white shadow-lg shadow-violet-600/20">+ Nuevo proyecto</Button>
           </Link>
         )}
       </PageHeader>

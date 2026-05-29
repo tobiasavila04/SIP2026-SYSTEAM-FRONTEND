@@ -90,7 +90,7 @@ function PortfolioItem({ proyectoTitulo, cantidad, precioActual, index }) {
 
 function WalletPanel() {
   const { data, isLoading, isError, dataUpdatedAt } = useWalletSummary()
-  const saldoIdea = data?.saldoIdea ?? 0
+  const saldoIdea = data?.balances?.idea ?? 0
   const portfolio = data?.portfolio ?? []
 
   return (
