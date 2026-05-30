@@ -15,6 +15,7 @@ const ProjectDetailPage = lazy(() => import('@/pages/projects/project-detail'))
 const ProjectEditorPage = lazy(() => import('@/pages/projects/project-editor'))
 const SettingsPage = lazy(() => import('@/pages/settings/settings'))
 const InvestmentHistoryPage = lazy(() => import('@/pages/inversiones/index'))
+const WalletPage = lazy(() => import('@/pages/wallet/index'))
 const AdminUsersPage = lazy(() => import('@/pages/admin/users'))
 const AdminRolesPage = lazy(() => import('@/pages/admin/roles'))
 
@@ -67,6 +68,7 @@ export function AppRouter() {
         <Route path="/proyectos/:id/editar" element={<LazyPage Component={ProjectEditorPage} />} />
         <Route path="/proyectos/:id" element={<LazyPage Component={ProjectDetailPage} />} />
         <Route path="/inversiones" element={<LazyPage Component={InvestmentHistoryPage} />} />
+        <Route path="/billetera" element={<LazyPage Component={WalletPage} />} />
         <Route path="/perfil" element={<Navigate to="/configuracion" replace />} />
         <Route path="/configuracion" element={<LazyPage Component={SettingsPage} />} />
 

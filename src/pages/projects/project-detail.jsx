@@ -14,6 +14,7 @@ import { InvestmentModal } from '@/components/features/investment/investment-mod
 import { TxHashLink } from '@/components/shared/tx-hash-link'
 import { ErrorState } from '@/components/shared/error-state'
 import { StatusBadge } from '@/components/shared/status-badge'
+import { ProjectFailedBanner } from '@/components/shared/project-failed-banner'
 import { Skeleton } from '@/components/shared/loading-skeleton'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
@@ -177,6 +178,12 @@ function StatusActions({ project, isCreator, isAdmin, canInvest, onInvest, onRef
             <RefreshCw className="w-3.5 h-3.5" />
             Evaluar vencimientos
           </Button>
+          {failed && (
+            <Button onClick={onRefund} variant="outline" size="sm" className="gap-2 border-amber-500/20 text-amber-400 hover:bg-amber-500/10">
+              <RefreshCw className="w-3.5 h-3.5" />
+              Forzar reembolso
+            </Button>
+          )}
         </>
       )}
     </div>
@@ -334,17 +341,7 @@ export default function ProjectDetailPage() {
           </section>
         )}
 
-        {(project.estado === 'CANCELADO' || project.estado === 'RECHAZADO' || (project.estado === 'FINALIZADO' && project.montoRecaudado < project.montoRequerido)) && (
-          <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm font-medium text-amber-300">Proyecto sin financiamiento completo</p>
-              <p className="text-xs text-amber-400/70 mt-0.5">
-                Este proyecto no alcanzó su meta de financiamiento. Si invertiste, podés solicitar un reembolso.
-              </p>
-            </div>
-          </div>
-        )}
+        <ProjectFailedBanner project={project} />
 
         <section aria-label="Métricas del proyecto" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t border-white/5">
           <MetricCard icon={Target} label="Monto requerido" value={formatCurrency(project.montoRequerido)} valueClass="text-emerald-300" />

@@ -196,6 +196,7 @@ export function InvestmentModal({ open, onOpenChange, projectId, projectTitle, o
   const numEffectiveAmount = Number(effectiveAmount) || 0
   const investAmountWei = effectiveAmount && decimals ? parseUnits(effectiveAmount, decimals) : 0n
   const needsApproval = allowance !== undefined && investAmountWei > 0n && allowance < investAmountWei
+  const hasInsufficientBalance = formattedBalance !== null && numEffectiveAmount > 0 && formattedBalance < numEffectiveAmount
 
   const validation = validateMutation.data
   const isValid = validation?.valido
@@ -229,6 +230,11 @@ export function InvestmentModal({ open, onOpenChange, projectId, projectTitle, o
     }
     if (!isConnected || !address) {
       toast.error('Conectá tu wallet primero')
+      return
+    }
+    if (hasInsufficientBalance) {
+      setErrorInfo({ message: 'No tenés suficiente saldo de $IDEA', balance: formattedBalance, required: numEffectiveAmount })
+      setStep('error')
       return
     }
 
@@ -282,7 +288,7 @@ export function InvestmentModal({ open, onOpenChange, projectId, projectTitle, o
     }
   }
 
-  const canInvest = isConnected && numEffectiveAmount > 0 && step === 'form'
+  const canInvest = isConnected && numEffectiveAmount > 0 && step === 'form' && !hasInsufficientBalance
   const investDisabled = !canInvest || (isValid === false) || validateMutation.isPending
 
   const handleClose = () => {
@@ -551,11 +557,27 @@ export function InvestmentModal({ open, onOpenChange, projectId, projectTitle, o
                       ? 'Validando...'
                       : isValid === false
                         ? 'Inversión no válida'
-                        : numEffectiveAmount > 0
-                          ? `Invertir ${Number(effectiveAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} $IDEA`
-                          : 'Ingresá cantidad de subtokens'}
+                        : hasInsufficientBalance
+                          ? 'Saldo insuficiente'
+                          : numEffectiveAmount > 0
+                            ? `Invertir ${Number(effectiveAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} $IDEA`
+                            : 'Ingresá cantidad de subtokens'}
                   </div>
                 </Button>
+              )}
+
+              {/* Insufficient balance warning */}
+              {isConnected && hasInsufficientBalance && (
+                <div className="flex items-start gap-2.5 p-3 rounded-xl bg-red-500/5 border border-red-500/10">
+                  <XCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs font-medium text-red-300">Saldo insuficiente de $IDEA</p>
+                    <p className="text-[11px] text-red-400/60 mt-0.5">
+                      Tenés <span className="font-medium">{formattedBalance?.toLocaleString(undefined, { maximumFractionDigits: 2 })} $IDEA</span>
+                      {' '}y necesitás <span className="font-medium">{Number(effectiveAmount).toLocaleString(undefined, { maximumFractionDigits: 2 })} $IDEA</span>.
+                    </p>
+                  </div>
+                </div>
               )}
 
               {/* Needs approval hint */}

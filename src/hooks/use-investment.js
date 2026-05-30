@@ -31,6 +31,21 @@ export function useValidateInvestment() {
   })
 }
 
+export function useRefundInvestment() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (investmentId) =>
+      apiRequest(API_ENDPOINTS.INVESTMENT_REFUND(investmentId), {
+        method: 'POST',
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['investment-history'] })
+      queryClient.invalidateQueries({ queryKey: ['wallet'] })
+      queryClient.invalidateQueries({ queryKey: ['project'] })
+    },
+  })
+}
+
 export function useCreateInvestment() {
   const queryClient = useQueryClient()
   return useMutation({

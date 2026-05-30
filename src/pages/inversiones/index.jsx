@@ -1,29 +1,85 @@
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useWalletSummary } from '@/hooks/use-wallet'
+import { useRefundInvestment } from '@/hooks/use-investment'
 import { useInvestmentHistory } from '@/hooks/use-investment-history'
-import { ExternalLink, Loader2, TrendingUp } from 'lucide-react'
-import { format } from 'date-fns'
-import { es } from 'date-fns/locale'
+import { TxHashLink } from '@/components/shared/tx-hash-link'
 import { PageHeader } from '@/components/shared/page-header'
 import { ErrorState } from '@/components/shared/error-state'
 import { Skeleton } from '@/components/shared/loading-skeleton'
-import { formatCurrency } from '@/lib/utils'
+import { EmptyState } from '@/components/shared/empty-state'
+import { Pagination } from '@/components/shared/pagination'
+import { Button } from '@/components/ui/button'
+import { formatCurrency, cn } from '@/lib/utils'
+import { toast } from 'sonner'
+import {
+  TrendingUp, ExternalLink, Loader2, RefreshCw,
+  Wallet, CheckCircle2, ArrowRight
+} from 'lucide-react'
+import { format } from 'date-fns'
+import { es } from 'date-fns/locale'
 
-const ETHERSCAN_BASE = 'https://sepolia.etherscan.io/tx'
+function StatusBadgeInvestment({ estado }) {
+  const config = {
+    CONFIRMADA: {
+      variant: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+      label: 'Confirmada',
+      tooltip: 'Inversión confirmada en blockchain',
+    },
+    REEMBOLSADA: {
+      variant: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+      label: 'Reembolsada',
+      tooltip: 'Reintegrado automáticamente',
+    },
+    PENDIENTE: {
+      variant: 'bg-slate-500/10 text-slate-400 border-slate-500/20',
+      label: 'Pendiente',
+      tooltip: 'Esperando confirmación blockchain',
+    },
+  }
+  const c = config[estado] || config.PENDIENTE
+
+  return (
+    <span title={c.tooltip} className={cn(
+      'inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border',
+      c.variant
+    )}>
+      {estado === 'REEMBOLSADA' && <RefreshCw className="w-3 h-3" />}
+      {estado === 'CONFIRMADA' && <CheckCircle2 className="w-3 h-3" />}
+      {c.label}
+    </span>
+  )
+}
 
 export default function InvestmentHistoryPage() {
-  const { data: walletSummary, isLoading: summaryLoading, isError: summaryError, refetch: refetchSummary } = useWalletSummary()
-  const { data: history, isLoading: historyLoading, isError: historyError, refetch: refetchHistory } = useInvestmentHistory()
+  const [page, setPage] = useState(0)
+  const { data: walletSummary, isLoading: summaryLoading } = useWalletSummary()
+  const { data: historyPage, isLoading: historyLoading, isError, refetch } = useInvestmentHistory(page, 10)
+  const refundMutation = useRefundInvestment()
 
   const isLoading = summaryLoading || historyLoading
-  const isError = summaryError || historyError
+  const portfolio = walletSummary?.portfolio ?? []
+  const saldoIdea = walletSummary?.balances?.idea ?? 0
+  const investments = historyPage?.content ?? []
+  const totalPages = historyPage?.totalPages ?? 0
+
+  const handleRefund = async (inv) => {
+    if (!confirm(`¿Solicitar reembolso de ${formatCurrency(inv.montoIdea)} en "${inv.proyectoTitulo}"?`)) return
+    try {
+      await refundMutation.mutateAsync(inv.id)
+      toast.success('Reembolso procesado correctamente')
+      refetch()
+    } catch (e) {
+      toast.error(e?.message || 'Error al procesar el reembolso')
+    }
+  }
 
   if (isLoading) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-8 w-48" />
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Skeleton className="h-24 rounded-xl" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Skeleton className="h-24 rounded-xl" />
           <Skeleton className="h-24 rounded-xl" />
         </div>
@@ -33,12 +89,8 @@ export default function InvestmentHistoryPage() {
   }
 
   if (isError) {
-    return <ErrorState message="No se pudieron cargar las inversiones." onRetry={() => { refetchSummary(); refetchHistory() }} />
+    return <ErrorState message="No se pudieron cargar las inversiones." onRetry={refetch} />
   }
-
-  const portfolio = walletSummary?.portfolio ?? []
-  const saldoIdea = walletSummary?.balances?.idea ?? 0
-  const rawInvestments = Array.isArray(history) ? history : history?.content ?? []
 
   return (
     <motion.div
@@ -52,83 +104,124 @@ export default function InvestmentHistoryPage() {
         description="Resumen de tu cartera y actividad de inversión on-chain"
       />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <SummaryCard label="Balance $IDEA" value={`${Number(saldoIdea).toLocaleString()} $IDEA`} />
-        <SummaryCard label="Proyectos invertidos" value={portfolio?.length ?? 0} />
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <SummaryCard
+          icon={Wallet}
+          label="Balance $IDEA"
+          value={`${Number(saldoIdea).toLocaleString()} $IDEA`}
+        />
+        <SummaryCard
+          icon={TrendingUp}
+          label="Proyectos invertidos"
+          value={portfolio?.length ?? 0}
+        />
+        <SummaryCard
+          icon={RefreshCw}
+          label="Reembolsados"
+          value={investments.filter(i => i.estado === 'REEMBOLSADA').length}
+        />
       </div>
 
       <div className="rounded-xl border border-white/5 bg-card overflow-hidden">
         <div className="overflow-x-auto">
-          {rawInvestments.length === 0 ? (
-            <div className="p-8 text-center text-sm text-slate-500">
-              No hay inversiones registradas aún.
-            </div>
+          {investments.length === 0 ? (
+            <EmptyState
+              icon={TrendingUp}
+              title="No tenés inversiones todavía"
+              description="Invertí en un proyecto para verlo reflejado en tu historial."
+              action={
+                <Link to="/proyectos">
+                  <Button className="bg-violet-600 hover:bg-violet-500 text-white gap-2">
+                    <ArrowRight className="w-4 h-4" />
+                    Explorar proyectos
+                  </Button>
+                </Link>
+              }
+            />
           ) : (
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-white/5 text-left text-xs uppercase tracking-wider text-slate-500">
                   <th className="px-4 py-3 font-medium">Proyecto</th>
-                  <th className="px-4 py-3 font-medium">Monto $IDEA</th>
+                  <th className="px-4 py-3 font-medium">Monto</th>
                   <th className="px-4 py-3 font-medium">Sub-tokens</th>
                   <th className="px-4 py-3 font-medium">Fecha</th>
-                  <th className="px-4 py-3 font-medium">TX Hash</th>
+                  <th className="px-4 py-3 font-medium">Comprobante</th>
                   <th className="px-4 py-3 font-medium">Estado</th>
+                  <th className="px-4 py-3 font-medium"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
-                {rawInvestments.map((inv, i) => (
-                  <tr key={inv.id ?? i} className="hover:bg-white/[0.02] transition-colors">
-                    <td className="px-4 py-3 text-white">{inv.proyectoTitulo ?? '—'}</td>
-                    <td className="px-4 py-3 text-slate-300 font-mono">
-                      {inv.montoIdea != null ? `${Number(inv.montoIdea).toLocaleString()} $IDEA` : '—'}
-                    </td>
-                    <td className="px-4 py-3 text-slate-400">
-                      {inv.subTokensRecibidos ?? '—'}
-                    </td>
-                    <td className="px-4 py-3 text-slate-400">
-                      {inv.createdAt ? format(new Date(inv.createdAt), 'dd MMM yyyy', { locale: es }) : '—'}
-                    </td>
-                    <td className="px-4 py-3">
-                      {inv.txHash ? (
-                        <a
-                          href={`${ETHERSCAN_BASE}/${inv.txHash}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-violet-400 hover:text-violet-300 transition-colors font-mono text-xs"
+                {investments.map((inv, i) => {
+                  const isRefundable = inv.estado === 'CONFIRMADA' && inv.proyectoEstado === 'RECHAZADO'
+                  return (
+                    <tr key={inv.id ?? i} className="hover:bg-white/[0.02] transition-colors">
+                      <td className="px-4 py-3">
+                        <Link
+                          to={`/proyectos/${inv.proyectoId}`}
+                          className="text-white hover:text-violet-300 transition-colors font-medium inline-flex items-center gap-1"
                         >
-                          {inv.txHash.slice(0, 10)}...{inv.txHash.slice(-8)}
-                          <ExternalLink className="w-3 h-3" />
-                        </a>
-                      ) : (
-                        <span className="text-slate-500">—</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full ${
-                        inv.estado === 'CONFIRMADA'
-                          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                          : inv.estado === 'REEMBOLSADA'
-                            ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                            : 'bg-slate-500/10 text-slate-400 border border-slate-500/20'
-                      }`}>
-                        {inv.estado ?? '—'}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+                          {inv.proyectoTitulo ?? '—'}
+                          <ExternalLink className="w-3 h-3 text-slate-500" />
+                        </Link>
+                      </td>
+                      <td className="px-4 py-3 text-slate-300 font-mono">
+                        {inv.montoIdea != null ? `${Number(inv.montoIdea).toLocaleString()} $IDEA` : '—'}
+                      </td>
+                      <td className="px-4 py-3 text-slate-400">
+                        {inv.subTokensRecibidos ?? '—'}
+                      </td>
+                      <td className="px-4 py-3 text-slate-400 whitespace-nowrap">
+                        {inv.createdAt ? format(new Date(inv.createdAt), 'dd MMM yyyy', { locale: es }) : '—'}
+                      </td>
+                      <td className="px-4 py-3">
+                        {inv.txHash ? (
+                          <TxHashLink hash={inv.txHash} />
+                        ) : (
+                          <span className="text-slate-500">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <StatusBadgeInvestment estado={inv.estado} />
+                      </td>
+                      <td className="px-4 py-3">
+                        {isRefundable && (
+                          <Button
+                            onClick={() => handleRefund(inv)}
+                            size="sm"
+                            variant="outline"
+                            disabled={refundMutation.isPending}
+                            className="gap-1.5 border-amber-500/20 text-amber-400 hover:bg-amber-500/10 text-xs h-7 px-2.5"
+                          >
+                            {refundMutation.isPending
+                              ? <Loader2 className="w-3 h-3 animate-spin" />
+                              : <RefreshCw className="w-3 h-3" />
+                            }
+                            Reembolso
+                          </Button>
+                        )}
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           )}
         </div>
       </div>
+
+      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
     </motion.div>
   )
 }
 
-function SummaryCard({ label, value }) {
+function SummaryCard({ icon: Icon, label, value }) {
   return (
     <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5">
-      <p className="text-xs text-slate-500 mb-1">{label}</p>
+      <div className="flex items-center gap-2 text-xs text-slate-500 mb-2">
+        <Icon className="w-3.5 h-3.5" />
+        {label}
+      </div>
       <p className="text-lg font-semibold text-white">{value}</p>
     </div>
   )
