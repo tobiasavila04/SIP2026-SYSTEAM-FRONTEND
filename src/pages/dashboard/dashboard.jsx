@@ -52,7 +52,7 @@ const CustomTooltip = ({ active, payload }) => {
         <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider mb-1">
           {payload[0].name}
         </p>
-        <p className="text-sm font-bold text-white">
+        <p className="text-sm font-bold text-slate-500">
           {typeof value === 'number' && value >= 1000
             ? formatCurrency(value)
             : value}
@@ -61,6 +61,39 @@ const CustomTooltip = ({ active, payload }) => {
     )
   }
   return null
+}
+
+const CustomizedAxisTick = ({ x, y, payload }) => {
+  const isLong = payload.value.length > 15
+  const text = isLong ? `${payload.value.substring(0, 15)}...` : payload.value
+  
+  return (
+    <g transform={`translate(${x},${y})`}>
+      <title>{payload.value}</title>
+      {/* Rectángulo invisible para capturar el mouse */}
+      <rect 
+        x={-40} 
+        y={-10} 
+        width={80} 
+        height={30} 
+        fill="transparent" 
+        style={{ cursor: 'pointer' }}
+        pointerEvents="all"
+      />
+      {/* Texto visible */}
+      <text 
+        x={0} 
+        y={0} 
+        dy={10} 
+        textAnchor="middle" 
+        fill="#94a3b8" 
+        fontSize={10}
+        pointerEvents="none" 
+      >
+        {text}
+      </text>
+    </g>
+  )
 }
 
 function ActivityTimeline({ activities }) {
@@ -232,21 +265,26 @@ export default function DashboardPage() {
   }, [projectsData])
 
   const barData = useMemo(() => {
-    const list = stats?.topProyectosRecaudacion ?? stats?.topRecaudacion ?? stats?.topProyectosPorRecaudacion
-    if (list && list.length > 0) {
-      return list.slice(0, 5).map((p) => ({
-        name: p.titulo ?? p.title ?? p.name ?? 'Proyecto',
-        monto: p.montoRecaudado ?? p.recaudado ?? p.totalRecaudado ?? p.monto ?? 0
-      }))
+    let sourceList = stats?.topProyectosRecaudacion ?? stats?.topRecaudacion ?? stats?.topProyectosPorRecaudacion
+    if (!sourceList || sourceList.length === 0) {
+      sourceList = projectsList || []
     }
-    // Fallback: Computar rankings del cliente
-    return [...projectsList]
-      .sort((a, b) => (b.montoRecaudado ?? 0) - (a.montoRecaudado ?? 0))
+    
+    const uniqueProjects = new Map()
+    sourceList.forEach(p => {
+      const name = p.titulo ?? p.title ?? p.name ?? 'Proyecto'
+      const monto = p.montoRecaudado ?? p.recaudado ?? p.totalRecaudado ?? p.monto ?? 0
+      if (monto > 0) {
+        if (!uniqueProjects.has(name) || uniqueProjects.get(name) < monto) {
+          uniqueProjects.set(name, monto)
+        }
+      }
+    })
+    
+    return Array.from(uniqueProjects.entries())
+      .sort((a, b) => b[1] - a[1])
       .slice(0, 5)
-      .map((p) => ({
-        name: p.titulo ?? 'Proyecto',
-        monto: p.montoRecaudado ?? 0
-      }))
+      .map(([name, monto]) => ({ name, monto }))
   }, [stats, projectsList])
 
   const topRecaudacionList = useMemo(() => {
@@ -395,7 +433,7 @@ export default function DashboardPage() {
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={barData} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
-                  <XAxis dataKey="name" stroke="#475569" fontSize={10} tickLine={false} axisLine={false} tick={{ fill: '#94a3b8' }} />
+                  <XAxis dataKey="name" stroke="#475569" fontSize={10} tickLine={false} axisLine={false} tick={{ fill: '#94a3b8' }} interval={0} tick={<CustomizedAxisTick/>} />
                   <YAxis stroke="#475569" fontSize={10} tickLine={false} axisLine={false} tickFormatter={formatYAxis} tick={{ fill: '#94a3b8' }} />
                   <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.02)' }} />
                   <Bar dataKey="monto" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={45} />

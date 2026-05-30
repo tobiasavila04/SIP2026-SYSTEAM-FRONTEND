@@ -18,6 +18,7 @@ const InvestmentHistoryPage = lazy(() => import('@/pages/inversiones/index'))
 const WalletPage = lazy(() => import('@/pages/wallet/index'))
 const AdminUsersPage = lazy(() => import('@/pages/admin/users'))
 const AdminRolesPage = lazy(() => import('@/pages/admin/roles'))
+const MarketplacePage = lazy(() => import('@/pages/marketplace/index'))
 
 function ProtectedRoute({ children }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
@@ -69,6 +70,7 @@ export function AppRouter() {
         <Route path="/proyectos/:id" element={<LazyPage Component={ProjectDetailPage} />} />
         <Route path="/inversiones" element={<LazyPage Component={InvestmentHistoryPage} />} />
         <Route path="/billetera" element={<LazyPage Component={WalletPage} />} />
+        <Route path="/marketplace" element={<LazyPage Component={MarketplacePage} />} />
         <Route path="/perfil" element={<Navigate to="/configuracion" replace />} />
         <Route path="/configuracion" element={<LazyPage Component={SettingsPage} />} />
 
