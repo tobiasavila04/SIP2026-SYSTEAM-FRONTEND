@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { usePermissions, useAuthStore } from '@/stores/auth-store'
 import { useProjects, useEvaluateStates } from '@/hooks/use-projects'
@@ -166,6 +166,11 @@ function StatCard({ title, value, change, icon: Icon, trend, index = 0 }) {
 export default function DashboardPage() {
   const user = useAuthStore((s) => s.user)
   const { isAdmin, isCreator } = usePermissions()
+  
+  const [isMounted, setIsMounted] = useState(false)
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   // Hooks de datos
   const { data: projectsData, isLoading: projectsLoading } = useProjects({ page: 0, size: 100 })
@@ -173,9 +178,12 @@ export default function DashboardPage() {
   const { data: modulesStatus, isLoading: modulesLoading, refetch: refetchModules } = useModulesStatus(isAdmin)
   const evaluateStates = useEvaluateStates()
 
-  // Diagnóstico en consola de desarrollo
+  // Diagnóstico detallado en consola de desarrollo
   if (import.meta.env.DEV) {
-    console.log("Raw dashboard stats from TanStack Query:", stats)
+    console.log('[Dashboard] Raw stats:', stats)
+    console.log('[Dashboard] Stats keys:', stats ? Object.keys(stats) : 'null')
+    console.log('[Dashboard] topProyectosRecaudacion:', stats?.topProyectosRecaudacion)
+    console.log('[Dashboard] projectsList sample:', projectsData?.content?.slice(0, 2))
   }
 
   // Parseo de actividad reciente
@@ -264,6 +272,12 @@ export default function DashboardPage() {
     return Array.isArray(projectsData?.content) ? projectsData.content : []
   }, [projectsData])
 
+  // Filtro reutilizable: excluye proyectos cancelados
+  const isNotCancelled = (p) => {
+    const estado = (p.estado ?? p.status ?? '').toUpperCase()
+    return estado !== 'CANCELADO' && estado !== 'CANCELLED'
+  }
+
   const barData = useMemo(() => {
     let sourceList = stats?.topProyectosRecaudacion ?? stats?.topRecaudacion ?? stats?.topProyectosPorRecaudacion
     if (!sourceList || sourceList.length === 0) {
@@ -271,10 +285,12 @@ export default function DashboardPage() {
     }
     
     const uniqueProjects = new Map()
-    sourceList.forEach(p => {
+    sourceList.filter(isNotCancelled).forEach(p => {
       const name = p.titulo ?? p.title ?? p.name ?? 'Proyecto'
-      const monto = p.montoRecaudado ?? p.recaudado ?? p.totalRecaudado ?? p.monto ?? 0
-      if (monto > 0) {
+      const rawMonto = p.montoRecaudado ?? p.recaudado ?? p.totalRecaudado ?? p.monto ?? p.value ?? 0
+      const monto = Number(rawMonto)
+      
+      if (!isNaN(monto)) {
         if (!uniqueProjects.has(name) || uniqueProjects.get(name) < monto) {
           uniqueProjects.set(name, monto)
         }
@@ -289,17 +305,18 @@ export default function DashboardPage() {
 
   const topRecaudacionList = useMemo(() => {
     const list = stats?.topProyectosRecaudacion ?? stats?.topRecaudacion ?? stats?.topProyectosPorRecaudacion
-    if (list && list.length > 0) return list
-    return [...projectsList]
+    const source = (list && list.length > 0) ? list : projectsList
+    return [...source]
+      .filter(isNotCancelled)
       .sort((a, b) => (b.montoRecaudado ?? 0) - (a.montoRecaudado ?? 0))
       .slice(0, 5)
   }, [stats, projectsList])
 
   const topInversoresList = useMemo(() => {
     const list = stats?.topProyectosInversores ?? stats?.topInversores ?? stats?.topProyectosPorInversores
-    if (list && list.length > 0) return list
-    // Fallback de inversores: ordenar por monto recaudado o devolver vacío si no hay datos
-    return [...projectsList]
+    const source = (list && list.length > 0) ? list : projectsList
+    return [...source]
+      .filter(isNotCancelled)
       .sort((a, b) => (b.montoRecaudado ?? 0) - (a.montoRecaudado ?? 0))
       .slice(0, 5)
   }, [stats, projectsList])
@@ -395,14 +412,16 @@ export default function DashboardPage() {
             ) : (
               <div className="w-full h-full flex flex-col sm:flex-row items-center justify-around gap-4">
                 <div className="w-[180px] h-[180px] sm:w-[220px] sm:h-[220px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie data={pieData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={4} dataKey="value">
-                        {pieData.map((entry, index) => <Cell key={`cell-${index}`} fill={getCellColor(entry.name)} />)}
-                      </Pie>
-                      <Tooltip content={<CustomTooltip />} />
-                    </PieChart>
-                  </ResponsiveContainer>
+                  {isMounted && (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie data={pieData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={4} dataKey="value">
+                          {pieData.map((entry, index) => <Cell key={`cell-${index}`} fill={getCellColor(entry.name)} />)}
+                        </Pie>
+                        <Tooltip content={<CustomTooltip />} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  )}
                 </div>
                 <div className="flex flex-col gap-2 max-h-[160px] overflow-y-auto px-2">
                   {pieData.map((entry) => (
@@ -425,12 +444,12 @@ export default function DashboardPage() {
               Top 5 Proyectos por Recaudación
             </h3>
           </div>
-          <div className="flex-1 min-h-0">
+          <div className="h-[300px] w-full">
             {barData.length === 0 ? (
               <div className="w-full h-full flex items-center justify-center">
                 <p className="text-sm text-slate-500">No hay datos de recaudación disponibles</p>
               </div>
-            ) : (
+            ) : isMounted ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={barData} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
                   <XAxis dataKey="name" stroke="#475569" fontSize={10} tickLine={false} axisLine={false} tick={{ fill: '#94a3b8' }} interval={0} tick={<CustomizedAxisTick/>} />
@@ -439,7 +458,7 @@ export default function DashboardPage() {
                   <Bar dataKey="monto" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={45} />
                 </BarChart>
               </ResponsiveContainer>
-            )}
+            ) : null}
           </div>
         </div>
       </section>

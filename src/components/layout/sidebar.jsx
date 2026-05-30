@@ -11,6 +11,7 @@ import {
   Menu,
   Wallet,
   Vote,
+  Store,
 } from 'lucide-react'
 import { useAccount, useReadContract, useBalance } from 'wagmi'
 import { formatUnits } from 'viem'
@@ -22,6 +23,7 @@ const mainNav = [
   { to: '/proyectos', label: 'Proyectos', icon: FolderKanban },
   { to: '/inversiones', label: 'Inversiones', icon: TrendingUp },
   { to: '/billetera', label: 'Billetera', icon: Wallet },
+  { to: '/marketplace', label: 'Marketplace', icon: Store },
   { to: '/gobernanza', label: 'Gobernanza', icon: Vote },
   { to: '/configuracion', label: 'Configuración', icon: Settings },
 ]
