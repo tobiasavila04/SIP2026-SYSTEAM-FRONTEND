@@ -317,7 +317,11 @@ export default function DashboardPage() {
     const source = (list && list.length > 0) ? list : projectsList
     return [...source]
       .filter(isNotCancelled)
-      .sort((a, b) => (b.montoRecaudado ?? 0) - (a.montoRecaudado ?? 0))
+      .sort((a, b) => {
+        const invA = a.cantidadInversores ?? a.inversores ?? a.totalInversores ?? a.cantidad ?? 0;
+        const invB = b.cantidadInversores ?? b.inversores ?? b.totalInversores ?? b.cantidad ?? 0;
+        return invB - invA;
+      })
       .slice(0, 5)
   }, [stats, projectsList])
 
