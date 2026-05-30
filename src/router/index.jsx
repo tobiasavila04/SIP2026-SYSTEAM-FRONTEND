@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useAuthStore } from '@/stores/auth-store'
+import { useAuth } from '@/providers/auth-provider'
 import { DashboardLayout } from '@/components/layout/dashboard-layout'
 import { PageSkeleton } from '@/components/shared/loading-skeleton'
 
@@ -18,7 +19,8 @@ const InvestmentHistoryPage = lazy(() => import('@/pages/inversiones/index'))
 const WalletPage = lazy(() => import('@/pages/wallet/index'))
 const AdminUsersPage = lazy(() => import('@/pages/admin/users'))
 const AdminRolesPage = lazy(() => import('@/pages/admin/roles'))
-const MarketplacePage = lazy(() => import('@/pages/marketplace/index'))
+{/*const MarketplacePage = lazy(() => import('@/pages/marketplace/index'))*/}
+const ModulesPage = lazy(() => import('@/pages/modules/index'))
 
 function ProtectedRoute({ children }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
@@ -39,7 +41,9 @@ function AdminRoute({ children }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const user = useAuthStore((s) => s.user)
   const roles = useAuthStore((s) => s.roles)
+  const { isLoading } = useAuth()
   if (!isAuthenticated) return <Navigate to="/" replace />
+  if (isLoading) return <PageSkeleton />
   if (!user) return null
   if (!roles.includes('ADMIN')) return <Navigate to="/dashboard" replace />
   return <>{children}</>
@@ -70,12 +74,13 @@ export function AppRouter() {
         <Route path="/proyectos/:id" element={<LazyPage Component={ProjectDetailPage} />} />
         <Route path="/inversiones" element={<LazyPage Component={InvestmentHistoryPage} />} />
         <Route path="/billetera" element={<LazyPage Component={WalletPage} />} />
-        <Route path="/marketplace" element={<LazyPage Component={MarketplacePage} />} />
+        {/* <Route path="/marketplace" element={<LazyPage Component={MarketplacePage} />} /> */}
         <Route path="/perfil" element={<Navigate to="/configuracion" replace />} />
         <Route path="/configuracion" element={<LazyPage Component={SettingsPage} />} />
 
         <Route path="/admin/usuarios" element={<AdminRoute><LazyPage Component={AdminUsersPage} /></AdminRoute>} />
         <Route path="/admin/roles" element={<AdminRoute><LazyPage Component={AdminRolesPage} /></AdminRoute>} />
+        <Route path="/admin/modulos" element={<AdminRoute><LazyPage Component={ModulesPage} /></AdminRoute>} />
       </Route>
 
       <Route path="*" element={<Navigate to="/dashboard" replace />} />

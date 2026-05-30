@@ -41,7 +41,7 @@ function StateLoading({ message, sub }) {
   )
 }
 
-function StateSuccess({ amount, subtokens, projectTitle, txHash, onClose }) {
+function StateSuccess({ amount, subtokens, projectTitle, txHash, onClose, symbol }) {
   return (
     <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-300">
       <div className="flex flex-col items-center py-6 space-y-4">
@@ -63,7 +63,7 @@ function StateSuccess({ amount, subtokens, projectTitle, txHash, onClose }) {
         </div>
         {subtokens != null && (
           <div className="flex justify-between items-center px-5 py-3.5">
-            <span className="text-sm text-slate-400">Subtokens recibidos</span>
+            <span className="text-sm text-slate-400">{symbol} recibidos</span>
             <span className="text-sm font-semibold text-emerald-300">{subtokens.toLocaleString()}</span>
           </div>
         )}
@@ -76,7 +76,7 @@ function StateSuccess({ amount, subtokens, projectTitle, txHash, onClose }) {
         <div className="flex items-start gap-3">
           <Sparkles className="w-4 h-4 text-violet-400 shrink-0 mt-0.5" />
           <p className="text-xs text-slate-400 leading-relaxed">
-            Los subtokens aparecerán en tu wallet y en la sección de inversiones. Podés hacer seguimiento desde el panel de control.
+            Los {symbol} aparecerán en tu wallet y en la sección de inversiones. Podés hacer seguimiento desde el panel de control.
           </p>
         </div>
       </div>
@@ -137,7 +137,7 @@ function StateError({ message, balance, required, onRetry, onClose }) {
   )
 }
 
-export function InvestmentModal({ open, onOpenChange, projectId, projectTitle, onSuccess }) {
+export function InvestmentModal({ open, onOpenChange, projectId, projectTitle, simbolo, onSuccess }) {
   const [subtokenCount, setSubtokenCount] = useState('')
   const [step, setStep] = useState('form')
   const [investHash, setInvestHash] = useState(null)
@@ -149,6 +149,7 @@ export function InvestmentModal({ open, onOpenChange, projectId, projectTitle, o
 
   const { data: tokenPrice, isLoading: loadingPrice } = useTokenPrice(projectId)
   const { data: tokenInfo } = useTokenInfo(projectId)
+  const symbol = simbolo || tokenInfo?.simbolo || 'subtoken'
   const validateMutation = useValidateInvestment()
   const createInvestment = useCreateInvestment()
 
@@ -225,7 +226,7 @@ export function InvestmentModal({ open, onOpenChange, projectId, projectTitle, o
 
   const handleInvest = async () => {
     if (!effectiveAmount || isNaN(numEffectiveAmount) || numEffectiveAmount <= 0) {
-      toast.error('Ingresá una cantidad válida de subtokens')
+      toast.error(`Ingresá una cantidad válida de ${symbol}`)
       return
     }
     if (!isConnected || !address) {
@@ -316,7 +317,7 @@ export function InvestmentModal({ open, onOpenChange, projectId, projectTitle, o
               : step === 'error'
                 ? 'Ocurrió un error al procesar la inversión.'
                 : isConnected
-                  ? `Comprá subtokens de ${projectTitle} con tus $IDEA.`
+                  ? `Comprá ${symbol} de ${projectTitle} con tus $IDEA.`
                   : 'Conectá tu wallet para empezar a invertir.'}
           </DialogDescription>
         </DialogHeader>
@@ -329,6 +330,7 @@ export function InvestmentModal({ open, onOpenChange, projectId, projectTitle, o
               projectTitle={projectTitle}
               txHash={investHash}
               onClose={() => { reset(); onOpenChange(false) }}
+              symbol={symbol}
             />
           ) : step === 'error' ? (
             <StateError
@@ -373,43 +375,28 @@ export function InvestmentModal({ open, onOpenChange, projectId, projectTitle, o
               {loadingPrice ? (
                 <div className="flex items-center gap-2.5 text-xs text-slate-500 py-3 px-4 rounded-xl bg-white/[0.02] border border-white/5">
                   <Loader2 className="w-3.5 h-3.5 animate-spin text-violet-400" />
-                  Cargando precio del subtoken...
+                  Cargando precio del {symbol}...
                 </div>
               ) : precioActual != null && (
                 <div className="rounded-xl bg-gradient-to-b from-white/[0.03] to-transparent border border-white/5 overflow-hidden">
-                  <div className="grid grid-cols-3 divide-x divide-white/5">
+                  <div className="grid grid-cols-2 divide-x divide-white/5">
                     <div className="p-3 text-center">
                       <div className="flex items-center justify-center gap-1.5 text-[10px] text-slate-500 uppercase tracking-wider mb-1">
                         <Coins className="w-3 h-3" />
-                        Base
+                        Precio base
                       </div>
                       <p className="text-base font-bold text-white">
-                        {tokenPrice?.precioBase != null ? Number(tokenPrice.precioBase).toFixed(2) : '—'}
+                        ${tokenPrice?.precioBase != null ? Number(tokenPrice.precioBase).toFixed(2) : '—'}
                       </p>
-                      <p className="text-[10px] text-slate-600">$IDEA c/u</p>
+                      <p className="text-[10px] text-slate-600">$IDEA</p>
                     </div>
                     <div className="p-3 text-center">
                       <div className="flex items-center justify-center gap-1.5 text-[10px] text-slate-500 uppercase tracking-wider mb-1">
                         <TrendingUp className="w-3 h-3" />
-                        Actual
+                        Precio actual
                       </div>
-                      <p className="text-base font-bold text-white">{precioActual.toFixed(2)}</p>
-                      <p className="text-[10px] text-slate-600">$IDEA c/u</p>
-                    </div>
-                    <div className="p-3 text-center">
-                      <div className="flex items-center justify-center gap-1.5 text-[10px] text-slate-500 uppercase tracking-wider mb-1">
-                        <Gauge className="w-3 h-3" />
-                        Factores
-                      </div>
-                      {tokenPrice?.factorDemanda != null && tokenPrice?.factorRendimiento != null ? (
-                        <div className="flex items-center justify-center gap-1.5 mt-0.5">
-                          <span className="text-xs text-slate-300" title="Factor demanda">{Number(tokenPrice.factorDemanda).toFixed(2)}</span>
-                          <span className="text-[10px] text-slate-600">×</span>
-                          <span className="text-xs text-slate-300" title="Factor rendimiento">{Number(tokenPrice.factorRendimiento).toFixed(2)}</span>
-                        </div>
-                      ) : (
-                        <span className="text-xs text-slate-600">—</span>
-                      )}
+                      <p className="text-base font-bold text-white">${precioActual.toFixed(2)}</p>
+                      <p className="text-[10px] text-slate-600">$IDEA</p>
                     </div>
                   </div>
                   {/* Cupo bar */}
@@ -432,7 +419,7 @@ export function InvestmentModal({ open, onOpenChange, projectId, projectTitle, o
 
               {/* Subtoken input */}
               <div>
-                <Label className="text-xs text-slate-400 font-medium">Cantidad de subtokens</Label>
+                <Label className="text-xs text-slate-400 font-medium">Cantidad de {symbol}</Label>
                 <div className="relative mt-1.5">
                   <Input
                     ref={inputRef}
@@ -467,7 +454,7 @@ export function InvestmentModal({ open, onOpenChange, projectId, projectTitle, o
                         : 'bg-white/[0.02] border-white/5 text-slate-500 hover:border-violet-500/20 hover:text-violet-400 hover:bg-white/[0.04] active:scale-95'
                     )}
                   >
-                    {q} subtoken{q > 1 ? 's' : ''}
+                    {q} {symbol}
                   </button>
                 ))}
               </div>
@@ -500,7 +487,7 @@ export function InvestmentModal({ open, onOpenChange, projectId, projectTitle, o
                       </div>
                       {subTokensARecebir != null && (
                         <p className="text-xs text-emerald-400/70 leading-relaxed pl-9">
-                          Con <span className="font-medium text-emerald-300">{numSubtokenCount.toLocaleString()}</span> subtoken{numSubtokenCount !== 1 ? 's' : ''}
+                          Con <span className="font-medium text-emerald-300">{numSubtokenCount.toLocaleString()}</span> {symbol}
                           {' '}necesitás <span className="font-medium text-emerald-300">{Number(effectiveAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} $IDEA</span>.
                         </p>
                       )}
@@ -561,7 +548,7 @@ export function InvestmentModal({ open, onOpenChange, projectId, projectTitle, o
                           ? 'Saldo insuficiente'
                           : numEffectiveAmount > 0
                             ? `Invertir ${Number(effectiveAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} $IDEA`
-                            : 'Ingresá cantidad de subtokens'}
+                            : `Ingresá cantidad de ${symbol}`}
                   </div>
                 </Button>
               )}

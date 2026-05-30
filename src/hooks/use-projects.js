@@ -9,6 +9,7 @@ function mapProjectFormToApi(formData) {
   if (formData.gobernanzaComunidad != null) apiData.gobernanzaComunidad = formData.gobernanzaComunidad
   if (formData.cupoMaximoTokens != null) apiData.cupoMaximoTokens = formData.cupoMaximoTokens
   if (formData.valorNominalToken != null) apiData.valorNominalToken = formData.valorNominalToken
+  if (formData.simbolo) apiData.simbolo = formData.simbolo
   return apiData
 }
 

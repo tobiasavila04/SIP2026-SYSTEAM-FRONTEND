@@ -20,7 +20,7 @@ export const statusLabels = {
 
 export function FundingProgress({ raised, required, compact }) {
   if (!required) return null
-  const percent = raised ? Math.min(Math.round((raised / required) * 100), 100) : 0
+  const percent = raised ? Math.min(Math.ceil((raised / required) * 100), 100) : 0
   return (
     <div className="space-y-1">
       {!compact && (

@@ -42,15 +42,16 @@ export default function ProjectEditorPage() {
   if (isEdit) {
     return (
       <ProjectForm
-        defaultValues={{
-          titulo: project.titulo,
-          descripcion: project.descripcion,
-          montoRequerido: project.montoRequerido,
-          plazo: project.plazo,
-          gobernanzaComunidad: project.gobernanzaComunidad,
-          cupoMaximoTokens: project.cupoMaximoTokens ?? undefined,
-          valorNominalToken: project.valorNominalToken ?? undefined,
-        }}
+          defaultValues={{
+            titulo: project.titulo,
+            descripcion: project.descripcion,
+            montoRequerido: project.montoRequerido,
+            plazo: project.plazo,
+            gobernanzaComunidad: project.gobernanzaComunidad,
+            cupoMaximoTokens: project.cupoMaximoTokens ?? undefined,
+            valorNominalToken: project.valorNominalToken ?? undefined,
+            simbolo: project.simbolo ?? '',
+          }}
         onSubmit={handleSubmit}
         isEdit
       />

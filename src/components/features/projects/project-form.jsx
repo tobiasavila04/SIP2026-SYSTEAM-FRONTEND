@@ -25,6 +25,7 @@ const projectSchema = z.object({
   gobernanzaComunidad: z.boolean().optional(),
   cupoMaximoTokens: z.coerce.number().int().min(1, 'Debe emitirse al menos 1 token'),
   valorNominalToken: z.coerce.number().min(0.01, 'El valor nominal debe ser mayor a 0'),
+  simbolo: z.string().min(2, 'Mínimo 2 caracteres').max(5, 'Máximo 5 caracteres').toUpperCase(),
 })
 
 function Card({ icon: Icon, title, description, children }) {
@@ -64,6 +65,7 @@ export function ProjectForm({ defaultValues, onSubmit, isEdit }) {
       gobernanzaComunidad: defaultValues?.gobernanzaComunidad || false,
       cupoMaximoTokens: defaultValues?.cupoMaximoTokens || undefined,
       valorNominalToken: defaultValues?.valorNominalToken || undefined,
+      simbolo: defaultValues?.simbolo || '',
     },
   })
 
@@ -203,6 +205,34 @@ export function ProjectForm({ defaultValues, onSubmit, isEdit }) {
                 )}
               />
             </FieldGroup>
+
+            <div className="mt-4">
+              <FormField
+                control={form.control}
+                name="simbolo"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Símbolo del token</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="ej: CERV"
+                        maxLength={5}
+                        className="uppercase"
+                        onChange={(e) => field.onChange(e.target.value.toUpperCase())}
+                        onBlur={field.onBlur}
+                        value={field.value}
+                        ref={field.ref}
+                        name={field.name}
+                      />
+                    </FormControl>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Identificador único del token en la blockchain (ej: CERV, IDEA-RIEGO)
+                    </p>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             {supply && price && (
               <div className="rounded-lg bg-indigo-500/5 border border-indigo-500/10 p-4 flex items-center justify-between">

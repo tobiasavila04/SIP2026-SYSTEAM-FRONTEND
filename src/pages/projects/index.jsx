@@ -131,11 +131,16 @@ export default function ProjectCatalogPage() {
     return noDestacados.slice(start, start + PAGE_SIZE)
   }, [noDestacados, page])
 
-  const stats = useMemo(() => [
-    { label: 'Total proyectos', value: data?.totalElements ?? 0, icon: FolderKanban },
-    { label: 'En financiamiento', value: proyectos.filter(p => p.estado === 'FINANCIAMIENTO').length, icon: CircleDollarSign },
-    { label: 'Mis proyectos', value: usuarioId ? proyectos.filter(p => p.creadorId === usuarioId).length : 0, icon: Layers },
-  ], [data, proyectos, usuarioId])
+  const stats = useMemo(() => {
+    const s = [
+      { label: 'Total proyectos', value: data?.totalElements ?? 0, icon: FolderKanban },
+      { label: 'En financiamiento', value: proyectos.filter(p => p.estado === 'FINANCIAMIENTO').length, icon: CircleDollarSign },
+    ];
+    if (puedeCrear) {
+      s.push({ label: 'Mis proyectos', value: usuarioId ? proyectos.filter(p => p.creadorId === usuarioId).length : 0, icon: Layers });
+    }
+    return s;
+  }, [data, proyectos, usuarioId, puedeCrear])
 
   const activeFilters = [statusFilter, montoRange, gobernanzaOnly ? 'gobernanza' : '', vista !== 'todos' ? vista : ''].filter(Boolean).length
   const hayFiltros = activeFilters > 0 || !!search
@@ -158,7 +163,7 @@ export default function ProjectCatalogPage() {
       </div>
 
       <section aria-label="Estadísticas de proyectos">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className={cn("grid grid-cols-1 gap-3", stats.length === 3 ? "sm:grid-cols-3" : "sm:grid-cols-2")}>
           {stats.map((s) => (
             <article key={s.label} className="rounded-lg border border-white/5 bg-card p-4">
               <div className="flex items-center gap-2 mb-1.5">
@@ -170,7 +175,6 @@ export default function ProjectCatalogPage() {
           ))}
         </div>
       </section>
-
       <section aria-label="Filtros de búsqueda">
         <div className="rounded-xl border border-white/5 bg-card p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">

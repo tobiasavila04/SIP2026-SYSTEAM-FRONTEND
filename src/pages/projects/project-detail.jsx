@@ -263,13 +263,15 @@ export default function ProjectDetailPage() {
     )
   }
 
+  console.log('DEBUG project:', project)
+  console.log('DEBUG simbolo:', project?.simbolo)
   if (isError || !project) {
     return <ErrorState message="No se pudo cargar el proyecto." onRetry={() => refetch()} />
   }
 
   const isCreator = project.creadorId === user?.id
   const canInvest = isInvestor && project.estado === 'FINANCIAMIENTO'
-  const daysRemaining = project.financingEndDate ? differenceInDays(new Date(project.financingEndDate), new Date()) : null
+  const daysRemaining = project.plazo ? differenceInDays(new Date(project.plazo), new Date()) : null
 
   return (
     <div className="max-w-4xl space-y-6">
@@ -347,30 +349,37 @@ export default function ProjectDetailPage() {
           <MetricCard icon={Target} label="Monto requerido" value={formatCurrency(project.montoRequerido)} valueClass="text-emerald-300" />
           <MetricCard
             icon={Calendar}
-            label={project.estado === 'FINANCIAMIENTO' ? 'Fin financiamiento' : 'Plazo'}
-            value={project.financingEndDate ? formatDate(project.financingEndDate) : 'No definido'}
+            label="Fin financiamiento"
+            value={project.plazo ? formatDate(project.plazo) : 'No definido'}
           />
           <MetricCard icon={Coins} label="Cupo máximo tokens" value={project.cupoMaximoTokens?.toLocaleString() ?? 'No definido'} />
           <MetricCard icon={Wallet} label="Valor nominal token" value={project.valorNominalToken ? formatCurrency(project.valorNominalToken) : 'No definido'} />
         </section>
 
-        {/* Token info section */}
+        {/* Subtoken info section */}
         {(project.estado === 'FINANCIAMIENTO' || project.estado === 'EJECUCION' || project.estado === 'FINALIZADO') && (
           <section className="pt-4 border-t border-white/5 space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="text-xs font-medium text-slate-500 uppercase tracking-wider">Información del token</h3>
+              <h3 className="text-xs font-medium text-slate-500 uppercase tracking-wider flex items-center gap-2">
+                Información del subtoken
+                <span className="font-mono text-violet-400 bg-violet-500/10 px-1.5 py-0.5 rounded text-[11px]">{project.simbolo || tokenInfo?.simbolo || '—'}</span>
+              </h3>
               <button onClick={fetchTokenInfo} disabled={loadingTokenFetch} className="text-xs text-violet-400 hover:text-violet-300 transition-colors">
                 {loadingTokenFetch ? 'Cargando...' : 'Actualizar'}
               </button>
             </div>
             {tokenInfo ? (
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <MetricCard icon={Coins} label="Supply total" value={Number(tokenInfo.totalSupply ?? 0).toLocaleString()} valueClass="text-violet-300" />
-                <MetricCard icon={Wallet} label="Tokens emitidos" value={Number(tokenInfo.emitidos ?? 0).toLocaleString()} valueClass="text-violet-300" />
-                <MetricCard icon={TrendingUp} label="Tokens restantes" value={Number(tokenInfo.disponibles ?? 0).toLocaleString()} valueClass="text-emerald-300" />
+                <MetricCard icon={Coins} label="Suministro total" value={Number(tokenInfo.suministroTotal ?? 0).toLocaleString()} valueClass="text-violet-300" />
+                <MetricCard icon={Wallet} label="Cupo restante" value={Number(tokenInfo.cupoRestante ?? 0).toLocaleString()} valueClass="text-violet-300" />
+                <MetricCard icon={TrendingUp} label="Precio actual" value={`$${Number(tokenInfo.precioActual ?? 0).toFixed(2)}`} valueClass="text-emerald-300" />
               </div>
             ) : (
-              <p className="text-xs text-slate-500">No hay información de tokens disponible.</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <MetricCard icon={Coins} label="Cupo máximo" value={project.cupoMaximoTokens?.toLocaleString() ?? '—'} valueClass="text-violet-300" />
+                <MetricCard icon={Wallet} label="Valor nominal" value={project.valorNominalToken ? formatCurrency(project.valorNominalToken) : '—'} valueClass="text-violet-300" />
+                <MetricCard icon={TrendingUp} label="Estado en blockchain" value={project.tokenAddress ? 'Creado' : 'Pendiente'} valueClass={project.tokenAddress ? 'text-emerald-300' : 'text-amber-300'} />
+              </div>
             )}
             {project.tokenAddress && (
               <div className="flex items-center gap-2 text-xs text-slate-500">
@@ -408,6 +417,7 @@ export default function ProjectDetailPage() {
         onOpenChange={setShowInvestDialog}
         projectId={projectId}
         projectTitle={project.titulo}
+        simbolo={project.simbolo}
         onSuccess={refetch}
       />
 
