@@ -9,7 +9,8 @@ export default function OAuth2CallbackPage() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    const token = searchParams.get('token')
+    const accessToken = searchParams.get('accessToken')
+    const refreshToken = searchParams.get('refreshToken')
     const errorParam = searchParams.get('error')
 
     if (errorParam) {
@@ -17,21 +18,21 @@ export default function OAuth2CallbackPage() {
       return
     }
 
-    if (!token) {
+    if (!accessToken) {
       setError('Parámetros de autenticación inválidos')
       return
     }
 
     try {
-      const payload = JSON.parse(atob(token.split('.')[1]))
+      const payload = JSON.parse(atob(accessToken.split('.')[1]))
 
-      setStoredTokens(token, '')
+      setStoredTokens(accessToken, refreshToken ?? '')
       if (payload.userId) {
         setStoredUserId(payload.userId)
       }
 
       useAuthStore.setState({
-        token,
+        token: accessToken,
         isAuthenticated: true,
         user: null,
         roles: payload.roles || [],
