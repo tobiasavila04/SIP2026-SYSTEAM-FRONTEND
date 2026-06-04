@@ -11,6 +11,9 @@ import { usePermissions } from '@/stores/auth-store'
 import { apiRequest } from '@/lib/api-client'
 import { API_ENDPOINTS } from '@/config/api'
 import { InvestmentModal } from '@/components/features/investment/investment-modal'
+import { OracleAuditPanel } from '@/components/features/oracle/oracle-audit-panel'
+import { OracleBillingForm } from '@/components/features/oracle/oracle-billing-form'
+import { useOracleReport } from '@/hooks/use-oracle'
 import { TxHashLink } from '@/components/shared/tx-hash-link'
 import { ErrorState } from '@/components/shared/error-state'
 import { StatusBadge } from '@/components/shared/status-badge'
@@ -22,7 +25,7 @@ import { statusVariants, statusLabels, FundingProgress } from '@/lib/project-con
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { toast } from 'sonner'
 import { differenceInDays } from 'date-fns'
-import { ArrowLeft, Target, Calendar, Coins, Wallet, Loader2, TrendingUp, Rocket, CheckCircle2, Ban, SquarePen, ExternalLink, RefreshCw, AlertTriangle, Star, Sparkles, ShieldCheck } from 'lucide-react'
+import { ArrowLeft, Target, Calendar, Coins, Wallet, Loader2, TrendingUp, Rocket, CheckCircle2, Ban, SquarePen, ExternalLink, RefreshCw, AlertTriangle, Star, Sparkles, ShieldCheck, FileText } from 'lucide-react'
 
 const VITE_INVESTMENT_SWAP_ADDRESS = import.meta.env.VITE_INVESTMENT_SWAP_ADDRESS
 
@@ -111,7 +114,7 @@ function RefundDialog({ open, onOpenChange, projectId, onSuccess }) {
   )
 }
 
-function StatusActions({ project, isCreator, isAdmin, canInvest, onInvest, onRefund, onBoost, onDesboost, onTransition, onClose, onEvaluateStates, transitioning, closing }) {
+function StatusActions({ project, isCreator, isAdmin, canInvest, onInvest, onRefund, onBoost, onDesboost, onTransition, onClose, onEvaluateStates, onReportBilling, transitioning, closing }) {
   const failed = project.estado === 'CANCELADO' || project.estado === 'RECHAZADO' || (project.estado === 'FINALIZADO' && project.montoRecaudado < project.montoRequerido)
 
   return (
@@ -147,6 +150,12 @@ function StatusActions({ project, isCreator, isAdmin, canInvest, onInvest, onRef
         <Button onClick={() => onTransition('FINANCIAMIENTO')} disabled={transitioning} className="bg-emerald-600 hover:bg-emerald-500 text-white gap-2 h-9 px-5 text-sm rounded-lg shadow-lg shadow-emerald-600/20">
           {transitioning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Rocket className="w-4 h-4" />}
           {transitioning ? 'Publicando...' : 'Publicar'}
+        </Button>
+      )}
+      {isCreator && project.estado === 'EJECUCION' && (
+        <Button onClick={onReportBilling} variant="outline" size="sm" className="gap-2 border-blue-500/20 text-blue-400 hover:bg-blue-500/10">
+          <FileText className="w-3.5 h-3.5" />
+          Reportar facturación
         </Button>
       )}
       {isCreator && project.estado === 'EJECUCION' && (
@@ -205,10 +214,16 @@ export default function ProjectDetailPage() {
 
   const [showInvestDialog, setShowInvestDialog] = useState(false)
   const [showRefundDialog, setShowRefundDialog] = useState(false)
+  const [showOracleBillingForm, setShowOracleBillingForm] = useState(false)
   const [transitioning, setTransitioning] = useState(false)
 
   const [tokenInfo, setTokenInfo] = useState(null)
   const [loadingToken, setLoadingToken] = useState(false)
+
+  const showOraclePanel = project?.estado === 'EJECUCION' || project?.estado === 'FINALIZADO'
+  const { data: oracleReport, isLoading: oracleLoading, isError: oracleError } = useOracleReport(
+    showOraclePanel ? projectId : null
+  )
 
   const transitionTo = async (status) => {
     setTransitioning(true)
@@ -318,6 +333,7 @@ export default function ProjectDetailPage() {
             onTransition={transitionTo}
             onClose={() => closeProject.mutateAsync(projectId).then(refetch)}
             onEvaluateStates={() => evaluateStates.mutateAsync().then(refetch)}
+            onReportBilling={() => setShowOracleBillingForm(true)}
             transitioning={transitioning}
             closing={closeProject.isPending}
           />
@@ -399,6 +415,15 @@ export default function ProjectDetailPage() {
           </section>
         )}
 
+        {showOraclePanel && (
+          <OracleAuditPanel
+            projectId={projectId}
+            report={oracleReport}
+            isLoading={oracleLoading}
+            isError={oracleError}
+          />
+        )}
+
         <div className="pt-4 border-t border-white/5">
           <div className="flex items-center gap-2 text-xs text-slate-500">
             <span>Creado el {formatDate(project.createdAt)}</span>
@@ -426,6 +451,12 @@ export default function ProjectDetailPage() {
         onOpenChange={setShowRefundDialog}
         projectId={projectId}
         onSuccess={refetch}
+      />
+
+      <OracleBillingForm
+        projectId={projectId}
+        open={showOracleBillingForm}
+        onOpenChange={setShowOracleBillingForm}
       />
     </div>
   )
