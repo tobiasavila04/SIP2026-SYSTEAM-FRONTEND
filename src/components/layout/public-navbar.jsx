@@ -12,7 +12,7 @@ export function PublicNavbar({ search, onSearchChange }) {
     <header className="h-16 border-b border-white/5 bg-[#0A0C14]/80 backdrop-blur-xl sticky top-0 z-50">
       <div className="max-w-7xl mx-auto h-full px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
         <Link to="/explorar" className="flex items-center gap-2 shrink-0">
-          <Sparkles className="w-5 h-5 text-violet-400" />
+          <img src="/logo.png" alt="IDEAFY" className="w-7 h-7" />
           <span className="text-lg font-bold text-white tracking-tight">IDEAFY</span>
         </Link>
 

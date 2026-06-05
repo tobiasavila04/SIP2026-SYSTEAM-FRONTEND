@@ -11,6 +11,7 @@ import { usePermissions } from '@/stores/auth-store'
 import { apiRequest } from '@/lib/api-client'
 import { API_ENDPOINTS } from '@/config/api'
 import { InvestmentModal } from '@/components/features/investment/investment-modal'
+import { InvestmentDisclaimerModal } from '@/components/features/investment/investment-disclaimer-modal'
 import { OracleAuditPanel } from '@/components/features/oracle/oracle-audit-panel'
 import { OracleBillingForm } from '@/components/features/oracle/oracle-billing-form'
 import { useOracleReport } from '@/hooks/use-oracle'
@@ -212,6 +213,7 @@ export default function ProjectDetailPage() {
   const evaluateStates = useEvaluateStates()
   const closeProject = useCloseProject()
 
+  const [showDisclaimerDialog, setShowDisclaimerDialog] = useState(false)
   const [showInvestDialog, setShowInvestDialog] = useState(false)
   const [showRefundDialog, setShowRefundDialog] = useState(false)
   const [showOracleBillingForm, setShowOracleBillingForm] = useState(false)
@@ -326,7 +328,7 @@ export default function ProjectDetailPage() {
             isCreator={isCreator}
             isAdmin={isAdmin}
             canInvest={canInvest}
-            onInvest={() => setShowInvestDialog(true)}
+            onInvest={() => setShowDisclaimerDialog(true)}
             onRefund={() => setShowRefundDialog(true)}
             onBoost={() => boostProject.mutateAsync(projectId).then(refetch)}
             onDesboost={() => desboostProject.mutateAsync(projectId).then(refetch)}
@@ -436,6 +438,15 @@ export default function ProjectDetailPage() {
           </div>
         </div>
       </div>
+
+      <InvestmentDisclaimerModal 
+        open={showDisclaimerDialog} 
+        onOpenChange={setShowDisclaimerDialog} 
+        onConfirm={() => {
+          setShowDisclaimerDialog(false)
+          setShowInvestDialog(true)
+        }} 
+      />
 
       <InvestmentModal
         open={showInvestDialog}

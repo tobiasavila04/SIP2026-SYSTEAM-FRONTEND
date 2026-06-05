@@ -483,6 +483,7 @@ export default function DashboardPage() {
                 const recaudado = project.montoRecaudado ?? project.recaudado ?? project.totalRecaudado ?? project.monto ?? 0
                 const requerido = project.montoRequerido ?? project.requerido ?? 1
                 const pct = Math.min(100, Math.max(0, (recaudado / requerido) * 100))
+                const displayPct = pct > 0 && pct < 1 ? 1 : Math.round(pct)
 
                 return (
                   <div key={project.id || i} className="group relative flex flex-col gap-1 p-2 rounded-lg hover:bg-white/[0.02] transition-all">
@@ -495,9 +496,9 @@ export default function DashboardPage() {
                     </div>
                     <div className="mt-1 flex items-center gap-2">
                       <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden">
-                        <div className="h-full bg-gradient-to-r from-violet-500 to-indigo-500 rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+                        <div className="h-full bg-gradient-to-r from-violet-500 to-indigo-500 rounded-full transition-all duration-500" style={{ width: `${displayPct}%` }} />
                       </div>
-                      <span className="text-[10px] text-slate-500 w-8 text-right font-medium">{pct.toFixed(0)}%</span>
+                      <span className="text-[10px] text-slate-500 w-8 text-right font-medium">{displayPct}%</span>
                     </div>
                   </div>
                 )

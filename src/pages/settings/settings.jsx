@@ -66,7 +66,7 @@ function BalanceCard({ currency, balance, icon: Icon, index }) {
   )
 }
 
-function PortfolioItem({ proyectoTitulo, cantidad, precioActual, index }) {
+function PortfolioItem({ proyectoNombre, subtokenNombre, subtokenSimbolo, cantidad, precioActual, index }) {
   return (
     <motion.div
       initial={{ opacity: 0, x: -8 }}
@@ -76,7 +76,7 @@ function PortfolioItem({ proyectoTitulo, cantidad, precioActual, index }) {
     >
       <div className="flex items-center gap-2.5 min-w-0">
         <div className="w-2 h-2 rounded-full bg-violet-500/40 shrink-0" />
-        <span className="text-sm text-slate-300 truncate">{proyectoTitulo}</span>
+        <span className="text-sm text-slate-300 truncate">{proyectoNombre} - {subtokenSimbolo ? `$ ${subtokenSimbolo}` : subtokenNombre}</span>
       </div>
       <div className="text-right shrink-0 ml-4">
         <p className="text-sm font-medium text-white">{Number(cantidad).toLocaleString('es-AR')}</p>

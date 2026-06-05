@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { SquarePen, Clock, Coins, TrendingUp, Star } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { StatusBadge } from '@/components/shared/status-badge'
@@ -7,15 +7,25 @@ import { cn, formatCurrency, formatDate } from '@/lib/utils'
 import { differenceInDays } from 'date-fns'
 
 export function ProjectCard({ project, isCreator, showActions = true }) {
+  const navigate = useNavigate()
   const hasTokens = project.cupoMaximoTokens && project.valorNominalToken
   const hasProgress = project.montoRecaudado != null
   const isFailed = project.estado === 'RECHAZADO' || project.estado === 'CANCELADO'
   const daysLeft = project.plazo ? differenceInDays(new Date(project.plazo), new Date()) : null
 
+  const handleCardClick = (e) => {
+    // Don't navigate if user clicked an interactive element inside the card
+    if (e.target.closest('a, button')) return
+    navigate(`/proyectos/${project.id}`)
+  }
+
   return (
-    <Link
-      to={project._public ? `/proyectos/${project.id}` : `/proyectos/${project.id}`}
-      className="group relative rounded-xl border border-white/5 bg-card hover:border-violet-500/20 transition-all duration-300 ease-out hover:shadow-lg hover:shadow-violet-500/5 flex flex-col h-full overflow-hidden"
+    <div
+      onClick={handleCardClick}
+      role="link"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === 'Enter') navigate(`/proyectos/${project.id}`) }}
+      className="group relative rounded-xl border border-white/5 bg-card hover:border-violet-500/20 transition-all duration-300 ease-out hover:shadow-lg hover:shadow-violet-500/5 flex flex-col h-full overflow-hidden cursor-pointer"
     >
       <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-violet-500/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
@@ -59,18 +69,38 @@ export function ProjectCard({ project, isCreator, showActions = true }) {
             </div>
           )}
 
-          {daysLeft !== null && !isFailed && (
+          {daysLeft !== null && (
             <div className="ml-auto">
-              <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-0.5">
-                {daysLeft >= 0 ? 'Restan' : 'Vencido'}
-              </p>
-              <div className={cn(
-                'flex items-center gap-1 text-xs',
-                daysLeft < 0 ? 'text-red-400' : daysLeft <= 7 ? 'text-amber-400' : 'text-slate-400'
-              )}>
-                <Clock className="w-3 h-3" />
-                {daysLeft >= 0 ? `${daysLeft} días` : `hace ${Math.abs(daysLeft)} días`}
-              </div>
+              {project.estado === 'FINALIZADO' || project.estado === 'EJECUCION' ? (
+                <>
+                  <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-0.5">
+                    {project.estado === 'FINALIZADO' ? 'Estado' : 'Plazo'}
+                  </p>
+                  <div className="flex items-center gap-1 text-xs text-emerald-400">
+                    <Clock className="w-3 h-3" />
+                    <span>{project.estado === 'FINALIZADO' ? 'Completado' : 'Completado'}</span>
+                  </div>
+                </>
+              ) : isFailed || daysLeft < 0 ? (
+                <>
+                  <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-0.5">Estado</p>
+                  <div className="flex items-center gap-1 text-xs text-red-400">
+                    <Clock className="w-3 h-3" />
+                    <span>Vencido</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-0.5">Restan</p>
+                  <div className={cn(
+                    'flex items-center gap-1 text-xs',
+                    daysLeft <= 7 ? 'text-amber-400' : 'text-slate-400'
+                  )}>
+                    <Clock className="w-3 h-3" />
+                    <span>{daysLeft} días</span>
+                  </div>
+                </>
+              )}
             </div>
           )}
         </div>
@@ -107,16 +137,15 @@ export function ProjectCard({ project, isCreator, showActions = true }) {
             Ver detalle
           </span>
           {isCreator && (
-            <div onClick={(e) => e.stopPropagation()}>
-              <Link to={`/proyectos/${project.id}/editar`}>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-white hover:bg-white/5">
-                  <SquarePen className="w-3.5 h-3.5" />
-                </Button>
-              </Link>
-            </div>
+            <Link to={`/proyectos/${project.id}/editar`} onClick={(e) => e.stopPropagation()}>
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-white hover:bg-white/5">
+                <SquarePen className="w-3.5 h-3.5" />
+              </Button>
+            </Link>
           )}
         </div>
       )}
-    </Link>
+    </div>
   )
 }
+

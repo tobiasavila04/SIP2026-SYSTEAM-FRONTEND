@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClient, QueryClientProvider, MutationCache } from '@tanstack/react-query'
 import { Toaster, toast } from 'sonner'
 import { WagmiProvider } from 'wagmi'
 import { RainbowKitProvider } from '@rainbow-me/rainbowkit'
@@ -7,17 +7,18 @@ import { wagmiConfig } from '@/lib/web3'
 import { AuthProvider } from './auth-provider'
 
 const queryClient = new QueryClient({
+  mutationCache: new MutationCache({
+    onError: (error, variables, context, mutation) => {
+      if (mutation?.meta?.suppressErrorToast) return
+      const message = error?.message || 'Error inesperado'
+      toast.error(message)
+    },
+  }),
   defaultOptions: {
     queries: {
       staleTime: 30_000,
       retry: 1,
       refetchOnWindowFocus: false,
-    },
-    mutations: {
-      onError: (error) => {
-        const message = error?.message || 'Error inesperado'
-        toast.error(message)
-      },
     },
   },
 })

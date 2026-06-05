@@ -22,9 +22,18 @@ export function useDashboardStats() {
 export function useModulesStatus(enabled = false) {
   return useQuery({
     queryKey: ['modules', 'status'],
-    queryFn: () => apiRequest(API_ENDPOINTS.MODULES_STATUS),
+    queryFn: async () => {
+      try {
+        return await apiRequest(API_ENDPOINTS.MODULES_STATUS)
+      } catch (error) {
+        // Silently handle 404 — the route may not exist in the gateway
+        if (error?.status === 404) return []
+        throw error
+      }
+    },
     enabled: !!enabled,
     staleTime: 30_000,
-    retry: 1,
+    retry: false,
+    placeholderData: [],
   })
 }

@@ -114,9 +114,12 @@ export function Sidebar({ collapsed, onToggle }) {
           collapsed ? 'w-16' : 'w-60',
         )}
       >
-        <div className="h-14 flex items-center justify-between px-4 border-b border-sidebar-border shrink-0">
+        <div className="h-16 flex items-center justify-between px-4 border-b border-sidebar-border shrink-0">
           {!collapsed && (
-            <span className="text-lg font-bold text-white tracking-tight">IDEAFY</span>
+            <div className="flex items-center gap-3 min-w-0">
+              <img src="/logo.png" alt="IDEAFY" className="shrink-0 transition-all w-10 h-10" />
+              <span className="text-2xl font-bold text-white tracking-tight pt-0.5">IDEAFY</span>
+            </div>
           )}
           <button
             onClick={onToggle}

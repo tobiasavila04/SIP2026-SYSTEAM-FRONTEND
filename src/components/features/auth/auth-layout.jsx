@@ -18,9 +18,12 @@ export function AuthLayout({ error, children }) {
         transition={{ duration: 0.5 }}
         className="w-full max-w-sm relative"
       >
-        <div className="text-center mb-12">
-          <h1 className="text-6xl font-bold text-foreground tracking-tight leading-none">IDEAFY</h1>
-          <p className="text-sm text-slate-500 mt-3">Tokenización de activos digitales</p>
+        <div className="text-center mb-4">
+          <div className="flex flex-col items-center justify-center mb-4">
+            <img src="/logo.png" alt="IDEAFY" className="w-30 h-30" />
+            <h1 className="text-6xl font-bold text-foreground tracking-tight leading-none">IDEAFY</h1>
+          </div>
+          <p className="text-sm text-slate-500">Crowdfunding tokenizado para proyectos multirubro</p>
         </div>
 
         <div className="rounded-xl border border-white/5 bg-card p-6 space-y-6">

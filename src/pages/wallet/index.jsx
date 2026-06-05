@@ -97,6 +97,7 @@ export default function WalletPage() {
                 <thead>
                   <tr className="border-b border-white/5 text-left text-xs uppercase tracking-wider text-slate-500">
                     <th className="px-4 py-3 font-medium">Proyecto</th>
+                    <th className="px-4 py-3 font-medium">Subtoken</th>
                     <th className="px-4 py-3 font-medium">Cantidad</th>
                     <th className="px-4 py-3 font-medium">Precio actual</th>
                     <th className="px-4 py-3 font-medium">Valor total</th>
@@ -111,7 +112,10 @@ export default function WalletPage() {
                     return (
                       <tr key={item.subtokenId ?? i} className="hover:bg-white/[0.02] transition-colors">
                         <td className="px-4 py-3 text-white font-medium">
-                          {item.subtoken ?? '—'}
+                          {item.proyectoNombre ?? '—'}
+                        </td>
+                        <td className="px-4 py-3 text-white font-medium">
+                          {item.subtokenSimbolo ? `$ ${item.subtokenSimbolo}` : '—'}
                         </td>
                         <td className="px-4 py-3 text-slate-300">
                           {cantidad.toLocaleString()}
