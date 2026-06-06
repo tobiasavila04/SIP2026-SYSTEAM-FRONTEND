@@ -81,6 +81,8 @@ export const API_ENDPOINTS = {
 
   DIVIDENDOS_PROYECTO: (id) => buildProjectUrl(`/api/dividendos/proyecto/${id}`),
   DIVIDENDOS_MIS_RECLAMOS: buildProjectUrl('/api/dividendos/mis-reclamos'),
+  DIVIDENDOS_RECLAMAR: (id) => buildProjectUrl(`/api/dividendos/proyecto/${id}/reclamar`),
+  DIVIDENDOS_PENDIENTES: (id) => buildProjectUrl(`/api/dividendos/proyecto/${id}/pendientes`),
 
   ORACLE_REPORT: (id) => buildProjectUrl(`/api/oracle/report/${id}`),
   ORACLE_SUBMIT: (id) => buildProjectUrl(`/api/oracle/report/${id}`),

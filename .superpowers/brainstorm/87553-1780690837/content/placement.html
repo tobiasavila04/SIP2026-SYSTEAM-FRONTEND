@@ -1,0 +1,80 @@
+<h2>¿Dónde viven los paneles de ganancias?</h2>
+<p class="subtitle">Hay tres ubicaciones posibles — cada una tiene un impacto distinto en la navegación y la experiencia.</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Página dedicada <code>/ganancias</code></h3>
+      <p>Una sección propia en el sidebar con dos vistas según el rol: "Mis proyectos" para creators y "Mis inversiones" para investors. Un lugar claro y fácil de encontrar.</p>
+      <div class="mockup" style="margin-top:12px">
+        <div class="mockup-header">Vista previa — Sidebar</div>
+        <div class="mockup-body" style="display:flex;gap:0;padding:0">
+          <div class="mock-sidebar" style="width:140px;flex-shrink:0;padding:12px 8px;font-size:11px;line-height:2">
+            Dashboard<br>
+            Proyectos<br>
+            Inversiones<br>
+            Wallet<br>
+            <strong style="color:#a78bfa">★ Ganancias ← nuevo</strong><br>
+            Marketplace
+          </div>
+          <div class="mock-content" style="flex:1;padding:16px;font-size:12px">
+            <div style="font-weight:600;margin-bottom:8px">Panel de Ganancias</div>
+            <div style="display:flex;gap:8px;margin-bottom:12px">
+              <div class="placeholder" style="height:60px;flex:1;font-size:10px">Total ganado</div>
+              <div class="placeholder" style="height:60px;flex:1;font-size:10px">Pendiente</div>
+              <div class="placeholder" style="height:60px;flex:1;font-size:10px">Reclamado</div>
+            </div>
+            <div class="placeholder" style="height:80px;font-size:10px">Historial de dividendos</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Secciones embebidas en páginas existentes</h3>
+      <p>Para investors: un panel extra en la página de Wallet. Para creators: una sección en cada proyecto propio. Sin entrada nueva en el sidebar.</p>
+      <div class="mockup" style="margin-top:12px">
+        <div class="mockup-header">Vista previa — Wallet expandida</div>
+        <div class="mockup-body" style="padding:16px;font-size:12px">
+          <div style="font-weight:600;margin-bottom:8px">Wallet</div>
+          <div style="display:flex;gap:8px;margin-bottom:10px">
+            <div class="placeholder" style="height:50px;flex:1;font-size:10px">Balance IDEA</div>
+            <div class="placeholder" style="height:50px;flex:1;font-size:10px">Balance USDT</div>
+          </div>
+          <div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:10px;font-weight:600;margin-bottom:8px">Mis Ganancias ← nuevo</div>
+          <div style="display:flex;gap:8px">
+            <div class="placeholder" style="height:50px;flex:1;font-size:10px">Dividendos pendientes</div>
+            <div class="placeholder" style="height:50px;flex:1;font-size:10px">Historial de reclamos</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Sección en el Dashboard existente</h3>
+      <p>Agrandar el dashboard actual con widgets de ganancias según el rol. El dashboard ya muestra estadísticas generales — se le suma la info financiera personal.</p>
+      <div class="mockup" style="margin-top:12px">
+        <div class="mockup-header">Vista previa — Dashboard</div>
+        <div class="mockup-body" style="padding:16px;font-size:12px">
+          <div style="display:flex;gap:8px;margin-bottom:10px">
+            <div class="placeholder" style="height:50px;flex:1;font-size:10px">Proyectos activos</div>
+            <div class="placeholder" style="height:50px;flex:1;font-size:10px">Total inversores</div>
+            <div class="placeholder" style="height:50px;flex:1;font-size:10px">Monto recaudado</div>
+          </div>
+          <div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:10px;font-weight:600;margin-bottom:8px">Tus Ganancias ← nuevo</div>
+          <div style="display:flex;gap:8px">
+            <div class="placeholder" style="height:60px;flex:1;font-size:10px">Gráfico evolución</div>
+            <div class="placeholder" style="height:60px;flex:1;font-size:10px">Dividendos por proyecto</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

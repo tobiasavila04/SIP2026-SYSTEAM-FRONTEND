@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import { useAuthStore } from '@/stores/auth-store'
+import { usePermissions } from '@/stores/auth-store'
 import {
   LayoutDashboard,
   FolderKanban,
@@ -12,6 +13,7 @@ import {
   Wallet,
   Vote,
   Store,
+  BadgeDollarSign,
 } from 'lucide-react'
 import { useAccount, useReadContract, useBalance } from 'wagmi'
 import { formatUnits } from 'viem'
@@ -87,6 +89,8 @@ function WalletInfo({ collapsed }) {
 export function Sidebar({ collapsed, onToggle }) {
   const roles = useAuthStore((s) => s.roles)
   const isAdmin = roles.includes('ADMIN')
+  const { isCreator, isInvestor } = usePermissions()
+  const showGanancias = isCreator || isInvestor
 
   return (
     <>
@@ -135,9 +139,17 @@ export function Sidebar({ collapsed, onToggle }) {
 
         <nav aria-label="Secciones" className="flex-1 p-2 space-y-1 overflow-y-auto">
           <NavSection label={collapsed ? undefined : 'Principal'}>
-            {mainNav.map(({ to, label, icon: Icon }) => (
-              <NavItem key={to} to={to} icon={Icon} label={label} collapsed={collapsed} />
-            ))}
+            {mainNav.flatMap(({ to, label, icon: Icon }) => {
+              const items = [
+                <NavItem key={to} to={to} icon={Icon} label={label} collapsed={collapsed} />,
+              ]
+              if (to === '/inversiones' && showGanancias) {
+                items.push(
+                  <NavItem key="/ganancias" to="/ganancias" icon={BadgeDollarSign} label="Ganancias" collapsed={collapsed} />
+                )
+              }
+              return items
+            })}
           </NavSection>
 
           {isAdmin && (

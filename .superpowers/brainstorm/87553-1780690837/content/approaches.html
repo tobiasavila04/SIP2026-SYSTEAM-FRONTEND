@@ -1,0 +1,94 @@
+<h2>¿Cómo organizamos la página /ganancias?</h2>
+<p class="subtitle">Tres enfoques distintos — cada uno tiene implicaciones en UX y complejidad.</p>
+
+<div class="options">
+
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Tabs por rol <span style="font-size:11px;background:#7c3aed22;color:#a78bfa;padding:2px 8px;border-radius:99px;margin-left:6px">Recomendado</span></h3>
+      <p>Una pestaña "Mis Proyectos" (creator) y otra "Mis Inversiones" (investor). Tabs visibles según el rol. Si tenés ambos roles, ves ambas tabs.</p>
+      <div class="mockup" style="margin-top:12px">
+        <div class="mockup-header">Vista previa</div>
+        <div class="mockup-body" style="padding:16px;font-size:12px">
+          <div style="font-weight:700;font-size:14px;margin-bottom:12px">Mis Ganancias</div>
+          <div style="display:flex;gap:0;border-bottom:1px solid rgba(255,255,255,0.1);margin-bottom:14px">
+            <div style="padding:6px 16px;border-bottom:2px solid #7c3aed;color:#a78bfa;font-weight:600;font-size:11px">Mis Proyectos</div>
+            <div style="padding:6px 16px;color:#64748b;font-size:11px">Mis Inversiones</div>
+          </div>
+          <div style="display:flex;gap:8px;margin-bottom:10px">
+            <div class="placeholder" style="height:55px;flex:1;font-size:10px">Total distribuido<br><strong>$3,200</strong></div>
+            <div class="placeholder" style="height:55px;flex:1;font-size:10px">Repartos<br><strong>4</strong></div>
+            <div class="placeholder" style="height:55px;flex:1;font-size:10px">Proyectos activos<br><strong>2</strong></div>
+          </div>
+          <div class="placeholder" style="height:70px;font-size:10px">Tabla de repartos por proyecto...</div>
+        </div>
+      </div>
+      <div class="pros-cons" style="margin-top:10px">
+        <div class="pros"><h4>Pros</h4><ul><li>Separación clara por rol</li><li>Cada sección ocupa todo el ancho</li><li>Escala bien con mucho contenido</li></ul></div>
+        <div class="cons"><h4>Contras</h4><ul><li>Un click extra para cambiar de vista</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Secciones apiladas</h3>
+      <p>Todo en una página scrollable: primero la sección de creator, después la de investor. Ambas visibles al mismo tiempo si el usuario tiene ambos roles.</p>
+      <div class="mockup" style="margin-top:12px">
+        <div class="mockup-header">Vista previa</div>
+        <div class="mockup-body" style="padding:16px;font-size:12px">
+          <div style="font-weight:700;font-size:14px;margin-bottom:12px">Mis Ganancias</div>
+          <div style="font-size:10px;font-weight:600;color:#a78bfa;margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">Como Creador</div>
+          <div style="display:flex;gap:8px;margin-bottom:10px">
+            <div class="placeholder" style="height:45px;flex:1;font-size:10px">Total distribuido</div>
+            <div class="placeholder" style="height:45px;flex:1;font-size:10px">Repartos</div>
+          </div>
+          <div style="border-top:1px solid rgba(255,255,255,0.06);margin:12px 0;font-size:10px;font-weight:600;color:#34d399;padding-top:10px;text-transform:uppercase;letter-spacing:.05em">Como Inversor</div>
+          <div style="display:flex;gap:8px">
+            <div class="placeholder" style="height:45px;flex:1;font-size:10px">Total cobrado</div>
+            <div class="placeholder" style="height:45px;flex:1;font-size:10px">Pendiente de reclamar</div>
+          </div>
+        </div>
+      </div>
+      <div class="pros-cons" style="margin-top:10px">
+        <div class="pros"><h4>Pros</h4><ul><li>Todo visible de un vistazo</li><li>Sin clicks de navegación</li></ul></div>
+        <div class="cons"><h4>Contras</h4><ul><li>Página larga si hay mucha data</li><li>Mezcla contextos distintos</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Lista + Panel de detalle</h3>
+      <p>Columna izquierda con los proyectos/inversiones. Click en uno → panel derecho muestra el detalle completo, repartos e historial.</p>
+      <div class="mockup" style="margin-top:12px">
+        <div class="mockup-header">Vista previa</div>
+        <div class="mockup-body" style="display:flex;gap:0;padding:0">
+          <div style="width:140px;flex-shrink:0;border-right:1px solid rgba(255,255,255,0.06);padding:12px 8px;font-size:11px">
+            <div style="font-size:9px;font-weight:600;color:#64748b;text-transform:uppercase;margin-bottom:8px">Proyectos</div>
+            <div style="background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.3);border-radius:6px;padding:6px 8px;margin-bottom:4px;font-size:10px">Proyecto Alpha ✓</div>
+            <div style="padding:6px 8px;margin-bottom:4px;font-size:10px;color:#64748b">Proyecto Beta</div>
+            <div style="font-size:9px;font-weight:600;color:#64748b;text-transform:uppercase;margin:10px 0 8px">Inversiones</div>
+            <div style="padding:6px 8px;font-size:10px;color:#64748b">StartupXYZ</div>
+          </div>
+          <div style="flex:1;padding:12px;font-size:12px">
+            <div style="font-weight:600;margin-bottom:8px">Proyecto Alpha</div>
+            <div style="display:flex;gap:6px;margin-bottom:8px">
+              <div class="placeholder" style="height:40px;flex:1;font-size:9px">Dist. total</div>
+              <div class="placeholder" style="height:40px;flex:1;font-size:9px">Por token</div>
+            </div>
+            <div class="placeholder" style="height:55px;font-size:10px">Historial repartos...</div>
+          </div>
+        </div>
+      </div>
+      <div class="pros-cons" style="margin-top:10px">
+        <div class="pros"><h4>Pros</h4><ul><li>Ideal para muchos proyectos</li><li>Detalle sin salir de la página</li></ul></div>
+        <div class="cons"><h4>Contras</h4><ul><li>Más complejo de implementar</li><li>Incómodo en mobile</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+</div>
