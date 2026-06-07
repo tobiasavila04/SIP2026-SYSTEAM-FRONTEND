@@ -30,8 +30,8 @@ export default function LoginPage() {
   }
 
   const handleGoogleLogin = () => {
-    window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/oauth2/authorization/google`
-  }
+    window.location.href = '/oauth2/authorization/google';
+  };
 
   return (
     <AuthLayout error={error}>
