@@ -27,3 +27,16 @@ dist-ssr
 *.sw?
 # Local Pi runtime state
 .atl/
+.pi/
+.superpowers/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Legacy Deployments (Firebase/Vercel no longer used since GKE migration)
+.firebase/
+.firebaserc
+firebase.json
+vercel.json
