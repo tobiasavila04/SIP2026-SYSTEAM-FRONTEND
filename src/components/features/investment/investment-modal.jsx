@@ -1,9 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { useAccount, useReadContract, useWriteContract } from 'wagmi'
-import { waitForTransactionReceipt } from '@wagmi/core'
-import { parseUnits, formatUnits } from 'viem'
-import { wagmiConfig } from '@/lib/web3'
-import { ERC20_ABI, INVESTMENT_SWAP_ABI } from '@/lib/abis'
+import { useAccount } from 'wagmi'
 import { useTokenPrice, useTokenInfo, useValidateInvestment, useCreateInvestment } from '@/hooks/use-investment'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { Button } from '@/components/ui/button'
@@ -15,14 +11,13 @@ import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import {
   Loader2, CheckCircle2, AlertTriangle, TrendingUp,
-  Coins, Wallet, XCircle, RefreshCw, Ban, ArrowRight,
-  Zap, Gauge, Sparkles
+  Coins, XCircle, RefreshCw, Ban, ArrowRight,
+  Zap, Sparkles
 } from 'lucide-react'
 
 const QUICK_SUBTOKENS = [1, 5, 10, 50]
 
-const VITE_IDEA_TOKEN_ADDRESS = import.meta.env.VITE_IDEA_TOKEN_ADDRESS
-const VITE_INVESTMENT_SWAP_ADDRESS = import.meta.env.VITE_INVESTMENT_SWAP_ADDRESS
+const generateTxHash = () => '0xoffline-' + Date.now() + '-' + Math.random().toString(36).slice(2)
 
 function StateLoading({ message, sub }) {
   return (
@@ -145,40 +140,12 @@ export function InvestmentModal({ open, onOpenChange, projectId, projectTitle, s
   const inputRef = useRef(null)
 
   const { address, isConnected } = useAccount()
-  const { writeContractAsync } = useWriteContract()
 
   const { data: tokenPrice, isLoading: loadingPrice } = useTokenPrice(projectId)
   const { data: tokenInfo } = useTokenInfo(projectId)
   const symbol = simbolo || tokenInfo?.simbolo || 'subtoken'
   const validateMutation = useValidateInvestment()
   const createInvestment = useCreateInvestment()
-
-  const { data: allowance, refetch: refetchAllowance } = useReadContract({
-    address: VITE_IDEA_TOKEN_ADDRESS,
-    abi: ERC20_ABI,
-    functionName: 'allowance',
-    args: address ? [address, VITE_INVESTMENT_SWAP_ADDRESS] : undefined,
-    query: { enabled: isConnected && !!address },
-  })
-
-  const { data: userBalance } = useReadContract({
-    address: VITE_IDEA_TOKEN_ADDRESS,
-    abi: ERC20_ABI,
-    functionName: 'balanceOf',
-    args: address ? [address] : undefined,
-    query: { enabled: isConnected && !!address },
-  })
-
-  const { data: decimals } = useReadContract({
-    address: VITE_IDEA_TOKEN_ADDRESS,
-    abi: ERC20_ABI,
-    functionName: 'decimals',
-    query: { enabled: isConnected },
-  })
-
-  const formattedBalance = userBalance && decimals
-    ? Number(formatUnits(userBalance, decimals))
-    : null
 
   const precioActual = tokenPrice?.precioActual
     ? Number(tokenPrice.precioActual)
@@ -195,9 +162,6 @@ export function InvestmentModal({ open, onOpenChange, projectId, projectTitle, s
   const numSubtokenCount = Number(subtokenCount) || 0
   const effectiveAmount = precioActual ? (numSubtokenCount * precioActual).toFixed(2) : ''
   const numEffectiveAmount = Number(effectiveAmount) || 0
-  const investAmountWei = effectiveAmount && decimals ? parseUnits(effectiveAmount, decimals) : 0n
-  const needsApproval = allowance !== undefined && investAmountWei > 0n && allowance < investAmountWei
-  const hasInsufficientBalance = formattedBalance !== null && numEffectiveAmount > 0 && formattedBalance < numEffectiveAmount
 
   const validation = validateMutation.data
   const isValid = validation?.valido
@@ -233,40 +197,15 @@ export function InvestmentModal({ open, onOpenChange, projectId, projectTitle, s
       toast.error('Conectá tu wallet primero')
       return
     }
-    if (hasInsufficientBalance) {
-      setErrorInfo({ message: 'No tenés suficiente saldo de $IDEA', balance: formattedBalance, required: numEffectiveAmount })
-      setStep('error')
-      return
-    }
 
     try {
-      if (needsApproval) {
-        setStep('approving')
-        const approveHash = await writeContractAsync({
-          address: VITE_IDEA_TOKEN_ADDRESS,
-          abi: ERC20_ABI,
-          functionName: 'approve',
-          args: [VITE_INVESTMENT_SWAP_ADDRESS, investAmountWei],
-        })
-        await waitForTransactionReceipt(wagmiConfig, { hash: approveHash })
-        refetchAllowance()
-      }
-
-      setStep('investing')
-      const hash = await writeContractAsync({
-        address: VITE_INVESTMENT_SWAP_ADDRESS,
-        abi: INVESTMENT_SWAP_ABI,
-        functionName: 'invest',
-        args: [BigInt(projectId), investAmountWei],
-      })
-      setInvestHash(hash)
-      await waitForTransactionReceipt(wagmiConfig, { hash })
-
       setStep('backend')
+      const txHash = generateTxHash()
+      setInvestHash(txHash)
       await createInvestment.mutateAsync({
         proyectoId: projectId,
         montoIdea: numEffectiveAmount,
-        txHash: hash,
+        txHash: txHash,
       })
 
       setStep('done')
@@ -275,32 +214,26 @@ export function InvestmentModal({ open, onOpenChange, projectId, projectTitle, s
     } catch (e) {
       const msg = e?.message || ''
       if (msg.includes('User rejected') || msg.includes('user rejected')) {
-        setErrorInfo({ message: 'Transacción cancelada', balance: formattedBalance, required: numEffectiveAmount })
-      } else if (msg.includes('insufficient funds')) {
-        setErrorInfo({ message: 'No tenés suficiente ETH en tu wallet para pagar el gas', balance: formattedBalance, required: numEffectiveAmount })
-      } else if (msg.includes('insufficient allowance')) {
-        setErrorInfo({ message: 'Necesitás aprobar los tokens primero', balance: formattedBalance, required: numEffectiveAmount })
-      } else if (msg.includes('execution reverted')) {
-        setErrorInfo({ message: 'La transacción fue rechazada por el contrato. Probá con un monto menor.', balance: formattedBalance, required: numEffectiveAmount })
+        setErrorInfo({ message: 'Transacción cancelada' })
       } else {
-        setErrorInfo({ message: msg || 'Error al procesar la inversión', balance: formattedBalance, required: numEffectiveAmount })
+        setErrorInfo({ message: msg || 'Error al procesar la inversión' })
       }
       setStep('error')
     }
   }
 
-  const canInvest = isConnected && numEffectiveAmount > 0 && step === 'form' && !hasInsufficientBalance
+  const canInvest = isConnected && numEffectiveAmount > 0 && step === 'form'
   const investDisabled = !canInvest || (isValid === false) || validateMutation.isPending
 
   const handleClose = () => {
-    if (step !== 'approving' && step !== 'investing' && step !== 'backend') {
+    if (step !== 'backend') {
       reset()
       onOpenChange(false)
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { if (!v && step !== 'approving' && step !== 'investing' && step !== 'backend') handleClose(); else onOpenChange(v) }}>
+    <Dialog open={open} onOpenChange={(v) => { if (!v && step !== 'backend') handleClose(); else onOpenChange(v) }}>
       <DialogContent className="sm:max-w-md p-0 gap-0 bg-gradient-to-b from-[#0B0E1A] to-[#070912] border border-white/[0.06] shadow-2xl shadow-black/50">
         <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-violet-500/40 to-transparent" />
 
@@ -340,36 +273,13 @@ export function InvestmentModal({ open, onOpenChange, projectId, projectTitle, s
               onRetry={() => { setStep('form'); setErrorInfo(null) }}
               onClose={() => { reset(); onOpenChange(false) }}
             />
-          ) : step !== 'form' ? (
+          ) : step === 'backend' ? (
             <StateLoading
-              message={
-                step === 'approving' ? 'Paso 1/2: Aprobando gasto de tokens...' :
-                step === 'investing' ? 'Paso 2/2: Ejecutando inversión...' :
-                'Confirmando inversión en el servidor...'
-              }
-              sub={step === 'approving' ? 'Firmá la transacción en MetaMask para autorizar el gasto.' :
-                    step === 'investing' ? 'Firmá la transacción de inversión en MetaMask.' :
-                    'Guardando los datos de la transacción en la plataforma.'}
+              message="Procesando inversión..."
+              sub="Guardando los datos de la transacción en la plataforma."
             />
           ) : (
             <div className="space-y-4">
-              {/* Wallet balance */}
-              {isConnected && (
-                <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-gradient-to-r from-white/[0.03] to-transparent border border-white/[0.06]">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-7 h-7 rounded-lg bg-violet-500/10 flex items-center justify-center">
-                      <Wallet className="w-3.5 h-3.5 text-violet-400" />
-                    </div>
-                    <span className="text-xs text-slate-400">Tu balance</span>
-                  </div>
-                  <span className="text-sm font-semibold text-white">
-                    {formattedBalance != null
-                      ? formattedBalance.toLocaleString(undefined, { maximumFractionDigits: 2 })
-                      : '—'}
-                    <span className="text-xs text-slate-500 ml-1">$IDEA</span>
-                  </span>
-                </div>
-              )}
 
               {/* Price card */}
               {loadingPrice ? (
@@ -544,38 +454,14 @@ export function InvestmentModal({ open, onOpenChange, projectId, projectTitle, s
                       ? 'Validando...'
                       : isValid === false
                         ? 'Inversión no válida'
-                        : hasInsufficientBalance
-                          ? 'Saldo insuficiente'
-                          : numEffectiveAmount > 0
-                            ? `Invertir ${Number(effectiveAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} $IDEA`
-                            : `Ingresá cantidad de ${symbol}`}
+                        : numEffectiveAmount > 0
+                          ? `Invertir ${Number(effectiveAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} $IDEA`
+                          : `Ingresá cantidad de ${symbol}`}
                   </div>
                 </Button>
               )}
 
-              {/* Insufficient balance warning */}
-              {isConnected && hasInsufficientBalance && (
-                <div className="flex items-start gap-2.5 p-3 rounded-xl bg-red-500/5 border border-red-500/10">
-                  <XCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-xs font-medium text-red-300">Saldo insuficiente de $IDEA</p>
-                    <p className="text-[11px] text-red-400/60 mt-0.5">
-                      Tenés <span className="font-medium">{formattedBalance?.toLocaleString(undefined, { maximumFractionDigits: 2 })} $IDEA</span>
-                      {' '}y necesitás <span className="font-medium">{Number(effectiveAmount).toLocaleString(undefined, { maximumFractionDigits: 2 })} $IDEA</span>.
-                    </p>
-                  </div>
-                </div>
-              )}
 
-              {/* Needs approval hint */}
-              {isConnected && needsApproval && numEffectiveAmount > 0 && (
-                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-violet-500/5 border border-violet-500/10">
-                  <AlertTriangle className="w-3.5 h-3.5 text-violet-400 shrink-0" />
-                  <p className="text-[11px] text-violet-300/60">
-                    Se requiere aprobar el gasto de tokens (paso 1/2) antes de la inversión.
-                  </p>
-                </div>
-              )}
             </div>
           )}
         </div>

@@ -52,19 +52,25 @@ export default function ModulesPage() {
         {modulos.map((modulo) => {
           const hechasMod = modulo.etapas.filter(e => e.estado === 'hecho').length
           const totalMod = modulo.etapas.length
-          const isOpen = expanded[modulo.nombre]
+          const isComplete = totalMod > 0 && hechasMod === totalMod
+          const isStarted = hechasMod > 0 && !isComplete
+
+          const cardBg = isComplete ? 'bg-emerald-900/20 border-emerald-500/30' : isStarted ? 'bg-violet-900/10 border-violet-500/30' : 'bg-slate-800/30 border-slate-700/30'
+          const hoverBg = isComplete ? 'hover:bg-emerald-900/30' : isStarted ? 'hover:bg-violet-900/20' : 'hover:bg-slate-700/20'
+          const pillBg = isComplete ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : isStarted ? 'bg-violet-500/10 text-violet-300 border-violet-500/20' : 'bg-slate-700/30 text-slate-400 border-slate-600/30'
+          const iconColor = isComplete ? 'text-emerald-400' : isStarted ? 'text-violet-400' : 'text-slate-400'
 
           return (
             <div
               key={modulo.nombre}
-              className="bg-slate-800/30 border border-slate-700/30 rounded-xl overflow-hidden"
+              className={`rounded-xl overflow-hidden border transition-colors ${cardBg}`}
             >
               <button
                 onClick={() => setExpanded(prev => ({ ...prev, [modulo.nombre]: !isOpen }))}
-                className="w-full flex items-center gap-3 p-4 hover:bg-slate-700/20 transition-colors text-left"
+                className={`w-full flex items-center gap-3 p-4 transition-colors text-left ${hoverBg}`}
               >
-                {isOpen ? <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" /> : <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />}
-                <Grip className="w-4 h-4 text-slate-500 shrink-0" />
+                {isOpen ? <ChevronDown className={`w-4 h-4 shrink-0 ${iconColor}`} /> : <ChevronRight className={`w-4 h-4 shrink-0 ${iconColor}`} />}
+                <Grip className={`w-4 h-4 shrink-0 ${iconColor}`} />
                 <div className="flex-1 min-w-0">
                   <h3 className="text-sm font-medium text-white truncate">{modulo.nombre}</h3>
                   <div className="flex items-center gap-2 mt-1">
@@ -74,16 +80,16 @@ export default function ModulesPage() {
                         style={{ width: `${totalMod > 0 ? (hechasMod / totalMod) * 100 : 0}%` }}
                       />
                     </div>
-                    <span className="text-xs text-slate-500">{hechasMod}/{totalMod}</span>
+                    <span className="text-xs font-medium text-slate-300">{hechasMod}/{totalMod}</span>
                   </div>
                 </div>
-                <span className={`text-xs px-2 py-0.5 rounded-full border ${hechasMod === totalMod ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-slate-700/30 text-slate-400 border-slate-600/30'}`}>
-                  {hechasMod === totalMod ? 'Completo' : `${pctMod(hechasMod, totalMod)}%`}
+                <span className={`text-xs px-2 py-0.5 rounded-full border ${pillBg}`}>
+                  {isComplete ? 'Completo' : `${pctMod(hechasMod, totalMod)}%`}
                 </span>
               </button>
 
               {isOpen && (
-                <div className="border-t border-slate-700/30 divide-y divide-slate-700/20">
+                <div className={`border-t divide-y ${isComplete ? 'border-emerald-500/20 divide-emerald-500/10' : isStarted ? 'border-violet-500/20 divide-violet-500/10' : 'border-slate-700/30 divide-slate-700/20'}`}>
                   {modulo.etapas.map((etapa) => {
                     const st = estadoIcon[etapa.estado] || estadoIcon.pendiente
                     return (
@@ -95,11 +101,11 @@ export default function ModulesPage() {
                             {etapa.estado}
                           </span>
                         </div>
-                        <p className="text-xs text-slate-500 leading-relaxed">{etapa.descripcion}</p>
+                        <p className="text-sm text-slate-300 leading-relaxed">{etapa.descripcion}</p>
                         {etapa.entregables?.length > 0 && (
                           <div className="flex flex-wrap gap-1.5 pt-1">
                             {etapa.entregables.map((e) => (
-                              <span key={e} className="text-[10px] px-1.5 py-0.5 rounded bg-slate-700/30 text-slate-400 font-mono">
+                              <span key={e} className="text-[11px] px-2 py-0.5 rounded bg-violet-500/20 border border-violet-500/30 text-violet-200 font-mono font-medium shadow-sm">
                                 {e}
                               </span>
                             ))}

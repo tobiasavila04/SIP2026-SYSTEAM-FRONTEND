@@ -14,6 +14,7 @@ export default defineConfig({
     },
   },
   server: {
+    allowedHosts: true,
     host: 'localhost',
     port: 5173,
     strictPort: false,
