@@ -6,9 +6,7 @@ COPY package*.json ./
 RUN npm install
 
 COPY . .
-# Limpiamos las variables para que utilice rutas relativas y el Ingress se encargue
-ENV VITE_API_URL=""
-ENV VITE_PROJECT_API_URL=""
+# Las variables se leen del .env.production configurado en git
 
 RUN npm run build
 
