@@ -1,7 +1,12 @@
 import { ExternalLink } from 'lucide-react'
 
-export function TxHashLink({ hash, short = true, chain = 'sepolia' }) {
-  const url = `https://${chain}.etherscan.io/tx/${hash}`
+export function TxHashLink({ hash, short = true, chain = 'base-sepolia' }) {
+  const cleanHash = hash?.trim() || ''
+  const formattedHash = cleanHash.startsWith('0x') ? cleanHash : `0x${cleanHash}`
+  
+  const url = chain === 'base-sepolia' 
+    ? `https://sepolia.basescan.org/tx/${formattedHash}`
+    : `https://basescan.org/tx/${formattedHash}`
 
   return (
     <a

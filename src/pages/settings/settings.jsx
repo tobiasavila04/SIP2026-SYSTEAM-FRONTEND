@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { PasswordInput } from '@/components/ui/password-input'
 import { Switch } from '@/components/ui/switch'
-import { cn, formatDate } from '@/lib/utils'
+import { cn, formatDate, formatDateUTC } from '@/lib/utils'
 import {
   User, Mail, Calendar, Shield, Bell, Key, AlertTriangle, Pencil, Loader2,
   Wallet, TrendingUp, AlertCircle, Layers,
@@ -172,6 +172,7 @@ export default function SettingsPage() {
   const [editing, setEditing] = useState(false)
   const [editName, setEditName] = useState('')
   const [editEmail, setEditEmail] = useState('')
+  const [editFechaNacimiento, setEditFechaNacimiento] = useState('')
   const [notifications, setNotifications] = useState({
     email: true,
     push: false,
@@ -186,6 +187,13 @@ export default function SettingsPage() {
     e.preventDefault()
     setSuccess('')
     setError('')
+
+    const passwordRegex = /^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!]).{8,}$/
+    if (!passwordRegex.test(newPassword)) {
+      setError('La contraseña debe contener al menos un número, una mayúscula, una minúscula y un carácter especial (@#$%^&+=!)')
+      return
+    }
+
     setPasswordLoading(true)
     try {
       await apiRequest(API_ENDPOINTS.AUTH_CHANGE_PASSWORD, {
@@ -205,15 +213,32 @@ export default function SettingsPage() {
   const handleStartEdit = () => {
     setEditName(user?.name || '')
     setEditEmail(user?.email || '')
+    setEditFechaNacimiento(user?.fechaNacimiento || '')
     setEditing(true)
+    setError('')
   }
 
   const handleSave = async () => {
+    if (editFechaNacimiento) {
+      const birthDate = new Date(editFechaNacimiento)
+      const today = new Date()
+      let age = today.getFullYear() - birthDate.getFullYear()
+      const m = today.getMonth() - birthDate.getMonth()
+      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--
+      }
+      if (age < 18) {
+        setError('Debes ser mayor de 18 años')
+        return
+      }
+    }
+    setError('')
     try {
-      const updated = await updateUser.mutateAsync({ id: user.id, name: editName, email: editEmail })
+      const updated = await updateUser.mutateAsync({ id: user.id, name: editName, email: editEmail, fechaNacimiento: editFechaNacimiento })
       setUser(updated)
       setEditing(false)
-    } catch {
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al guardar')
     }
   }
 
@@ -278,15 +303,24 @@ export default function SettingsPage() {
                   )}
                 </div>
 
+                {error && editing && (
+                  <div className="text-sm text-red-400 bg-red-500/10 rounded-lg px-3 py-2 mb-4">
+                    {error}
+                  </div>
+                )}
                 {editing ? (
                   <div className="space-y-4">
                     <div>
-                      <FormLabel>Nombre</FormLabel>
+                      <Label>Nombre</Label>
                       <Input value={editName} onChange={(e) => setEditName(e.target.value)} className="mt-1.5" />
                     </div>
                     <div>
-                      <FormLabel>Email</FormLabel>
+                      <Label>Email</Label>
                       <Input value={editEmail} onChange={(e) => setEditEmail(e.target.value)} className="mt-1.5" />
+                    </div>
+                    <div>
+                      <Label>Fecha de Nacimiento</Label>
+                      <Input type="date" value={editFechaNacimiento} onChange={(e) => setEditFechaNacimiento(e.target.value)} className="mt-1.5" />
                     </div>
                     <div className="flex gap-3 pt-2">
                       <Button onClick={handleSave} className="bg-indigo-500 hover:bg-indigo-400 text-white gap-2" disabled={updateUser.isPending}>
@@ -316,6 +350,15 @@ export default function SettingsPage() {
                       <div>
                         <p className="text-xs text-slate-500">Email</p>
                         <p className="text-sm text-white">{user.email}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-white/5 flex items-center justify-center">
+                        <Calendar className="w-4 h-4 text-slate-400" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-500">Fecha de Nacimiento</p>
+                        <p className="text-sm text-white">{user.fechaNacimiento ? formatDateUTC(user.fechaNacimiento) : 'No especificada'}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
@@ -403,10 +446,13 @@ export default function SettingsPage() {
                       id="newPassword"
                       required
                       minLength={8}
-                      placeholder="Mínimo 8 caracteres"
+                      placeholder="Ingresar contraseña"
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                     />
+                    <p className="text-[10px] text-slate-500 mt-1">
+                      * Mínimo 8 caracteres, 1 mayúscula, 1 número y 1 carácter especial (@#$%^&+=!)
+                    </p>
                   </div>
                   <Button type="submit" className="bg-indigo-500 hover:bg-indigo-400 text-white" disabled={passwordLoading}>
                     {passwordLoading ? 'Actualizando...' : 'Actualizar contraseña'}

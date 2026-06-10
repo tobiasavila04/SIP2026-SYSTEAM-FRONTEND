@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils'
 const STATUS_OPTIONS = [
   { value: '', label: 'Todos' },
   { value: 'PREPARACION', label: 'Preparación' },
+  { value: 'EN_AUDITORIA', label: 'En Auditoría' },
   { value: 'FINANCIAMIENTO', label: 'Financiamiento' },
   { value: 'EJECUCION', label: 'Ejecución' },
   { value: 'FINALIZADO', label: 'Finalizado' },

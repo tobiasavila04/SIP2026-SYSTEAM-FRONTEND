@@ -121,60 +121,60 @@ function StatusActions({ project, isCreator, isAdmin, canInvest, onInvest, onRef
   return (
     <div className="flex items-center gap-2 flex-wrap">
       {canInvest && (
-        <Button onClick={onInvest} className="bg-violet-600 hover:bg-violet-500 text-white gap-2 h-9 px-5 text-sm rounded-lg shadow-lg shadow-violet-600/20">
+        <Button onClick={onInvest} className="bg-violet-600 hover:bg-violet-500 text-white gap-2 h-9 px-4 text-sm rounded-lg shadow-lg shadow-violet-600/20">
           <TrendingUp className="w-4 h-4" />
           Invertir
         </Button>
       )}
       {failed && (
-        <Button onClick={onRefund} variant="outline" size="sm" className="gap-2 border-amber-500/20 text-amber-400 hover:bg-amber-500/10">
-          <RefreshCw className="w-3.5 h-3.5" />
+        <Button onClick={onRefund} variant="outline" className="gap-2 border-amber-500/20 text-amber-400 hover:bg-amber-500/10 h-9 px-4 text-sm rounded-lg">
+          <RefreshCw className="w-4 h-4" />
           Solicitar Reembolso
         </Button>
       )}
 
       {isCreator && !project.esDestacado && project.estado !== 'FINALIZADO' && project.estado !== 'RECHAZADO' && project.estado !== 'CANCELADO' && (
-        <Button onClick={onBoost} variant="outline" size="sm" className="gap-2 border-amber-500/20 text-amber-400 hover:bg-amber-500/10">
-          <Star className="w-3.5 h-3.5" />
+        <Button onClick={onBoost} variant="outline" className="gap-2 border-amber-500/20 text-amber-400 hover:bg-amber-500/10 h-9 px-4 text-sm rounded-lg">
+          <Star className="w-4 h-4" />
           Destacar (100 $IDEA)
         </Button>
       )}
       {isCreator && project.esDestacado && (
-        <Button onClick={onDesboost} variant="outline" size="sm" className="gap-2 border-amber-500/20 text-amber-400 hover:bg-amber-500/10">
-          <Star className="w-3.5 h-3.5 fill-amber-400" />
+        <Button onClick={onDesboost} variant="outline" className="gap-2 border-amber-500/20 text-amber-400 hover:bg-amber-500/10 h-9 px-4 text-sm rounded-lg">
+          <Star className="w-4 h-4 fill-amber-400" />
           Quitar destacado
         </Button>
       )}
 
       {/* Creator state transitions */}
       {isCreator && project.estado === 'PREPARACION' && (
-        <Button onClick={() => onTransition('FINANCIAMIENTO')} disabled={transitioning} className="bg-emerald-600 hover:bg-emerald-500 text-white gap-2 h-9 px-5 text-sm rounded-lg shadow-lg shadow-emerald-600/20">
+        <Button onClick={() => onTransition('FINANCIAMIENTO')} disabled={transitioning} className="bg-emerald-600 hover:bg-emerald-500 text-white gap-2 h-9 px-4 text-sm rounded-lg shadow-lg shadow-emerald-600/20">
           {transitioning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Rocket className="w-4 h-4" />}
           {transitioning ? 'Publicando...' : 'Publicar'}
         </Button>
       )}
       {isCreator && project.estado === 'EJECUCION' && (
-        <Button onClick={onReportBilling} variant="outline" size="sm" className="gap-2 border-blue-500/20 text-blue-400 hover:bg-blue-500/10">
-          <FileText className="w-3.5 h-3.5" />
+        <Button onClick={onReportBilling} variant="outline" className="gap-2 border-blue-500/20 text-blue-400 hover:bg-blue-500/10 h-9 px-4 text-sm rounded-lg">
+          <FileText className="w-4 h-4" />
           Reportar facturación
         </Button>
       )}
       {isCreator && project.estado === 'EJECUCION' && (
-        <Button onClick={onClose} disabled={closing} className="bg-emerald-600 hover:bg-emerald-500 text-white gap-2 h-9 px-5 text-sm rounded-lg">
+        <Button onClick={onClose} disabled={closing} className="bg-emerald-600 hover:bg-emerald-500 text-white gap-2 h-9 px-4 text-sm rounded-lg">
           {closing ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
           {closing ? 'Cerrando...' : 'Cerrar proyecto'}
         </Button>
       )}
-      {isCreator && project.estado !== 'CANCELADO' && project.estado !== 'FINALIZADO' && (
-        <Button onClick={() => onTransition('CANCELADO')} disabled={transitioning} variant="outline" size="sm" className="gap-2 border-red-500/20 text-red-400 hover:bg-red-500/10">
-          {transitioning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Ban className="w-3.5 h-3.5" />}
+      {isCreator && ['PREPARACION', 'EN_AUDITORIA'].includes(project.estado) && (
+        <Button onClick={() => onTransition('CANCELADO')} disabled={transitioning} variant="outline" className="gap-2 border-red-500/20 text-red-400 hover:bg-red-500/10 h-9 px-4 text-sm rounded-lg">
+          {transitioning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Ban className="w-4 h-4" />}
           Cancelar
         </Button>
       )}
-      {isCreator && (
+      {isCreator && ['PREPARACION', 'EN_AUDITORIA', 'FINANCIAMIENTO'].includes(project.estado) && (
         <Link to={`/proyectos/${project.id}/editar`}>
-          <Button variant="outline" size="sm" className="gap-2 border-white/10">
-            <SquarePen className="w-3.5 h-3.5" />
+          <Button variant="outline" className="gap-2 border-white/10 h-9 px-4 text-sm rounded-lg">
+            <SquarePen className="w-4 h-4" />
             Editar
           </Button>
         </Link>
@@ -184,14 +184,20 @@ function StatusActions({ project, isCreator, isAdmin, canInvest, onInvest, onRef
       {isAdmin && (
         <>
           <div className="w-px h-6 bg-white/10 mx-1" />
-          <Button onClick={onEvaluateStates} variant="outline" size="sm" className="gap-2 border-white/10 text-slate-400">
-            <RefreshCw className="w-3.5 h-3.5" />
+          <Button onClick={onEvaluateStates} variant="outline" className="gap-2 border-white/10 text-slate-400 h-9 px-4 text-sm rounded-lg">
+            <RefreshCw className="w-4 h-4" />
             Evaluar vencimientos
           </Button>
           {failed && (
-            <Button onClick={onRefund} variant="outline" size="sm" className="gap-2 border-amber-500/20 text-amber-400 hover:bg-amber-500/10">
-              <RefreshCw className="w-3.5 h-3.5" />
+            <Button onClick={onRefund} variant="outline" className="gap-2 border-amber-500/20 text-amber-400 hover:bg-amber-500/10 h-9 px-4 text-sm rounded-lg">
+              <RefreshCw className="w-4 h-4" />
               Forzar reembolso
+            </Button>
+          )}
+          {project.estado === 'FINANCIAMIENTO' && (
+            <Button onClick={() => onTransition('CANCELADO')} disabled={transitioning} variant="outline" className="gap-2 border-red-500/20 text-red-400 hover:bg-red-500/10 h-9 px-4 text-sm rounded-lg">
+              {transitioning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Ban className="w-4 h-4" />}
+              Forzar Cancelación
             </Button>
           )}
         </>

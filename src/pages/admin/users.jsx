@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback } from 'react'
+import { useMemo, useState, useCallback, useEffect } from 'react'
 import {
   getCoreRowModel,
   getPaginationRowModel,
@@ -26,18 +26,39 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { formatDate } from '@/lib/utils'
+import { formatDate, formatDateUTC } from '@/lib/utils'
 import { Plus, Pencil, Power, Mail, Calendar } from 'lucide-react'
 
 function UserFormDialog({ open, onOpenChange, onSubmit, initialData, loading, mode }) {
   const [name, setName] = useState(initialData?.name || '')
   const [email, setEmail] = useState(initialData?.email || '')
+  const [fechaNacimiento, setFechaNacimiento] = useState(initialData?.fechaNacimiento || '')
+  const [error, setError] = useState('')
   const isEdit = mode === 'edit'
+
+  const handleSubmit = () => {
+    if (fechaNacimiento) {
+      const birthDate = new Date(fechaNacimiento)
+      const today = new Date()
+      let age = today.getFullYear() - birthDate.getFullYear()
+      const m = today.getMonth() - birthDate.getMonth()
+      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--
+      }
+      if (age < 18) {
+        setError('Debes ser mayor de 18 años')
+        return
+      }
+    }
+    setError('')
+    onSubmit({ name, email, fechaNacimiento })
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader><DialogTitle>{isEdit ? 'Editar usuario' : 'Crear usuario'}</DialogTitle></DialogHeader>
+        {error && <div className="text-sm text-red-400 bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
         <div className="space-y-4">
           <div>
             <Label>Nombre</Label>
@@ -47,7 +68,11 @@ function UserFormDialog({ open, onOpenChange, onSubmit, initialData, loading, mo
             <Label>Email</Label>
             <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="correo@ejemplo.com" type="email" />
           </div>
-          <Button onClick={() => onSubmit({ name, email })} className="w-full bg-indigo-500 hover:bg-indigo-400 text-white" disabled={!name || !email || loading}>
+          <div>
+            <Label>Fecha de Nacimiento</Label>
+            <Input type="date" value={fechaNacimiento} onChange={(e) => setFechaNacimiento(e.target.value)} />
+          </div>
+          <Button onClick={handleSubmit} className="w-full bg-indigo-500 hover:bg-indigo-400 text-white" disabled={!name || !email || !fechaNacimiento || loading}>
             {loading ? 'Guardando...' : isEdit ? 'Guardar cambios' : 'Crear usuario'}
           </Button>
         </div>
@@ -67,8 +92,8 @@ function MobileUserCard({ user, roles, onToggle, onEdit, assignRole, revokeRole,
             <span className="text-xs text-slate-400">{user.email}</span>
           </div>
         </div>
-        <StatusBadge variant={user.enabled ? 'success' : 'error'}>
-          {user.enabled ? 'Activo' : 'Inactivo'}
+        <StatusBadge variant={user.deletedAt ? 'error' : user.enabled ? 'success' : 'warning'}>
+          {user.deletedAt ? 'Eliminado' : user.enabled ? 'Activo' : 'Inactivo'}
         </StatusBadge>
       </div>
 
@@ -81,9 +106,17 @@ function MobileUserCard({ user, roles, onToggle, onEdit, assignRole, revokeRole,
       </div>
 
       {user.createdAt && (
-        <div className="flex items-center gap-1">
-          <Calendar className="w-3 h-3 text-slate-500" />
-          <span className="text-xs text-slate-500">{formatDate(user.createdAt)}</span>
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-1">
+            <Calendar className="w-3 h-3 text-slate-500" />
+            <span className="text-xs text-slate-500">Creado: {formatDate(user.createdAt)}</span>
+          </div>
+          {user.fechaNacimiento && (
+            <div className="flex items-center gap-1">
+              <Calendar className="w-3 h-3 text-slate-500" />
+              <span className="text-xs text-slate-500">Nac: {formatDateUTC(user.fechaNacimiento)}</span>
+            </div>
+          )}
         </div>
       )}
 
@@ -141,12 +174,21 @@ function MobileUserCard({ user, roles, onToggle, onEdit, assignRole, revokeRole,
 
 export default function AdminUsersPage() {
   const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [page, setPage] = useState(0)
   const [deleteId, setDeleteId] = useState(null)
   const [showCreate, setShowCreate] = useState(false)
   const [editingUser, setEditingUser] = useState(null)
 
-  const { data, isLoading, isError, refetch } = useUsers(page)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search)
+      setPage(0)
+    }, 400)
+    return () => clearTimeout(timer)
+  }, [search])
+
+  const { data, isLoading, isError, refetch } = useUsers(page, debouncedSearch)
   const { data: roles } = useRoles()
   const createUser = useCreateUser()
   const deleteUser = useDeleteUser()
@@ -155,14 +197,6 @@ export default function AdminUsersPage() {
   const revokeRole = useRevokeRole()
 
   const users = data?.content || []
-
-  const filteredUsers = useMemo(
-    () => users.filter(
-      (u) => u.name?.toLowerCase().includes(search.toLowerCase()) ||
-             u.email?.toLowerCase().includes(search.toLowerCase())
-    ),
-    [users, search]
-  )
 
   const columnHelper = createColumnHelper()
 
@@ -192,13 +226,25 @@ export default function AdminUsersPage() {
         header: 'Creado',
         cell: (info) => <span className="text-slate-500 text-xs">{formatDate(info.getValue())}</span>,
       }),
+      columnHelper.accessor('fechaNacimiento', {
+        header: 'Nacimiento',
+        cell: (info) => <span className="text-slate-500 text-xs">{info.getValue() ? formatDateUTC(info.getValue()) : '-'}</span>,
+      }),
       columnHelper.accessor('enabled', {
         header: 'Estado',
         cell: (info) => {
           const enabled = info.getValue()
+          const deletedAt = info.row.original.deletedAt
+          if (deletedAt) {
+            return (
+              <div className="w-20 text-center">
+                <StatusBadge variant="error">Eliminado</StatusBadge>
+              </div>
+            )
+          }
           return (
             <div className="w-20 text-center">
-              <StatusBadge variant={enabled ? 'success' : 'error'}>
+              <StatusBadge variant={enabled ? 'success' : 'warning'}>
                 {enabled ? 'Activo' : 'Inactivo'}
               </StatusBadge>
             </div>
@@ -271,7 +317,7 @@ export default function AdminUsersPage() {
   )
 
   const table = useReactTable({
-    data: filteredUsers,
+    data: users,
     columns,
     pageCount: data?.totalPages || 1,
     state: { pagination: { pageIndex: page, pageSize: 10 } },
@@ -291,14 +337,14 @@ export default function AdminUsersPage() {
     }
   }
 
-  const handleCreate = useCallback(async ({ name, email }) => {
-    await createUser.mutateAsync({ name, email })
+  const handleCreate = useCallback(async ({ name, email, fechaNacimiento }) => {
+    await createUser.mutateAsync({ name, email, fechaNacimiento })
     setShowCreate(false)
   }, [createUser])
 
-  const handleEdit = useCallback(async ({ name, email }) => {
+  const handleEdit = useCallback(async ({ name, email, fechaNacimiento }) => {
     if (!editingUser) return
-    await updateUser.mutateAsync({ id: editingUser.id, name, email })
+    await updateUser.mutateAsync({ id: editingUser.id, name, email, fechaNacimiento })
     setEditingUser(null)
   }, [editingUser, updateUser])
 
@@ -334,10 +380,10 @@ export default function AdminUsersPage() {
 
           {/* Mobile cards */}
           <div className="md:hidden space-y-3">
-            {filteredUsers.length === 0 ? (
+            {users.length === 0 ? (
               <div className="text-center py-12 text-sm text-slate-500">No hay datos disponibles</div>
             ) : (
-              filteredUsers.map((user) => (
+              users.map((user) => (
                 <MobileUserCard
                   key={user.id}
                   user={user}

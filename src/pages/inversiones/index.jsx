@@ -129,14 +129,10 @@ export default function InvestmentHistoryPage() {
               icon={TrendingUp}
               title="No tenés inversiones todavía"
               description="Invertí en un proyecto para verlo reflejado en tu historial."
-              action={
-                <Link to="/proyectos">
-                  <Button className="bg-violet-600 hover:bg-violet-500 text-white gap-2">
-                    <ArrowRight className="w-4 h-4" />
-                    Explorar proyectos
-                  </Button>
-                </Link>
-              }
+              action={{
+                label: 'Explorar proyectos',
+                to: '/proyectos'
+              }}
             />
           ) : (
             <table className="w-full text-sm">

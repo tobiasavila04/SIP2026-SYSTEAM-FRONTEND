@@ -138,6 +138,20 @@
   ::-webkit-scrollbar-thumb:hover {
     background: #475569;
   }
+  
+  /* Inputs tweaks */
+  ::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    opacity: 0.7;
+    cursor: pointer;
+  }
+  ::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+  }
+  ::-ms-reveal,
+  ::-ms-clear {
+    display: none;
+  }
 }
 
 @layer utilities {

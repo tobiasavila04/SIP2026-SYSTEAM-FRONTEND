@@ -49,7 +49,8 @@ function FieldGroup({ children }) {
   return <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{children}</div>
 }
 
-export function ProjectForm({ defaultValues, onSubmit, isEdit }) {
+export function ProjectForm({ defaultValues, onSubmit, isEdit, projectState }) {
+  const isDescriptionOnly = ['EN_AUDITORIA', 'FINANCIAMIENTO'].includes(projectState)
   const [submitting, setSubmitting] = useState(false)
   const [supply, setSupply] = useState(defaultValues?.cupoMaximoTokens ?? '')
   const [price, setPrice] = useState(defaultValues?.valorNominalToken ?? '')
@@ -100,7 +101,7 @@ export function ProjectForm({ defaultValues, onSubmit, isEdit }) {
                 <FormItem>
                   <FormLabel>Nombre del proyecto</FormLabel>
                   <FormControl>
-                    <Input placeholder="ej: Sistema de Riego Inteligente" maxLength={200} required {...field} />
+                    <Input disabled={isDescriptionOnly} placeholder="ej: Sistema de Riego Inteligente" maxLength={200} required {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -137,7 +138,7 @@ export function ProjectForm({ defaultValues, onSubmit, isEdit }) {
                   <FormItem>
                     <FormLabel>Meta de financiamiento (USD)</FormLabel>
                     <FormControl>
-                      <Input type="number" step="0.01" min="0.01" placeholder="ej: 50000" required {...field} />
+                      <Input disabled={isDescriptionOnly} type="number" step="0.01" min="0.01" placeholder="ej: 50000" required {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -150,7 +151,7 @@ export function ProjectForm({ defaultValues, onSubmit, isEdit }) {
                     <FormItem>
                     <FormLabel>Fecha límite</FormLabel>
                     <FormControl>
-                      <Input type="datetime-local" required {...field} />
+                      <Input disabled={isDescriptionOnly} type="datetime-local" required {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -170,6 +171,7 @@ export function ProjectForm({ defaultValues, onSubmit, isEdit }) {
                     <FormLabel>Cantidad de tokens</FormLabel>
                     <FormControl>
                       <Input
+                        disabled={isDescriptionOnly}
                         type="number"
                         min="1"
                         step="1"
@@ -191,6 +193,7 @@ export function ProjectForm({ defaultValues, onSubmit, isEdit }) {
                     <FormLabel>Precio por token (USD)</FormLabel>
                     <FormControl>
                       <Input
+                        disabled={isDescriptionOnly}
                         type="number"
                         step="0.01"
                         min="0.01"
@@ -215,6 +218,7 @@ export function ProjectForm({ defaultValues, onSubmit, isEdit }) {
                     <FormLabel>Símbolo del token</FormLabel>
                     <FormControl>
                       <Input
+                        disabled={isDescriptionOnly}
                         placeholder="ej: CERV"
                         maxLength={5}
                         className="uppercase"
@@ -256,7 +260,7 @@ export function ProjectForm({ defaultValues, onSubmit, isEdit }) {
                 render={({ field }) => (
                   <FormItem className="flex items-center gap-3 space-y-0">
                     <FormControl>
-                      <Switch checked={field.value} onCheckedChange={field.onChange} />
+                      <Switch disabled={isDescriptionOnly} checked={field.value} onCheckedChange={field.onChange} />
                     </FormControl>
                     <div>
                       <span className="text-sm text-gray-300 font-medium">Gobernanza de comunidad</span>

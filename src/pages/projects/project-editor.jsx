@@ -54,6 +54,7 @@ export default function ProjectEditorPage() {
           }}
         onSubmit={handleSubmit}
         isEdit
+        projectState={project.estado}
       />
     )
   }

@@ -20,6 +20,16 @@ export function formatDate(dateString) {
   }).format(new Date(dateString))
 }
 
+export function formatDateUTC(dateString) {
+  if (!dateString) return ''
+  return new Intl.DateTimeFormat('es-AR', {
+    timeZone: 'UTC',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  }).format(new Date(dateString))
+}
+
 export function formatDateTime(dateString) {
   return new Intl.DateTimeFormat('es-AR', {
     year: 'numeric',

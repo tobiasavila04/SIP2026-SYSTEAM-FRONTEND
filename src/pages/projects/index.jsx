@@ -24,6 +24,7 @@ import {
 const STATUS_OPTIONS = [
   { value: '', label: 'Todos' },
   { value: 'PREPARACION', label: 'Preparación' },
+  { value: 'EN_AUDITORIA', label: 'En Auditoría' },
   { value: 'FINANCIAMIENTO', label: 'Financiamiento' },
   { value: 'EJECUCION', label: 'Ejecución' },
   { value: 'FINALIZADO', label: 'Finalizado' },
@@ -162,19 +163,21 @@ export default function ProjectCatalogPage() {
         )}
       </div>
 
-      <section aria-label="Estadísticas de proyectos">
-        <div className={cn("grid grid-cols-1 gap-3", stats.length === 3 ? "sm:grid-cols-3" : "sm:grid-cols-2")}>
-          {stats.map((s) => (
-            <article key={s.label} className="rounded-lg border border-white/5 bg-card p-4">
-              <div className="flex items-center gap-2 mb-1.5">
-                <s.icon className="w-3.5 h-3.5 text-slate-500" />
-                <span className="text-[11px] text-slate-500 uppercase tracking-wider">{s.label}</span>
-              </div>
-              <p className="text-xl font-bold text-white">{s.value}</p>
-            </article>
-          ))}
-        </div>
-      </section>
+      {puedeCrear && (
+        <section aria-label="Estadísticas de proyectos">
+          <div className={cn("grid grid-cols-1 gap-3", stats.length === 3 ? "sm:grid-cols-3" : "sm:grid-cols-2")}>
+            {stats.map((s) => (
+              <article key={s.label} className="rounded-lg border border-white/5 bg-card p-4">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <s.icon className="w-3.5 h-3.5 text-slate-500" />
+                  <span className="text-[11px] text-slate-500 uppercase tracking-wider">{s.label}</span>
+                </div>
+                <p className="text-xl font-bold text-white">{s.value}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
       <section aria-label="Filtros de búsqueda">
         <div className="rounded-xl border border-white/5 bg-card p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -225,18 +228,20 @@ export default function ProjectCatalogPage() {
               ))}
             </FilterSelect>
 
-            <button
-              onClick={() => setGobernanzaOnly(!gobernanzaOnly)}
-              className={cn(
-                'flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md transition-all',
-                gobernanzaOnly
-                  ? 'bg-violet-500/10 text-violet-300'
-                  : 'text-slate-500 hover:text-slate-300'
-              )}
-            >
-              <Users className="w-3.5 h-3.5" />
-              Gobernanza
-            </button>
+            {puedeCrear && (
+              <button
+                onClick={() => setGobernanzaOnly(!gobernanzaOnly)}
+                className={cn(
+                  'flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md transition-all',
+                  gobernanzaOnly
+                    ? 'bg-violet-500/10 text-violet-300'
+                    : 'text-slate-500 hover:text-slate-300'
+                )}
+              >
+                <Users className="w-3.5 h-3.5" />
+                Gobernanza
+              </button>
+            )}
 
             {hayFiltros && (
               <button

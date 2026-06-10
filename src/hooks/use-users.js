@@ -5,18 +5,18 @@ import { API_ENDPOINTS } from '@/config/api'
 export const userKeys = {
   all: ['users'],
   lists: () => [...userKeys.all, 'list'],
-  list: (page) => [...userKeys.lists(), page],
+  list: (page, search) => [...userKeys.lists(), page, search],
   details: () => [...userKeys.all, 'detail'],
   detail: (id) => [...userKeys.details(), id],
   me: () => [...userKeys.all, 'me'],
 }
 
-export function useUsers(page = 0) {
+export function useUsers(page = 0, search = '') {
   return useQuery({
-    queryKey: userKeys.list(page),
+    queryKey: userKeys.list(page, search),
     queryFn: () =>
       apiRequest(API_ENDPOINTS.USERS, {
-        params: { page, size: 10 },
+        params: { page, size: 10, search, sort: 'createdAt,desc' },
       }),
   })
 }
