@@ -2,18 +2,15 @@ import { Outlet, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/auth-store'
 import { Sidebar } from './sidebar'
 import { Header } from './header'
-import { clearStoredAuth } from '@/lib/api-client'
+import { useAuth } from '@/providers/auth-provider'
 
 export function DashboardLayout() {
   const sidebarOpen = useAuthStore((s) => s.sidebarOpen)
   const toggleSidebar = useAuthStore((s) => s.toggleSidebar)
-  const storeLogout = useAuthStore((s) => s.logout)
-  const navigate = useNavigate()
+  const { logout } = useAuth()
 
   const handleLogout = () => {
-    clearStoredAuth()
-    storeLogout()
-    navigate('/')
+    logout()
   }
 
   return (

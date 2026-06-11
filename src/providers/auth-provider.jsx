@@ -4,6 +4,7 @@ import { useAuthStore } from '@/stores/auth-store'
 import { apiRequest, clearStoredAuth, getStoredToken, setStoredTokens, setStoredUserId } from '@/lib/api-client'
 import { decodeJwt } from '@/lib/utils'
 import { API_ENDPOINTS } from '@/config/api'
+import { useDisconnect } from 'wagmi'
 
 const AuthContext = createContext(null)
 
@@ -17,6 +18,7 @@ export function AuthProvider({ children }) {
   const navigate = useNavigate()
   const { logout: storeLogout, token, isAuthenticated, roles } = useAuthStore()
   const [isLoading, setIsLoading] = useState(!token ? false : !useAuthStore.getState().user)
+  const { disconnect } = useDisconnect()
 
   const needsProfile = isAuthenticated && !roles.some(r => ['INVESTOR', 'CREATOR', 'ADMIN'].includes(r))
 
@@ -104,10 +106,15 @@ export function AuthProvider({ children }) {
   }
 
   const logout = useCallback(() => {
+    try {
+      disconnect()
+    } catch (e) {
+      console.warn('Wagmi disconnect failed:', e)
+    }
     clearStoredAuth()
     storeLogout()
     navigate('/')
-  }, [storeLogout, navigate])
+  }, [storeLogout, navigate, disconnect])
 
   return (
     <AuthContext.Provider value={{ login, register, logout, isLoading, needsProfile }}>
