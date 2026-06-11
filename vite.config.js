@@ -29,6 +29,11 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      '/oauth2/authorization': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        secure: false,
+      },
       '/api': {
         target: 'http://localhost:8989',
         changeOrigin: true,

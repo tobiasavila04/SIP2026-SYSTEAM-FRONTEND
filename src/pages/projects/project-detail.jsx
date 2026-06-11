@@ -115,7 +115,35 @@ function RefundDialog({ open, onOpenChange, projectId, onSuccess }) {
   )
 }
 
-function StatusActions({ project, isCreator, isAdmin, canInvest, onInvest, onRefund, onBoost, onDesboost, onTransition, onClose, onEvaluateStates, onReportBilling, transitioning, closing }) {
+function GasErrorModal({ open, onOpenChange }) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5 text-red-500" />
+            Falta de Gas (ETH)
+          </DialogTitle>
+          <DialogDescription>
+            No tenés suficientes fondos en la red Base Sepolia para cubrir el costo de red (Gas) de esta transacción.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-sm text-red-200">
+            Para registrar tu proyecto en la Blockchain, necesitás tener un poco de ETH (Base Sepolia) en tu billetera para pagar a los validadores. 
+            <br/><br/>
+            Podés conseguir ETH de prueba gratis en cualquier Faucet de Base Sepolia.
+          </div>
+          <Button onClick={() => onOpenChange(false)} variant="secondary" className="w-full h-10 rounded-lg bg-white/10 hover:bg-white/20 text-white border-0">
+            Entendido
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function StatusActions({ project, isCreator, isAdmin, canInvest, onInvest, onRefund, onBoost, onDesboost, onTransition, onPublish, onClose, onEvaluateStates, onReportBilling, transitioning, closing }) {
   const failed = project.estado === 'CANCELADO' || project.estado === 'RECHAZADO' || (project.estado === 'FINALIZADO' && project.montoRecaudado < project.montoRequerido)
 
   return (
@@ -148,7 +176,7 @@ function StatusActions({ project, isCreator, isAdmin, canInvest, onInvest, onRef
 
       {/* Creator state transitions */}
       {isCreator && project.estado === 'PREPARACION' && (
-        <Button onClick={() => onTransition('FINANCIAMIENTO')} disabled={transitioning} className="bg-emerald-600 hover:bg-emerald-500 text-white gap-2 h-9 px-4 text-sm rounded-lg shadow-lg shadow-emerald-600/20">
+        <Button onClick={onPublish} disabled={transitioning} className="bg-emerald-600 hover:bg-emerald-500 text-white gap-2 h-9 px-4 text-sm rounded-lg shadow-lg shadow-emerald-600/20">
           {transitioning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Rocket className="w-4 h-4" />}
           {transitioning ? 'Publicando...' : 'Publicar'}
         </Button>
@@ -219,9 +247,17 @@ export default function ProjectDetailPage() {
   const evaluateStates = useEvaluateStates()
   const closeProject = useCloseProject()
 
+  const { address, isConnected } = useAccount()
+  const { writeContractAsync } = useWriteContract({
+    mutation: {
+      meta: { suppressErrorToast: true }
+    }
+  })
+
   const [showDisclaimerDialog, setShowDisclaimerDialog] = useState(false)
   const [showInvestDialog, setShowInvestDialog] = useState(false)
   const [showRefundDialog, setShowRefundDialog] = useState(false)
+  const [showGasError, setShowGasError] = useState(false)
   const [showOracleBillingForm, setShowOracleBillingForm] = useState(false)
   const [transitioning, setTransitioning] = useState(false)
 
@@ -247,6 +283,46 @@ export default function ProjectDetailPage() {
       refetch()
     } catch (e) {
       toast.error(e?.message || 'Error al cambiar estado')
+    } finally {
+      setTransitioning(false)
+    }
+  }
+
+  const publishProject = async () => {
+    if (!isConnected || !address) {
+      toast.error('Conectá tu wallet primero para registrar el proyecto')
+      return
+    }
+
+    setTransitioning(true)
+    try {
+      toast.info('Aprobá la transacción en tu wallet...')
+      const hash = await writeContractAsync({
+        address: VITE_INVESTMENT_SWAP_ADDRESS,
+        abi: INVESTMENT_SWAP_ABI,
+        functionName: 'crearTokenProyecto',
+        args: [
+          BigInt(projectId),
+          project.titulo,
+          project.simbolo || `PRJ${projectId}`,
+          BigInt(project.cupoMaximoTokens || 0)
+        ]
+      })
+
+      toast.info('Esperando confirmación en la blockchain...')
+      await waitForTransactionReceipt(wagmiConfig, { hash })
+
+      await updateStatus.mutateAsync({ id: projectId, status: 'FINANCIAMIENTO' })
+      toast.success('Proyecto publicado y registrado en blockchain exitosamente')
+      refetch()
+    } catch (e) {
+      console.error(e)
+      const errorMsg = e?.message?.toLowerCase() || ''
+      if (errorMsg.includes('insufficient funds') || errorMsg.includes('gas')) {
+        setShowGasError(true)
+      } else {
+        toast.error(e?.shortMessage || e?.message || 'Error al publicar el proyecto en blockchain')
+      }
     } finally {
       setTransitioning(false)
     }
@@ -339,6 +415,7 @@ export default function ProjectDetailPage() {
             onBoost={() => boostProject.mutateAsync(projectId).then(refetch)}
             onDesboost={() => desboostProject.mutateAsync(projectId).then(refetch)}
             onTransition={transitionTo}
+            onPublish={publishProject}
             onClose={() => closeProject.mutateAsync(projectId).then(refetch)}
             onEvaluateStates={() => evaluateStates.mutateAsync().then(refetch)}
             onReportBilling={() => setShowOracleBillingForm(true)}
@@ -474,6 +551,11 @@ export default function ProjectDetailPage() {
         projectId={projectId}
         open={showOracleBillingForm}
         onOpenChange={setShowOracleBillingForm}
+      />
+
+      <GasErrorModal
+        open={showGasError}
+        onOpenChange={setShowGasError}
       />
     </div>
   )
