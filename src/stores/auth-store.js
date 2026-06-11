@@ -15,6 +15,9 @@ export const useAuthStore = create((set) => ({
   toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
   setSidebarOpen: (open) => set({ sidebarOpen: open }),
 
+  hasSyncedWallet: false,
+  setWalletSynced: () => set({ hasSyncedWallet: true }),
+
   setAuth: (token, refreshToken, user, roles, permissions) => {
     sessionStorage.setItem(TOKEN, token)
     sessionStorage.setItem(REFRESH_TOKEN, refreshToken)
@@ -34,7 +37,7 @@ export const useAuthStore = create((set) => ({
     sessionStorage.removeItem(TOKEN)
     sessionStorage.removeItem(REFRESH_TOKEN)
     sessionStorage.removeItem(USER_ID)
-    set({ token: null, refreshToken: null, user: null, isAuthenticated: false, roles: [], permissions: [] })
+    set({ token: null, refreshToken: null, user: null, isAuthenticated: false, roles: [], permissions: [], hasSyncedWallet: false })
   },
 }))
 

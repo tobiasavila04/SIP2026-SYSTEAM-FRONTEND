@@ -67,6 +67,7 @@ export const API_ENDPOINTS = {
   TOKEN_PRICE: (id) => buildProjectUrl(`/api/tokens/${id}/precio`),
 
   WALLET_SUMMARY: buildProjectUrl('/api/wallet/summary'),
+  WALLET_SYNC_IDEA: buildProjectUrl('/api/wallet/sync-idea'),
   WALLET_HISTORY: buildProjectUrl('/api/investments/history'),
 
   GOVERNANCE_PROPOSALS: buildProjectUrl('/api/governance/proposals'),
