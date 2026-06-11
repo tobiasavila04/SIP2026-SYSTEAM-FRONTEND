@@ -126,11 +126,14 @@ export function useCloseProject() {
 export function useBoostProject() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (id) =>
-      apiRequest(API_ENDPOINTS.PROJECT_BOOST(id), { method: 'POST' }),
+    mutationFn: ({ id, txHash }) =>
+      apiRequest(API_ENDPOINTS.PROJECT_BOOST(id), { 
+        method: 'POST',
+        body: { txHash } 
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: projectKeys.all })
-      toast.success('Proyecto destacado por 7 días')
+      toast.success('¡Boost aplicado exitosamente!')
     },
   })
 }

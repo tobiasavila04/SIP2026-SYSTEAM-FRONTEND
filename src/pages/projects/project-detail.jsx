@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { useAccount, useWriteContract } from 'wagmi'
+import { useAccount, useWriteContract, useConfig } from 'wagmi'
 import { waitForTransactionReceipt } from '@wagmi/core'
+import { parseUnits } from 'viem'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { useProject, useUpdateProjectStatus, useBoostProject, useEvaluateStates, useCloseProject, useSubmitAuditFinding } from '@/hooks/use-projects'
+import { useTokenInfo } from '@/hooks/use-investment'
 import { useAuthStore, usePermissions } from '@/stores/auth-store'
 import { apiRequest } from '@/lib/api-client'
 import { API_ENDPOINTS } from '@/config/api'
@@ -24,6 +26,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { statusVariants, statusLabels, FundingProgress } from '@/lib/project-constants'
 import { formatCurrency, formatDate } from '@/lib/utils'
+import { ERC20_ABI } from '@/lib/abis'
 import { toast } from 'sonner'
 import { differenceInDays } from 'date-fns'
 import { ArrowLeft, Target, Calendar, Coins, Wallet, Loader2, TrendingUp, Rocket, CheckCircle2, Ban, SquarePen, ExternalLink, RefreshCw, AlertTriangle, Star, Sparkles, ShieldCheck, FileText } from 'lucide-react'
@@ -232,7 +235,7 @@ function StatusActions({ project, isCreator, isAdmin, isAuditor, canInvest, onIn
       )}
 
       {project.estado !== 'FINALIZADO' && project.estado !== 'RECHAZADO' && project.estado !== 'CANCELADO' && (
-        <Button onClick={onBoost} variant="outline" className="gap-2 border-amber-500/20 text-amber-400 hover:bg-amber-500/10 h-9 px-4 text-sm rounded-lg shadow-sm shadow-amber-500/10">
+        <Button onClick={onBoost} disabled={transitioning} variant="outline" className="gap-2 border-amber-500/20 text-amber-400 hover:bg-amber-500/10 h-9 px-4 text-sm rounded-lg shadow-sm shadow-amber-500/10">
           <Star className="w-4 h-4 fill-amber-500/50" />
           Sumar Boost (100 $IDEA)
         </Button>
@@ -290,11 +293,14 @@ export default function ProjectDetailPage() {
   const submitAuditFinding = useSubmitAuditFinding()
 
   const { address, isConnected } = useAccount()
+  const config = useConfig()
   const { writeContractAsync } = useWriteContract({
     mutation: {
       meta: { suppressErrorToast: true }
     }
   })
+
+  const ideaTokenAddress = import.meta.env.VITE_IDEA_TOKEN_ADDRESS
 
   const [showDisclaimerDialog, setShowDisclaimerDialog] = useState(false)
   const [auditDialogState, setAuditDialogState] = useState({ open: false, resultado: 'APROBADO' })
@@ -401,6 +407,46 @@ export default function ProjectDetailPage() {
     }
   }
 
+  const handleBoost = async () => {
+    if (!isConnected || !address) {
+      toast.error('Conectá tu wallet primero para sumar un boost', { id: 'boost' })
+      return
+    }
+
+    if (!ideaTokenAddress) {
+      toast.error('Cargando información del token, intenta en un segundo...')
+      return
+    }
+    
+    try {
+      const BURN_ADDRESS = '0x000000000000000000000000000000000000dEaD'
+      const amountWei = parseUnits('100', 18)
+      
+      toast.loading('Autoriza la quema de 100 $IDEA en MetaMask...', { id: 'boost' })
+      
+      const txHash = await writeContractAsync({
+        address: ideaTokenAddress,
+        abi: ERC20_ABI,
+        functionName: 'transfer',
+        args: [BURN_ADDRESS, amountWei],
+      })
+
+      toast.loading('Esperando confirmación en la red Sepolia...', { id: 'boost' })
+      const receipt = await waitForTransactionReceipt(config, { hash: txHash })
+      
+      if (receipt.status === 'success') {
+        toast.loading('Impactando en el ranking...', { id: 'boost' })
+        await boostProject.mutateAsync({ id: projectId, txHash })
+        refetch()
+        toast.success('¡Boost aplicado! El proyecto subió en el ranking', { id: 'boost' })
+      } else {
+        toast.error('La transacción falló en la red', { id: 'boost' })
+      }
+    } catch (err) {
+      toast.error('Error al autorizar o enviar la transacción', { id: 'boost' })
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="space-y-6 max-w-4xl">
@@ -464,7 +510,7 @@ export default function ProjectDetailPage() {
             isAuditor={isAuditor}
             canInvest={canInvest}
             onInvest={() => setShowDisclaimerDialog(true)}
-            onBoost={() => boostProject.mutateAsync(projectId).then(refetch)}
+            onBoost={handleBoost}
             onTransition={transitionTo}
             onAudit={(resultado) => setAuditDialogState({ open: true, resultado })}
             onPublish={publishProject}
