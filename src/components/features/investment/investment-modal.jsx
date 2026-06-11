@@ -1,5 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { useAccount } from 'wagmi'
+import { useAccount, useWriteContract, useConfig } from 'wagmi'
+import { waitForTransactionReceipt } from '@wagmi/core'
+import { parseUnits } from 'viem'
+import { INVESTMENT_SWAP_ABI, ERC20_ABI } from '@/lib/abis'
 import { useTokenPrice, useTokenInfo, useValidateInvestment, useCreateInvestment } from '@/hooks/use-investment'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { Button } from '@/components/ui/button'
@@ -16,9 +19,6 @@ import {
 } from 'lucide-react'
 
 const QUICK_SUBTOKENS = [1, 5, 10, 50]
-
-const generateTxHash = () => '0xoffline-' + Date.now() + '-' + Math.random().toString(36).slice(2)
-
 function StateLoading({ message, sub }) {
   return (
     <div className="flex flex-col items-center justify-center py-10 space-y-5">
@@ -147,6 +147,9 @@ export function InvestmentModal({ open, onOpenChange, projectId, projectTitle, s
   const validateMutation = useValidateInvestment()
   const createInvestment = useCreateInvestment()
 
+  const config = useConfig()
+  const { writeContractAsync } = useWriteContract()
+
   const precioActual = tokenPrice?.precioActual
     ? Number(tokenPrice.precioActual)
     : tokenInfo?.precioActual
@@ -200,12 +203,36 @@ export function InvestmentModal({ open, onOpenChange, projectId, projectTitle, s
 
     try {
       setStep('backend')
-      const txHash = generateTxHash()
-      setInvestHash(txHash)
+      
+      const ideaTokenAddress = import.meta.env.VITE_IDEA_TOKEN_ADDRESS
+      const swapAddress = import.meta.env.VITE_INVESTMENT_SWAP_ADDRESS
+      const amountWei = parseUnits(String(numEffectiveAmount), 18)
+
+      // 1. Approve
+      const approveHash = await writeContractAsync({
+        address: ideaTokenAddress,
+        abi: ERC20_ABI,
+        functionName: 'approve',
+        args: [swapAddress, amountWei],
+      })
+
+      await waitForTransactionReceipt(config, { hash: approveHash })
+
+      // 2. Invest
+      const investTxHash = await writeContractAsync({
+        address: swapAddress,
+        abi: INVESTMENT_SWAP_ABI,
+        functionName: 'invest',
+        args: [BigInt(projectId), amountWei],
+      })
+
+      await waitForTransactionReceipt(config, { hash: investTxHash })
+      setInvestHash(investTxHash)
+
       await createInvestment.mutateAsync({
         proyectoId: projectId,
         montoIdea: numEffectiveAmount,
-        txHash: txHash,
+        txHash: investTxHash,
       })
 
       setStep('done')

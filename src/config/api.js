@@ -48,6 +48,7 @@ export const API_ENDPOINTS = {
   PROJECTS_CATALOG: buildProjectUrl('/api/projects/catalog'),
   PROJECTS_MY: buildProjectUrl('/api/projects/my-projects'),
   PROJECT_STATUS: (id) => buildProjectUrl(`/api/projects/${id}/status`),
+  PROJECT_AUDIT: (id) => buildProjectUrl(`/api/projects/${id}/audit`),
   PROJECT_FINANCING_PROGRESS: (id) => buildProjectUrl(`/api/projects/${id}/financing-progress`),
   PROJECT_SMART_CONTRACT: (id) => buildProjectUrl(`/api/projects/${id}/smart-contract`),
   PROJECT_EVALUATE_STATES: buildProjectUrl('/api/projects/evaluate-states'),

@@ -105,6 +105,7 @@ export function useUpdateProjectStatus() {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: projectKeys.all })
+      queryClient.invalidateQueries({ queryKey: ['dashboard', 'stats'] })
       toast.success('Estado del proyecto actualizado')
     },
   })
@@ -134,17 +135,6 @@ export function useBoostProject() {
   })
 }
 
-export function useDesboostProject() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (id) =>
-      apiRequest(API_ENDPOINTS.PROJECT_DESBOOST(id), { method: 'POST' }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: projectKeys.all })
-      toast.success('Proyecto ya no está destacado')
-    },
-  })
-}
 
 export function useEvaluateStates() {
   return useMutation({
@@ -152,6 +142,23 @@ export function useEvaluateStates() {
       apiRequest(API_ENDPOINTS.PROJECT_EVALUATE_STATES, { method: 'POST' }),
     onSuccess: () => {
       toast.success('Vencimientos evaluados')
+    },
+  })
+}
+
+export function useSubmitAuditFinding() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, resultado, observaciones, kybUrl }) =>
+      apiRequest(API_ENDPOINTS.PROJECT_AUDIT(id), {
+        method: 'POST',
+        body: { resultado, observaciones, kybUrl },
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: projectKeys.all })
+      queryClient.invalidateQueries({ queryKey: ['dashboard', 'stats'] })
+      toast.success('Auditoría registrada exitosamente')
     },
   })
 }

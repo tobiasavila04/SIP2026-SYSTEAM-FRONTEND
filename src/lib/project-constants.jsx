@@ -2,6 +2,8 @@ import { formatCurrency } from './utils'
 
 export const statusVariants = {
   PREPARACION: 'info',
+  EN_AUDITORIA: 'warning',
+  AUDITADO: 'success',
   FINANCIAMIENTO: 'success',
   EJECUCION: 'warning',
   FINALIZADO: 'default',
@@ -11,6 +13,8 @@ export const statusVariants = {
 
 export const statusLabels = {
   PREPARACION: 'Preparación',
+  EN_AUDITORIA: 'En Auditoría',
+  AUDITADO: 'Auditado',
   FINANCIAMIENTO: 'En Financiamiento',
   EJECUCION: 'En Ejecución',
   FINALIZADO: 'Finalizado',

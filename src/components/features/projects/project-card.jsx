@@ -29,11 +29,11 @@ export function ProjectCard({ project, isCreator, showActions = true }) {
     >
       <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-violet-500/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-      {project.esDestacado && (
+      {project.montoBoost > 0 && (
         <div className="absolute top-3 right-3 z-10">
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 shadow-sm shadow-amber-500/10">
             <Star className="w-3 h-3 fill-amber-300" />
-            Destacado
+            🔥 {Number(project.montoBoost).toLocaleString()} $IDEA
           </span>
         </div>
       )}

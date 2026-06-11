@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { useProjects } from '@/hooks/use-projects'
+import { useProjects, useMyProjects } from '@/hooks/use-projects'
+import { useDashboardStats } from '@/hooks/use-dashboard'
 import { useAuthStore } from '@/stores/auth-store'
 import { usePermissions } from '@/stores/auth-store'
 import { ProjectCard } from '@/components/features/projects/project-card'
@@ -75,20 +76,34 @@ export default function ProjectCatalogPage() {
   const { isCreator, isAdmin } = usePermissions()
   const puedeCrear = isCreator || isAdmin
 
-  const { data, isLoading, isError, refetch } = useProjects({
+  const { data: publicData, isLoading: publicLoading, isError: publicError, refetch: publicRefetch } = useProjects({
     search,
     estado: statusFilter || undefined,
     page: 0,
     size: 500,
   })
 
-  const proyectos = data?.content || []
+  const { data: myData, isLoading: myLoading, isError: myError, refetch: myRefetch } = useMyProjects()
+  const { data: dashboardStats } = useDashboardStats()
+
+  const isMyView = vista === 'mis-proyectos' && usuarioId
+  const isLoading = isMyView ? myLoading : publicLoading
+  const isError = isMyView ? myError : publicError
+  const refetch = isMyView ? myRefetch : publicRefetch
+
+  const proyectos = isMyView ? (myData?.content || []) : (publicData?.content || [])
 
   const proyectosFiltrados = useMemo(() => {
     let result = proyectos
 
-    if (vista === 'mis-proyectos' && usuarioId) {
-      result = result.filter((p) => p.creadorId === usuarioId)
+    if (isMyView) {
+      if (statusFilter) {
+        result = result.filter((p) => p.estado === statusFilter)
+      }
+      if (search) {
+        const lowerSearch = search.toLowerCase()
+        result = result.filter((p) => p.titulo.toLowerCase().includes(lowerSearch) || p.descripcion.toLowerCase().includes(lowerSearch))
+      }
     }
 
     if (montoRange) {
@@ -119,7 +134,7 @@ export default function ProjectCatalogPage() {
     })
 
     return result
-  }, [proyectos, vista, usuarioId, montoRange, gobernanzaOnly, sortBy])
+  }, [proyectos, isMyView, statusFilter, search, montoRange, gobernanzaOnly, sortBy])
 
   const destacados = useMemo(() => proyectosFiltrados.filter((p) => p.esDestacado), [proyectosFiltrados])
   const noDestacados = useMemo(() => proyectosFiltrados.filter((p) => !p.esDestacado), [proyectosFiltrados])
@@ -134,14 +149,14 @@ export default function ProjectCatalogPage() {
 
   const stats = useMemo(() => {
     const s = [
-      { label: 'Total proyectos', value: data?.totalElements ?? 0, icon: FolderKanban },
-      { label: 'En financiamiento', value: proyectos.filter(p => p.estado === 'FINANCIAMIENTO').length, icon: CircleDollarSign },
+      { label: 'Total proyectos', value: dashboardStats?.totalProjects ?? publicData?.totalElements ?? 0, icon: FolderKanban },
+      { label: 'En financiamiento', value: dashboardStats?.projectsByStatus?.['FINANCIAMIENTO'] ?? (publicData?.content || []).filter(p => p.estado === 'FINANCIAMIENTO').length, icon: CircleDollarSign },
     ];
     if (puedeCrear) {
-      s.push({ label: 'Mis proyectos', value: usuarioId ? proyectos.filter(p => p.creadorId === usuarioId).length : 0, icon: Layers });
+      s.push({ label: 'Mis proyectos', value: myData?.totalElements ?? 0, icon: Layers });
     }
     return s;
-  }, [data, proyectos, usuarioId, puedeCrear])
+  }, [publicData, myData, dashboardStats, puedeCrear])
 
   const activeFilters = [statusFilter, montoRange, gobernanzaOnly ? 'gobernanza' : '', vista !== 'todos' ? vista : ''].filter(Boolean).length
   const hayFiltros = activeFilters > 0 || !!search

@@ -48,8 +48,9 @@ export function usePermissions() {
   const isAdmin = roles.includes('ADMIN')
   const isCreator = roles.includes('CREATOR')
   const isInvestor = roles.includes('INVESTOR')
+  const isAuditor = roles.includes('AUDITOR')
 
   const can = (permission) => isAdmin || permissions.includes(permission)
 
-  return { isAdmin, isCreator, isInvestor, can, roles, permissions }
+  return { isAdmin, isCreator, isInvestor, isAuditor, can, roles, permissions }
 }

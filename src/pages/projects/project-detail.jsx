@@ -2,12 +2,9 @@ import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useAccount, useWriteContract } from 'wagmi'
 import { waitForTransactionReceipt } from '@wagmi/core'
-import { wagmiConfig } from '@/lib/web3'
-import { INVESTMENT_SWAP_ABI } from '@/lib/abis'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
-import { useProject, useUpdateProjectStatus, useBoostProject, useDesboostProject, useEvaluateStates, useCloseProject } from '@/hooks/use-projects'
-import { useAuthStore } from '@/stores/auth-store'
-import { usePermissions } from '@/stores/auth-store'
+import { useProject, useUpdateProjectStatus, useBoostProject, useEvaluateStates, useCloseProject, useSubmitAuditFinding } from '@/hooks/use-projects'
+import { useAuthStore, usePermissions } from '@/stores/auth-store'
 import { apiRequest } from '@/lib/api-client'
 import { API_ENDPOINTS } from '@/config/api'
 import { InvestmentModal } from '@/components/features/investment/investment-modal'
@@ -22,6 +19,9 @@ import { ProjectFailedBanner } from '@/components/shared/project-failed-banner'
 import { Skeleton } from '@/components/shared/loading-skeleton'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { statusVariants, statusLabels, FundingProgress } from '@/lib/project-constants'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -30,90 +30,7 @@ import { ArrowLeft, Target, Calendar, Coins, Wallet, Loader2, TrendingUp, Rocket
 
 const VITE_INVESTMENT_SWAP_ADDRESS = import.meta.env.VITE_INVESTMENT_SWAP_ADDRESS
 
-function RefundDialog({ open, onOpenChange, projectId, onSuccess }) {
-  const [step, setStep] = useState('idle')
-  const [refundHash, setRefundHash] = useState(null)
 
-  const { address, isConnected } = useAccount()
-  const { writeContractAsync } = useWriteContract()
-
-  const handleRefund = async () => {
-    if (!isConnected || !address) {
-      toast.error('Conectá tu wallet primero')
-      return
-    }
-
-    try {
-      setStep('refunding')
-      const hash = await writeContractAsync({
-        address: VITE_INVESTMENT_SWAP_ADDRESS,
-        abi: INVESTMENT_SWAP_ABI,
-        functionName: 'refund',
-        args: [BigInt(projectId)],
-      })
-      setRefundHash(hash)
-      await waitForTransactionReceipt(wagmiConfig, { hash })
-
-      toast.success('Reembolso procesado exitosamente en la blockchain')
-      setStep('done')
-      onSuccess?.()
-    } catch (e) {
-      toast.error(e?.message || 'Error al procesar el reembolso')
-      setStep('idle')
-    }
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={(v) => { if (!v && step !== 'refunding') { setStep('idle'); setRefundHash(null); onOpenChange(v) } else onOpenChange(v) }}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <RefreshCw className="w-5 h-5 text-amber-400" />
-            Solicitar Reembolso
-          </DialogTitle>
-          <DialogDescription>
-            {step === 'done'
-              ? 'Tu reembolso se procesó correctamente.'
-              : 'El proyecto no alcanzó su meta de financiamiento. Podés solicitar el reembolso de tu inversión.'}
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4">
-          {step === 'done' && refundHash ? (
-            <>
-              <div className="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-center space-y-3">
-                <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto" />
-                <p className="text-sm text-emerald-300 font-medium">Reembolso confirmado</p>
-                <TxHashLink hash={refundHash} />
-              </div>
-              <Button onClick={() => { setStep('idle'); setRefundHash(null); onOpenChange(false) }} className="w-full bg-violet-600 hover:bg-violet-500 text-white h-10 rounded-lg">
-                Cerrar
-              </Button>
-            </>
-          ) : (
-            <>
-              <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300 flex items-start gap-2">
-                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-                <span>Al solicitar el reembolso, los tokens invertidos serán devueltos a tu wallet. Esta acción ejecuta una transacción on-chain.</span>
-              </div>
-              {!isConnected ? (
-                <ConnectButton />
-              ) : (
-                <Button
-                  onClick={handleRefund}
-                  disabled={step === 'refunding'}
-                  className="w-full bg-amber-600 hover:bg-amber-500 text-white gap-2 h-10 rounded-lg"
-                >
-                  {step === 'refunding' && <Loader2 className="w-4 h-4 animate-spin" />}
-                  {step === 'refunding' ? 'Procesando reembolso...' : 'Solicitar Reembolso'}
-                </Button>
-              )}
-            </>
-          )}
-        </div>
-      </DialogContent>
-    </Dialog>
-  )
-}
 
 function GasErrorModal({ open, onOpenChange }) {
   return (
@@ -143,69 +60,198 @@ function GasErrorModal({ open, onOpenChange }) {
   )
 }
 
-function StatusActions({ project, isCreator, isAdmin, canInvest, onInvest, onRefund, onBoost, onDesboost, onTransition, onPublish, onClose, onEvaluateStates, onReportBilling, transitioning, closing }) {
+function AuditDialog({ open, onOpenChange, onConfirm, resultado, transitioning }) {
+  const [kybUrl, setKybUrl] = useState('')
+  const [observaciones, setObservaciones] = useState('')
+
+  useEffect(() => {
+    if (open) {
+      setKybUrl('')
+      setObservaciones('')
+    }
+  }, [open])
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    onConfirm(resultado, kybUrl, observaciones)
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            {resultado === 'APROBADO' ? (
+              <><CheckCircle2 className="w-5 h-5 text-emerald-500" /> Aprobar Auditoría</>
+            ) : (
+              <><Ban className="w-5 h-5 text-red-500" /> Rechazar Auditoría</>
+            )}
+          </DialogTitle>
+          <DialogDescription>
+            Completá los datos del reporte de auditoría (KYB) para registrar la decisión en el sistema.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4 py-2">
+          <div className="space-y-2">
+            <Label htmlFor="kybUrl" className="text-slate-300">URL del reporte KYB *</Label>
+            <Input
+              id="kybUrl"
+              value={kybUrl}
+              onChange={(e) => setKybUrl(e.target.value)}
+              placeholder="https://proveedor-kyb.com/reporte/..."
+              required
+              disabled={transitioning}
+              className="bg-slate-950 border-slate-700 text-white placeholder:text-slate-600 focus-visible:ring-emerald-500/50"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="observaciones" className="text-slate-300">Observaciones</Label>
+            <Textarea
+              id="observaciones"
+              value={observaciones}
+              onChange={(e) => setObservaciones(e.target.value)}
+              placeholder={resultado === 'APROBADO' ? 'Todo en orden. Cumple los requisitos.' : 'Motivo del rechazo...'}
+              disabled={transitioning}
+              className="bg-slate-950 border-slate-700 text-white placeholder:text-slate-600 min-h-[100px] focus-visible:ring-emerald-500/50"
+            />
+          </div>
+          <div className="flex justify-end gap-2 pt-4">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={transitioning} className="border-white/10">
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={transitioning || !kybUrl} className={resultado === 'APROBADO' ? "bg-emerald-600 hover:bg-emerald-500 text-white" : "bg-red-600 hover:bg-red-500 text-white"}>
+              {transitioning ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Confirmar'}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function PublishSuccessModal({ open, onOpenChange, tokenAddress }) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+            Proyecto Registrado Exitosamente
+          </DialogTitle>
+          <DialogDescription>
+            Tu proyecto ha sido desplegado en la blockchain (Base Sepolia) y ya está abierto a inversores.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          <div className="p-4 rounded-lg bg-slate-950 border border-emerald-500/20 text-sm">
+            <p className="text-slate-400 mb-2">Contrato Inteligente (Token):</p>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <span className="font-mono text-emerald-400 text-xs sm:text-sm break-all">{tokenAddress || 'Sincronizando...'}</span>
+              {tokenAddress && tokenAddress.startsWith('0x') && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => window.open(`https://sepolia.basescan.org/token/${tokenAddress}`, '_blank')}
+                  className="shrink-0 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300"
+                >
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  BaseScan
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+        <div className="flex justify-end">
+          <Button onClick={() => onOpenChange(false)} className="bg-slate-800 text-slate-100 hover:bg-slate-700 hover:text-white border-0">Cerrar</Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function StatusActions({ project, isCreator, isAdmin, isAuditor, canInvest, onInvest, onRefund, onBoost, onDesboost, onTransition, onAudit, onPublish, onClose, onEvaluateStates, onReportBilling, transitioning, closing }) {
   const failed = project.estado === 'CANCELADO' || project.estado === 'RECHAZADO' || (project.estado === 'FINALIZADO' && project.montoRecaudado < project.montoRequerido)
 
   return (
     <div className="flex items-center gap-2 flex-wrap">
+      {/* 1. Acciones principales de transición de estado e inversión */}
       {canInvest && (
         <Button onClick={onInvest} className="bg-violet-600 hover:bg-violet-500 text-white gap-2 h-9 px-4 text-sm rounded-lg shadow-lg shadow-violet-600/20">
           <TrendingUp className="w-4 h-4" />
           Invertir
         </Button>
       )}
-      {failed && (
-        <Button onClick={onRefund} variant="outline" className="gap-2 border-amber-500/20 text-amber-400 hover:bg-amber-500/10 h-9 px-4 text-sm rounded-lg">
-          <RefreshCw className="w-4 h-4" />
-          Solicitar Reembolso
-        </Button>
+
+      {(isAuditor || isAdmin) && project.estado === 'EN_AUDITORIA' && (
+        <>
+          <Button onClick={() => onAudit('APROBADO')} disabled={transitioning} className="bg-emerald-600 hover:bg-emerald-500 text-white gap-2 h-9 px-4 text-sm rounded-lg shadow-lg shadow-emerald-600/20">
+            {transitioning ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+            Aprobar Auditoría
+          </Button>
+          <Button onClick={() => onAudit('RECHAZADO')} disabled={transitioning} className="bg-red-600 hover:bg-red-500 text-white gap-2 h-9 px-4 text-sm rounded-lg shadow-lg shadow-red-600/20">
+            {transitioning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Ban className="w-4 h-4" />}
+            Rechazar Auditoría
+          </Button>
+        </>
       )}
 
-      {isCreator && !project.esDestacado && project.estado !== 'FINALIZADO' && project.estado !== 'RECHAZADO' && project.estado !== 'CANCELADO' && (
-        <Button onClick={onBoost} variant="outline" className="gap-2 border-amber-500/20 text-amber-400 hover:bg-amber-500/10 h-9 px-4 text-sm rounded-lg">
-          <Star className="w-4 h-4" />
-          Destacar (100 $IDEA)
-        </Button>
-      )}
-      {isCreator && project.esDestacado && (
-        <Button onClick={onDesboost} variant="outline" className="gap-2 border-amber-500/20 text-amber-400 hover:bg-amber-500/10 h-9 px-4 text-sm rounded-lg">
-          <Star className="w-4 h-4 fill-amber-400" />
-          Quitar destacado
-        </Button>
-      )}
-
-      {/* Creator state transitions */}
       {isCreator && project.estado === 'PREPARACION' && (
+        <Button onClick={() => onTransition('EN_AUDITORIA')} disabled={transitioning} className="bg-blue-600 hover:bg-blue-500 text-white gap-2 h-9 px-4 text-sm rounded-lg shadow-lg shadow-blue-600/20">
+          {transitioning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Target className="w-4 h-4" />}
+          {transitioning ? 'Enviando...' : 'Enviar a Auditoría'}
+        </Button>
+      )}
+
+      {isCreator && project.estado === 'EN_AUDITORIA' && (
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-800/50 text-slate-400 rounded-lg border border-slate-700/50 text-sm">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          Pendiente de revisión
+        </div>
+      )}
+
+      {isCreator && project.estado === 'AUDITADO' && (
         <Button onClick={onPublish} disabled={transitioning} className="bg-emerald-600 hover:bg-emerald-500 text-white gap-2 h-9 px-4 text-sm rounded-lg shadow-lg shadow-emerald-600/20">
           {transitioning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Rocket className="w-4 h-4" />}
           {transitioning ? 'Publicando...' : 'Publicar'}
         </Button>
       )}
-      {isCreator && project.estado === 'EJECUCION' && (
-        <Button onClick={onReportBilling} variant="outline" className="gap-2 border-blue-500/20 text-blue-400 hover:bg-blue-500/10 h-9 px-4 text-sm rounded-lg">
-          <FileText className="w-4 h-4" />
-          Reportar facturación
-        </Button>
-      )}
+
       {isCreator && project.estado === 'EJECUCION' && (
         <Button onClick={onClose} disabled={closing} className="bg-emerald-600 hover:bg-emerald-500 text-white gap-2 h-9 px-4 text-sm rounded-lg">
           {closing ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
           {closing ? 'Cerrando...' : 'Cerrar proyecto'}
         </Button>
       )}
-      {isCreator && ['PREPARACION', 'EN_AUDITORIA'].includes(project.estado) && (
-        <Button onClick={() => onTransition('CANCELADO')} disabled={transitioning} variant="outline" className="gap-2 border-red-500/20 text-red-400 hover:bg-red-500/10 h-9 px-4 text-sm rounded-lg">
-          {transitioning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Ban className="w-4 h-4" />}
-          Cancelar
+
+      {/* 2. Acciones secundarias y gestión */}
+      {isCreator && project.estado === 'EJECUCION' && (
+        <Button onClick={onReportBilling} variant="outline" className="gap-2 border-blue-500/20 text-blue-400 hover:bg-blue-500/10 h-9 px-4 text-sm rounded-lg">
+          <FileText className="w-4 h-4" />
+          Reportar facturación
         </Button>
       )}
-      {isCreator && ['PREPARACION', 'EN_AUDITORIA', 'FINANCIAMIENTO'].includes(project.estado) && (
+
+      {project.estado !== 'FINALIZADO' && project.estado !== 'RECHAZADO' && project.estado !== 'CANCELADO' && (
+        <Button onClick={onBoost} variant="outline" className="gap-2 border-amber-500/20 text-amber-400 hover:bg-amber-500/10 h-9 px-4 text-sm rounded-lg shadow-sm shadow-amber-500/10">
+          <Star className="w-4 h-4 fill-amber-500/50" />
+          Sumar Boost (100 $IDEA)
+        </Button>
+      )}
+
+      {isCreator && ['PREPARACION', 'EN_AUDITORIA', 'AUDITADO', 'FINANCIAMIENTO'].includes(project.estado) && (
         <Link to={`/proyectos/${project.id}/editar`}>
           <Button variant="outline" className="gap-2 border-white/10 h-9 px-4 text-sm rounded-lg">
             <SquarePen className="w-4 h-4" />
             Editar
           </Button>
         </Link>
+      )}
+
+      {isCreator && ['PREPARACION', 'EN_AUDITORIA', 'AUDITADO'].includes(project.estado) && (
+        <Button onClick={() => onTransition('CANCELADO')} disabled={transitioning} variant="outline" className="gap-2 border-red-500/20 text-red-400 hover:bg-red-500/10 h-9 px-4 text-sm rounded-lg">
+          {transitioning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Ban className="w-4 h-4" />}
+          Cancelar
+        </Button>
       )}
 
       {/* Admin actions */}
@@ -216,12 +262,7 @@ function StatusActions({ project, isCreator, isAdmin, canInvest, onInvest, onRef
             <RefreshCw className="w-4 h-4" />
             Evaluar vencimientos
           </Button>
-          {failed && (
-            <Button onClick={onRefund} variant="outline" className="gap-2 border-amber-500/20 text-amber-400 hover:bg-amber-500/10 h-9 px-4 text-sm rounded-lg">
-              <RefreshCw className="w-4 h-4" />
-              Forzar reembolso
-            </Button>
-          )}
+
           {project.estado === 'FINANCIAMIENTO' && (
             <Button onClick={() => onTransition('CANCELADO')} disabled={transitioning} variant="outline" className="gap-2 border-red-500/20 text-red-400 hover:bg-red-500/10 h-9 px-4 text-sm rounded-lg">
               {transitioning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Ban className="w-4 h-4" />}
@@ -237,15 +278,16 @@ function StatusActions({ project, isCreator, isAdmin, canInvest, onInvest, onRef
 export default function ProjectDetailPage() {
   const { id } = useParams()
   const projectId = Number(id)
-  const user = useAuthStore((s) => s.user)
-  const { isInvestor, isAdmin } = usePermissions()
+  const usuarioId = useAuthStore((s) => s.user?.id)
+  const { isInvestor, isAdmin, isAuditor } = usePermissions()
 
   const { data: project, isLoading, isError, refetch } = useProject(projectId)
+  const isCreator = project?.creadorId === usuarioId
   const updateStatus = useUpdateProjectStatus()
   const boostProject = useBoostProject()
-  const desboostProject = useDesboostProject()
   const evaluateStates = useEvaluateStates()
   const closeProject = useCloseProject()
+  const submitAuditFinding = useSubmitAuditFinding()
 
   const { address, isConnected } = useAccount()
   const { writeContractAsync } = useWriteContract({
@@ -255,8 +297,10 @@ export default function ProjectDetailPage() {
   })
 
   const [showDisclaimerDialog, setShowDisclaimerDialog] = useState(false)
+  const [auditDialogState, setAuditDialogState] = useState({ open: false, resultado: 'APROBADO' })
+  const [publishSuccessToken, setPublishSuccessToken] = useState(null)
   const [showInvestDialog, setShowInvestDialog] = useState(false)
-  const [showRefundDialog, setShowRefundDialog] = useState(false)
+
   const [showGasError, setShowGasError] = useState(false)
   const [showOracleBillingForm, setShowOracleBillingForm] = useState(false)
   const [transitioning, setTransitioning] = useState(false)
@@ -273,13 +317,13 @@ export default function ProjectDetailPage() {
     setTransitioning(true)
     try {
       await updateStatus.mutateAsync({ id: projectId, status })
-      toast.success(
-        `Proyecto ${
-          status === 'FINANCIAMIENTO' ? 'publicado' :
-          status === 'EJECUCION' ? 'en ejecución' :
-          status === 'FINALIZADO' ? 'finalizado' : 'cancelado'
-        } exitosamente`
-      )
+      let statusName = 'cancelado'
+      if (status === 'FINANCIAMIENTO') statusName = 'publicado'
+      if (status === 'EJECUCION') statusName = 'en ejecución'
+      if (status === 'FINALIZADO') statusName = 'finalizado'
+      if (status === 'EN_AUDITORIA') statusName = 'enviado a auditoría'
+      
+      toast.success(`Proyecto ${statusName} exitosamente`)
       refetch()
     } catch (e) {
       toast.error(e?.message || 'Error al cambiar estado')
@@ -296,24 +340,19 @@ export default function ProjectDetailPage() {
 
     setTransitioning(true)
     try {
-      toast.info('Aprobá la transacción en tu wallet...')
-      const hash = await writeContractAsync({
-        address: VITE_INVESTMENT_SWAP_ADDRESS,
-        abi: INVESTMENT_SWAP_ABI,
-        functionName: 'crearTokenProyecto',
-        args: [
-          BigInt(projectId),
-          project.titulo,
-          project.simbolo || `PRJ${projectId}`,
-          BigInt(project.cupoMaximoTokens || 0)
-        ]
-      })
-
-      toast.info('Esperando confirmación en la blockchain...')
-      await waitForTransactionReceipt(wagmiConfig, { hash })
-
+      toast.info('Publicando proyecto...')
       await updateStatus.mutateAsync({ id: projectId, status: 'FINANCIAMIENTO' })
-      toast.success('Proyecto publicado y registrado en blockchain exitosamente')
+      
+      // Fetch token info right away to get the contract address for the modal
+      try {
+        const tokenRes = await apiRequest(API_ENDPOINTS.TOKEN_BY_PROJECT(projectId))
+        setTokenInfo(tokenRes)
+        setPublishSuccessToken(tokenRes.contractAddress)
+      } catch (e) {
+        console.error("No se pudo obtener el token inmediatamente", e)
+        setPublishSuccessToken("Pendiente de sincronización")
+      }
+
       refetch()
     } catch (e) {
       console.error(e)
@@ -333,7 +372,7 @@ export default function ProjectDetailPage() {
   const fetchTokenInfo = async () => {
     setLoadingTokenFetch(true)
     try {
-      const res = await apiRequest(API_ENDPOINTS.TOKENS_BY_PROJECT(projectId))
+      const res = await apiRequest(API_ENDPOINTS.TOKEN_BY_PROJECT(projectId))
       setTokenInfo(res)
     } catch {
       setTokenInfo(null)
@@ -347,6 +386,20 @@ export default function ProjectDetailPage() {
       fetchTokenInfo()
     }
   }, [project?.id, project?.estado])
+
+  const handleAuditSubmit = async (resultado, kybUrl, observaciones) => {
+    if (!project) return
+    setTransitioning(true)
+    try {
+      await submitAuditFinding.mutateAsync({ id: project.id, resultado, observaciones, kybUrl })
+      setAuditDialogState({ ...auditDialogState, open: false })
+      refetch()
+    } catch (e) {
+      toast.error(e?.message || 'Error al enviar auditoría')
+    } finally {
+      setTransitioning(false)
+    }
+  }
 
   if (isLoading) {
     return (
@@ -368,7 +421,6 @@ export default function ProjectDetailPage() {
     return <ErrorState message="No se pudo cargar el proyecto." onRetry={() => refetch()} />
   }
 
-  const isCreator = project.creadorId === user?.id
   const canInvest = isInvestor && project.estado === 'FINANCIAMIENTO'
   const daysRemaining = project.plazo ? differenceInDays(new Date(project.plazo), new Date()) : null
 
@@ -387,10 +439,10 @@ export default function ProjectDetailPage() {
           <div className="space-y-2">
             <div className="flex items-center gap-3 flex-wrap">
               <h1 className="text-2xl font-bold text-white">{project.titulo}</h1>
-              {project.esDestacado && (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-500/15 text-amber-300 border border-amber-500/25">
+              {project.montoBoost > 0 && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-500/15 text-amber-300 border border-amber-500/25 shadow-sm shadow-amber-500/10">
                   <Star className="w-3 h-3 fill-amber-400" />
-                  DESTACADO
+                  🔥 {Number(project.montoBoost).toLocaleString()} $IDEA
                 </span>
               )}
             </div>
@@ -409,12 +461,12 @@ export default function ProjectDetailPage() {
             project={project}
             isCreator={isCreator}
             isAdmin={isAdmin}
+            isAuditor={isAuditor}
             canInvest={canInvest}
             onInvest={() => setShowDisclaimerDialog(true)}
-            onRefund={() => setShowRefundDialog(true)}
             onBoost={() => boostProject.mutateAsync(projectId).then(refetch)}
-            onDesboost={() => desboostProject.mutateAsync(projectId).then(refetch)}
             onTransition={transitionTo}
+            onAudit={(resultado) => setAuditDialogState({ open: true, resultado })}
             onPublish={publishProject}
             onClose={() => closeProject.mutateAsync(projectId).then(refetch)}
             onEvaluateStates={() => evaluateStates.mutateAsync().then(refetch)}
@@ -479,20 +531,20 @@ export default function ProjectDetailPage() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <MetricCard icon={Coins} label="Cupo máximo" value={project.cupoMaximoTokens?.toLocaleString() ?? '—'} valueClass="text-violet-300" />
                 <MetricCard icon={Wallet} label="Valor nominal" value={project.valorNominalToken ? formatCurrency(project.valorNominalToken) : '—'} valueClass="text-violet-300" />
-                <MetricCard icon={TrendingUp} label="Estado en blockchain" value={project.tokenAddress ? 'Creado' : 'Pendiente'} valueClass={project.tokenAddress ? 'text-emerald-300' : 'text-amber-300'} />
+                <MetricCard icon={TrendingUp} label="Estado en blockchain" value={tokenInfo?.contractAddress ? 'Creado' : 'Pendiente'} valueClass={tokenInfo?.contractAddress ? 'text-emerald-300' : 'text-amber-300'} />
               </div>
             )}
-            {project.tokenAddress && (
+            {tokenInfo?.contractAddress && (
               <div className="flex items-center gap-2 text-xs text-slate-500">
                 <ShieldCheck className="w-3.5 h-3.5 text-violet-400" />
                 <span>Token contract:</span>
                 <a
-                  href={`https://sepolia.basescan.org/token/${project.tokenAddress}`}
+                  href={`https://sepolia.basescan.org/token/${tokenInfo.contractAddress}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-violet-400 hover:text-violet-300 transition-colors font-mono"
                 >
-                  {project.tokenAddress.slice(0, 8)}...{project.tokenAddress.slice(-6)}
+                  {tokenInfo.contractAddress.slice(0, 8)}...{tokenInfo.contractAddress.slice(-6)}
                   <ExternalLink className="w-3 h-3 inline ml-1" />
                 </a>
               </div>
@@ -540,17 +592,26 @@ export default function ProjectDetailPage() {
         onSuccess={refetch}
       />
 
-      <RefundDialog
-        open={showRefundDialog}
-        onOpenChange={setShowRefundDialog}
-        projectId={projectId}
-        onSuccess={refetch}
-      />
+
 
       <OracleBillingForm
         projectId={projectId}
         open={showOracleBillingForm}
         onOpenChange={setShowOracleBillingForm}
+      />
+
+      <AuditDialog
+        open={auditDialogState.open}
+        onOpenChange={(open) => setAuditDialogState(prev => ({ ...prev, open }))}
+        onConfirm={handleAuditSubmit}
+        resultado={auditDialogState.resultado}
+        transitioning={transitioning}
+      />
+
+      <PublishSuccessModal
+        open={!!publishSuccessToken}
+        onOpenChange={(open) => !open && setPublishSuccessToken(null)}
+        tokenAddress={publishSuccessToken}
       />
 
       <GasErrorModal

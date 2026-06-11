@@ -4,6 +4,7 @@ import { usePermissions, useAuthStore } from '@/stores/auth-store'
 import { useProjects, useEvaluateStates } from '@/hooks/use-projects'
 import { useDashboardStats, useModulesStatus } from '@/hooks/use-dashboard'
 import { PageHeader } from '@/components/shared/page-header'
+import { statusLabels } from '@/lib/project-constants'
 import { Skeleton, StatSkeleton } from '@/components/shared/loading-skeleton'
 import { ErrorState } from '@/components/shared/error-state'
 import { Button } from '@/components/ui/button'
@@ -198,7 +199,7 @@ export default function DashboardPage() {
         ? `Buscando inversión - ${formatCurrency(p.montoRequerido ?? 0)}`
         : p.estado === 'EJECUCION'
           ? 'Proyecto en ejecución'
-          : `Estado: ${p.estado}`,
+          : `Estado: ${statusLabels[p.estado] || p.estado}`,
       timestamp: p.createdAt || p.updatedAt || new Date().toISOString(),
     }))
   }, [projectsData])
@@ -259,12 +260,12 @@ export default function DashboardPage() {
   }, [projectsByStatus])
 
   const formatStateLabel = (name) => {
-    const labels = { PREPARACION: 'Preparación', FINANCIAMIENTO: 'Financiamiento', EJECUCION: 'Ejecución', FINALIZADO: 'Finalizado', CANCELADO: 'Cancelado' }
+    const labels = { PREPARACION: 'Preparación', EN_AUDITORIA: 'En Auditoría', AUDITADO: 'Auditado', FINANCIAMIENTO: 'Financiamiento', EJECUCION: 'Ejecución', FINALIZADO: 'Finalizado', CANCELADO: 'Cancelado' }
     return labels[name] || name
   }
 
   const getCellColor = (name) => {
-    const colors = { PREPARACION: '#f59e0b', FINANCIAMIENTO: '#8b5cf6', EJECUCION: '#10b981', FINALIZADO: '#3b82f6', CANCELADO: '#ef4444' }
+    const colors = { PREPARACION: '#f59e0b', EN_AUDITORIA: '#f59e0b', AUDITADO: '#10b981', FINANCIAMIENTO: '#8b5cf6', EJECUCION: '#10b981', FINALIZADO: '#3b82f6', CANCELADO: '#ef4444' }
     return colors[name] || '#64748b'
   }
 
@@ -382,24 +383,18 @@ export default function DashboardPage() {
       <PageHeader
         title={`Bienvenido, ${user?.name || 'Usuario'}`}
         description="Resumen de tu actividad en la plataforma"
-      >
-        {isCreator && (
-          <Link to="/proyectos/crear">
-            <Button className="bg-violet-600 hover:bg-violet-500 text-white shadow-lg shadow-violet-600/20 cursor-pointer">
-              + Nuevo proyecto
-            </Button>
-          </Link>
-        )}
-      </PageHeader>
+      />
 
       {/* 1. Métricas Principales (Del código Original) */}
-      <section aria-label="Métricas principales">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {statCards.map((stat, i) => (
-            <StatCard key={stat.title} {...stat} index={i} />
-          ))}
-        </div>
-      </section>
+      {isAdmin && (
+        <section aria-label="Métricas principales">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {statCards.map((stat, i) => (
+              <StatCard key={stat.title} {...stat} index={i} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* 3. Gráficos del ecosistema (NUEVO) */}
       <section aria-label="Gráficos del ecosistema" className="grid grid-cols-1 lg:grid-cols-2 gap-6">

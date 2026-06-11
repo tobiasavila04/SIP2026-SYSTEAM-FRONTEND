@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useWalletSummary } from '@/hooks/use-wallet'
-import { useRefundInvestment } from '@/hooks/use-investment'
 import { useInvestmentHistory } from '@/hooks/use-investment-history'
 import { TxHashLink } from '@/components/shared/tx-hash-link'
 import { PageHeader } from '@/components/shared/page-header'
@@ -56,24 +55,11 @@ export default function InvestmentHistoryPage() {
   const [page, setPage] = useState(0)
   const { data: walletSummary, isLoading: summaryLoading } = useWalletSummary()
   const { data: historyPage, isLoading: historyLoading, isError, refetch } = useInvestmentHistory(page, 10)
-  const refundMutation = useRefundInvestment()
-
   const isLoading = summaryLoading || historyLoading
   const portfolio = walletSummary?.portfolio ?? []
   const saldoIdea = walletSummary?.balances?.idea ?? 0
   const investments = historyPage?.content ?? []
   const totalPages = historyPage?.totalPages ?? 0
-
-  const handleRefund = async (inv) => {
-    if (!confirm(`¿Solicitar reembolso de ${formatCurrency(inv.montoIdea)} en "${inv.proyectoTitulo}"?`)) return
-    try {
-      await refundMutation.mutateAsync(inv.id)
-      toast.success('Reembolso procesado correctamente')
-      refetch()
-    } catch (e) {
-      toast.error(e?.message || 'Error al procesar el reembolso')
-    }
-  }
 
   if (isLoading) {
     return (
@@ -181,21 +167,7 @@ export default function InvestmentHistoryPage() {
                         <StatusBadgeInvestment estado={inv.estado} />
                       </td>
                       <td className="px-4 py-3">
-                        {isRefundable && (
-                          <Button
-                            onClick={() => handleRefund(inv)}
-                            size="sm"
-                            variant="outline"
-                            disabled={refundMutation.isPending}
-                            className="gap-1.5 border-amber-500/20 text-amber-400 hover:bg-amber-500/10 text-xs h-7 px-2.5"
-                          >
-                            {refundMutation.isPending
-                              ? <Loader2 className="w-3 h-3 animate-spin" />
-                              : <RefreshCw className="w-3 h-3" />
-                            }
-                            Reembolso
-                          </Button>
-                        )}
+                        {/* El reembolso ahora es procesado automáticamente por el backend */}
                       </td>
                     </tr>
                   )

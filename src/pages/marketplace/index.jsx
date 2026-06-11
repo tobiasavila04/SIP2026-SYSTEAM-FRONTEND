@@ -6,6 +6,7 @@ import { Skeleton } from '@/components/shared/loading-skeleton'
 import { ErrorState } from '@/components/shared/error-state'
 import { CreateListingModal } from '@/components/features/marketplace/create-listing-modal'
 import { BuyListingModal } from '@/components/features/marketplace/buy-listing-modal'
+import { TxHashLink } from '@/components/shared/tx-hash-link'
 import { useMarketplaceListings } from '@/hooks/use-marketplace'
 import { formatCurrency } from '@/lib/utils'
 import {
@@ -206,6 +207,7 @@ export default function MarketplacePage() {
                   <th className="py-3 px-4 text-right">Cantidad</th>
                   <th className="py-3 px-4 text-right">Precio Unitario</th>
                   <th className="py-3 px-4 text-right">Total</th>
+                  <th className="py-3 px-4 text-center">Tx</th>
                   <th className="py-3 px-4 text-right">Acción</th>
                 </tr>
               </thead>
@@ -234,6 +236,9 @@ export default function MarketplacePage() {
                       </td>
                       <td className="py-4 px-4 text-right font-mono font-bold text-white">
                         {formatCurrency(totalPrice)}
+                      </td>
+                      <td className="py-4 px-4 text-center">
+                        {listing.txHash ? <TxHashLink hash={listing.txHash} /> : <span className="text-xs text-slate-500">-</span>}
                       </td>
                       <td className="py-4 px-4 text-right">
                         <Button
