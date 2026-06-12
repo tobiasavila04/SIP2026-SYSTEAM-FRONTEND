@@ -137,6 +137,7 @@ export function InvestmentModal({ open, onOpenChange, projectId, projectTitle, s
   const [step, setStep] = useState('form')
   const [investHash, setInvestHash] = useState(null)
   const [errorInfo, setErrorInfo] = useState(null)
+  const [frozenAmount, setFrozenAmount] = useState(null)
   const inputRef = useRef(null)
 
   const { address, isConnected } = useAccount()
@@ -201,9 +202,10 @@ export function InvestmentModal({ open, onOpenChange, projectId, projectTitle, s
       return
     }
 
+    setFrozenAmount(effectiveAmount)
+    setStep('backend')
+    
     try {
-      setStep('backend')
-      
       const ideaTokenAddress = import.meta.env.VITE_IDEA_TOKEN_ADDRESS
       const swapAddress = import.meta.env.VITE_INVESTMENT_SWAP_ADDRESS
       const amountWei = parseUnits(String(numEffectiveAmount), 18)
@@ -256,6 +258,7 @@ export function InvestmentModal({ open, onOpenChange, projectId, projectTitle, s
   const handleClose = () => {
     if (step !== 'backend') {
       reset()
+      setFrozenAmount(null)
       onOpenChange(false)
     }
   }
@@ -286,11 +289,11 @@ export function InvestmentModal({ open, onOpenChange, projectId, projectTitle, s
         <div className="px-6 py-4">
           {step === 'done' && investHash ? (
             <StateSuccess
-              amount={effectiveAmount}
+              amount={frozenAmount || effectiveAmount}
               subtokens={subTokensARecebir}
               projectTitle={projectTitle}
               txHash={investHash}
-              onClose={() => { reset(); onOpenChange(false) }}
+              onClose={() => { reset(); setFrozenAmount(null); onOpenChange(false) }}
               symbol={symbol}
             />
           ) : step === 'error' ? (

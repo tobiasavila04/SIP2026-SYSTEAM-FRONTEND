@@ -60,7 +60,7 @@ export const API_ENDPOINTS = {
   PROJECT_SMART_CONTRACT: (id) =>
     buildProjectUrl(`/api/projects/${id}/smart-contract`),
   PROJECT_EVALUATE_STATES: buildProjectUrl("/api/projects/evaluate-states"),
-  PROJECT_CLOSE: (id) => buildProjectUrl(`/api/projects/${id}/close`),
+  PROJECT_CLOSE: (id) => buildProjectUrl(`/api/projects/${id}/status?status=FINALIZADO`),
   PROJECT_BOOST: (id) => buildProjectUrl(`/api/projects/${id}/boost`),
   PROJECT_DESBOOST: (id) => buildProjectUrl(`/api/projects/${id}/desboost`),
 

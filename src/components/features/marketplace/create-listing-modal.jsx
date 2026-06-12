@@ -47,13 +47,17 @@ export function CreateListingModal({ open, onOpenChange }) {
     const newErrors = {}
     
     if (!subtokenId) {
-      newErrors.subtoken = 'Por favor, selecciona un token para vender'
+      newErrors.subtoken = 'Seleccioná un sub-token'
     }
     if (!cantidad || Number(cantidad) <= 0) {
       newErrors.cantidad = 'La cantidad debe ser mayor a 0'
     }
-    if (!precioPorToken || Number(String(precioPorToken).replace(',', '.')) <= 0) {
+    
+    const numPrecio = Number(String(precioPorToken).replace(',', '.'))
+    if (!precioPorToken || numPrecio <= 0) {
       newErrors.precio = 'El precio unitario debe ser mayor a 0'
+    } else if (!Number.isInteger(numPrecio)) {
+      newErrors.precio = 'El precio unitario debe ser un número entero (sin centavos)'
     }
     
     if (Object.keys(newErrors).length > 0) {
@@ -74,14 +78,16 @@ export function CreateListingModal({ open, onOpenChange }) {
     setIsTxPending(true)
     try {
       const selectedToken = portfolio.find(p => String(p.subtokenId) === String(subtokenId))
-      if (!selectedToken || !selectedToken.contractAddress) {
-         throw new Error("No se pudo encontrar la direccin del token en la blockchain")
-      }
+      if (!selectedToken) throw new Error('Token no encontrado')
       
       const subtokenAddress = selectedToken.contractAddress
       const marketplaceAddress = import.meta.env.VITE_IDEA_MARKETPLACE_ADDRESS
       const amountWei = parseUnits(String(cantidad), 18)
-      const priceWei = parseUnits(String(precioPorToken).replace(',', '.'), 18)
+      
+      // HACK: Mandamos el precio "desescalado" (sin los 18 ceros) para que la matemática 
+      // del contrato (amount * price) no explote generando 10^36.
+      const numPrecio = Number(String(precioPorToken).replace(',', '.'))
+      const unscaledPrice = BigInt(Math.floor(numPrecio))
       
       toast.loading('Aprobando el uso de tokens...', { id: 'list_tx' })
       const approveHash = await writeContractAsync({
@@ -92,12 +98,12 @@ export function CreateListingModal({ open, onOpenChange }) {
       })
       await waitForTransactionReceipt(config, { hash: approveHash })
       
-      toast.loading('Publicando en el marketplace...', { id: 'list_tx' })
+      toast.loading('Publicando orden en la red...', { id: 'list_tx' })
       const listTxHash = await writeContractAsync({
         address: marketplaceAddress,
         abi: IDEA_MARKETPLACE_ABI,
         functionName: 'listTokens',
-        args: [subtokenAddress, amountWei, priceWei],
+        args: [subtokenAddress, amountWei, unscaledPrice],
       })
       await waitForTransactionReceipt(config, { hash: listTxHash })
       
@@ -120,10 +126,16 @@ export function CreateListingModal({ open, onOpenChange }) {
       setErrors({})
     } catch (error) {
       toast.dismiss('list_tx')
+      const msg = error?.shortMessage || error?.message || ''
+      if (msg.toLowerCase().includes('user rejected') || msg.toLowerCase().includes('denied')) {
+        toast.error('Transacción cancelada por el usuario')
+        return
+      }
+
       if (error?.fieldErrors) {
         setErrors(error.fieldErrors)
       } else {
-        setErrors({ general: error?.message || error?.shortMessage || 'Error al publicar la orden de venta' })
+        setErrors({ general: msg || 'Error al publicar la orden de venta' })
       }
     } finally {
       setIsTxPending(false)

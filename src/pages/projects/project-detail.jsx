@@ -234,12 +234,20 @@ function StatusActions({ project, isCreator, isAdmin, isAuditor, canInvest, onIn
         </Button>
       )}
 
-      {project.estado !== 'FINALIZADO' && project.estado !== 'RECHAZADO' && project.estado !== 'CANCELADO' && (
-        <Button onClick={onBoost} disabled={transitioning} variant="outline" className="gap-2 border-amber-500/20 text-amber-400 hover:bg-amber-500/10 h-9 px-4 text-sm rounded-lg shadow-sm shadow-amber-500/10">
-          <Star className="w-4 h-4 fill-amber-500/50" />
-          Sumar Boost (100 $IDEA)
-        </Button>
-      )}
+        {/* Boost Button (slo si se permite boost) */}
+        {project.estado === 'FINANCIAMIENTO' && !project.esDestacado && (
+          <Button onClick={onBoost} disabled={transitioning} variant="outline" className="gap-2 border-amber-500/20 text-amber-400 hover:bg-amber-500/10 h-9 px-4 text-sm rounded-lg shadow-sm shadow-amber-500/10">
+            <Star className="w-4 h-4 fill-amber-500/50" />
+            Sumar Boost (100 $IDEA)
+          </Button>
+        )}
+
+        {project.estado === 'FINANCIAMIENTO' && project.esDestacado && (
+          <Button onClick={onDesboost} disabled={transitioning} variant="outline" className="gap-2 border-amber-500/20 text-amber-400 hover:bg-amber-500/10 h-9 px-4 text-sm rounded-lg shadow-sm shadow-amber-500/10">
+            <StarOff className="w-4 h-4 text-amber-500/50" />
+            Quitar Boost
+          </Button>
+        )}
 
       {isCreator && ['PREPARACION', 'EN_AUDITORIA', 'AUDITADO', 'FINANCIAMIENTO'].includes(project.estado) && (
         <Link to={`/proyectos/${project.id}/editar`}>
@@ -344,6 +352,17 @@ export default function ProjectDetailPage() {
       return
     }
 
+    if (!project.plazo || new Date(project.plazo) <= new Date()) {
+      toast.error('La fecha límite de financiamiento no está definida o ya está en el pasado. Edita el proyecto y selecciona una fecha futura.')
+      return
+    }
+
+    const recaudacionMaxima = (project.valorNominalToken || 0) * (project.cupoMaximoTokens || 0)
+    if (recaudacionMaxima < project.montoRequerido) {
+      toast.error(`No se puede publicar: la recaudación máxima ($${recaudacionMaxima}) no alcanza la meta de financiamiento ($${project.montoRequerido}). Revisa la configuración en Editar.`)
+      return
+    }
+
     setTransitioning(true)
     try {
       toast.info('Publicando proyecto...')
@@ -443,7 +462,13 @@ export default function ProjectDetailPage() {
         toast.error('La transacción falló en la red', { id: 'boost' })
       }
     } catch (err) {
-      toast.error('Error al autorizar o enviar la transacción', { id: 'boost' })
+      toast.dismiss('boost')
+      const msg = err?.shortMessage || err?.message || ''
+      if (msg.toLowerCase().includes('user rejected') || msg.toLowerCase().includes('denied')) {
+        toast.error('Boost cancelado por el usuario')
+      } else {
+        toast.error('Error al autorizar o enviar la transacción')
+      }
     }
   }
 

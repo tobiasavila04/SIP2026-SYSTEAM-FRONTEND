@@ -116,7 +116,7 @@ export function useCloseProject() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (id) =>
-      apiRequest(API_ENDPOINTS.PROJECT_CLOSE(id), { method: 'POST' }),
+      apiRequest(API_ENDPOINTS.PROJECT_CLOSE(id), { method: 'PATCH' }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: projectKeys.all })
       toast.success('Proyecto cerrado exitosamente')

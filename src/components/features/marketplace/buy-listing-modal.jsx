@@ -111,10 +111,16 @@ export function BuyListingModal({ open, onOpenChange, listing }) {
       onOpenChange(false)
     } catch (error) {
       toast.dismiss('buy_tx')
+      const msg = error?.shortMessage || error?.message || ''
+      if (msg.toLowerCase().includes('user rejected') || msg.toLowerCase().includes('denied')) {
+        toast.error('Transacción cancelada por el usuario')
+        return
+      }
+
       if (error?.fieldErrors) {
         setErrors(error.fieldErrors)
       } else {
-        setErrors({ general: error?.message || error?.shortMessage || 'Error al procesar la compra' })
+        setErrors({ general: msg || 'Error al procesar la compra' })
       }
     } finally {
       setIsTxPending(false)

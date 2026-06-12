@@ -29,11 +29,19 @@ const projectSchema = z.object({
   descripcion: z.string().min(1, 'La descripción es obligatoria'),
   rubro: z.coerce.number().min(1, 'Debe seleccionar un rubro'),
   montoRequerido: z.coerce.number().min(0.01, 'La meta debe ser mayor a 0'),
-  plazo: z.string().min(1, 'La fecha límite es obligatoria'),
+  plazo: z.string().min(1, 'La fecha límite es obligatoria').refine((val) => new Date(val) > new Date(), {
+    message: 'La fecha límite debe estar en el futuro',
+  }),
   gobernanzaComunidad: z.boolean().optional(),
-  cupoMaximoTokens: z.coerce.number().int().min(1, 'Debe emitirse al menos 1 token'),
+  cupoMaximoTokens: z.coerce.number().int().min(2, 'Debe emitirse al menos 2 tokens'),
   valorNominalToken: z.coerce.number().min(0.01, 'El valor nominal debe ser mayor a 0'),
   simbolo: z.string().min(2, 'Mínimo 2 caracteres').max(5, 'Máximo 5 caracteres').toUpperCase(),
+}).refine((data) => {
+  const maxRecaudacion = (data.cupoMaximoTokens || 0) * (data.valorNominalToken || 0);
+  return maxRecaudacion >= data.montoRequerido;
+}, {
+  message: 'El valor total de los tokens no alcanza la meta de financiamiento',
+  path: ['cupoMaximoTokens'],
 })
 
 function Card({ icon: Icon, title, description, children }) {
@@ -66,6 +74,7 @@ export function ProjectForm({ defaultValues, onSubmit, isEdit, projectState }) {
 
   const form = useForm({
     resolver: zodResolver(projectSchema),
+    mode: 'onChange',
     defaultValues: {
       titulo: defaultValues?.titulo || '',
       descripcion: defaultValues?.descripcion || '',
@@ -182,9 +191,15 @@ export function ProjectForm({ defaultValues, onSubmit, isEdit, projectState }) {
                 render={({ field }) => (
                     <FormItem>
                     <FormLabel>Fecha límite</FormLabel>
-                    <FormControl>
-                      <Input disabled={isDescriptionOnly} type="datetime-local" required {...field} />
-                    </FormControl>
+                      <FormControl>
+                        <Input 
+                          disabled={isDescriptionOnly} 
+                          type="datetime-local" 
+                          min={new Date().toISOString().slice(0, 16)} 
+                          required 
+                          {...field} 
+                        />
+                      </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -205,7 +220,7 @@ export function ProjectForm({ defaultValues, onSubmit, isEdit, projectState }) {
                       <Input
                         disabled={isDescriptionOnly}
                         type="number"
-                        min="1"
+                        min="2"
                         step="1"
                         placeholder="ej: 10000"
                         required
@@ -270,17 +285,28 @@ export function ProjectForm({ defaultValues, onSubmit, isEdit, projectState }) {
               />
             </div>
 
-            {supply && price && (
-              <div className="rounded-lg bg-indigo-500/5 border border-indigo-500/10 p-4 flex items-center justify-between">
-                <div className="flex items-center gap-2 text-sm text-gray-400">
-                  <Calculator className="w-4 h-4 text-indigo-400" />
-                  <span>Capital total si se venden todos los tokens</span>
-                </div>
-                <span className="text-lg font-bold text-indigo-300">
-                  {formatCurrency(total)}
-                </span>
-              </div>
-            )}
+            {supply && price && (() => {
+                const goal = Number(form.watch('montoRequerido')) || 0;
+                const isShort = total < goal;
+                return (
+                  <div className={`rounded-lg border p-4 flex flex-col gap-2 ${isShort ? 'bg-red-500/5 border-red-500/20' : 'bg-indigo-500/5 border-indigo-500/10'}`}>
+                    <div className="flex items-center justify-between">
+                      <div className={`flex items-center gap-2 text-sm ${isShort ? 'text-red-400' : 'text-gray-400'}`}>
+                        <Calculator className={`w-4 h-4 ${isShort ? 'text-red-400' : 'text-indigo-400'}`} />
+                        <span>Capital total si se venden todos los tokens</span>
+                      </div>
+                      <span className={`text-lg font-bold ${isShort ? 'text-red-400' : 'text-indigo-300'}`}>
+                        {formatCurrency(total)}
+                      </span>
+                    </div>
+                    {isShort && (
+                      <p className="text-xs text-red-400 mt-1">
+                        El capital total emitido debe ser mayor o igual a la meta de financiamiento ({formatCurrency(goal)}). Incrementá la cantidad o el precio de los tokens.
+                      </p>
+                    )}
+                  </div>
+                );
+              })()}
           </Card>
 
           {/* Footer */}
