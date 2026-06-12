@@ -29,7 +29,7 @@ import { formatCurrency, formatDate } from '@/lib/utils'
 import { ERC20_ABI } from '@/lib/abis'
 import { toast } from 'sonner'
 import { differenceInDays } from 'date-fns'
-import { ArrowLeft, Target, Calendar, Coins, Wallet, Loader2, TrendingUp, Rocket, CheckCircle2, Ban, SquarePen, ExternalLink, RefreshCw, AlertTriangle, Star, Sparkles, ShieldCheck, FileText } from 'lucide-react'
+import { ArrowLeft, Target, Calendar, Coins, Wallet, Loader2, TrendingUp, Rocket, CheckCircle2, Ban, SquarePen, ExternalLink, RefreshCw, AlertTriangle, Star, StarOff, Sparkles, ShieldCheck, FileText } from 'lucide-react'
 
 const VITE_INVESTMENT_SWAP_ADDRESS = import.meta.env.VITE_INVESTMENT_SWAP_ADDRESS
 
