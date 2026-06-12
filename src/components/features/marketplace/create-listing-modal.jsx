@@ -37,6 +37,9 @@ export function CreateListingModal({ open, onOpenChange }) {
 
   // Dynamic cost evaluation
   const total = Number(cantidad || 0) * Number(String(precioPorToken).replace(',', '.') || 0)
+
+  const selectedTokenForValidation = portfolio.find(p => String(p.subtokenId) === String(subtokenId))
+  const isInvalidState = selectedTokenForValidation && selectedTokenForValidation.proyectoEstado !== 'EJECUCION' && selectedTokenForValidation.proyectoEstado !== 'FINALIZADO'
   
   const handleInitialSubmit = (e) => {
     e.preventDefault()
@@ -55,6 +58,10 @@ export function CreateListingModal({ open, onOpenChange }) {
     
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
+      return
+    }
+
+    if (isInvalidState) {
       return
     }
     
@@ -227,6 +234,12 @@ export function CreateListingModal({ open, onOpenChange }) {
                 {errors.subtoken && (
                   <span className="text-xs text-red-500 font-medium mt-1">{errors.subtoken}</span>
                 )}
+                {isInvalidState && !errors.subtoken && (
+                  <span className="text-xs text-amber-500 font-medium mt-1 flex items-center gap-1">
+                    <AlertTriangle className="w-3 h-3" />
+                    Solo se pueden vender tokens de proyectos en Ejecución o Finalizados.
+                  </span>
+                )}
               </div>
               {/* Cantidad Input */}
               <div className="space-y-2 flex flex-col">
@@ -289,7 +302,7 @@ export function CreateListingModal({ open, onOpenChange }) {
                 </Button>
                 <Button
                   type="submit"
-                  disabled={createListing.isPending || portfolio.length === 0}
+                  disabled={createListing.isPending || portfolio.length === 0 || isInvalidState}
                   className="bg-violet-600 hover:bg-violet-500 text-white cursor-pointer"
                 >
                   Continuar
