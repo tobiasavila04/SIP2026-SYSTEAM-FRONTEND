@@ -233,6 +233,7 @@ export function InvestmentModal({ open, onOpenChange, projectId, projectTitle, s
         proyectoId: projectId,
         montoIdea: numEffectiveAmount,
         txHash: investTxHash,
+        walletAddress: address
       })
 
       setStep('done')
