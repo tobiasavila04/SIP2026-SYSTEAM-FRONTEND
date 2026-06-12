@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 
 function mapProjectFormToApi(formData) {
   const apiData = { titulo: formData.titulo, descripcion: formData.descripcion, montoRequerido: formData.montoRequerido }
+  if (formData.rubro != null) apiData.rubro = formData.rubro
   if (formData.plazo != null) apiData.plazo = formData.plazo
   if (formData.gobernanzaComunidad != null) apiData.gobernanzaComunidad = formData.gobernanzaComunidad
   if (formData.cupoMaximoTokens != null) apiData.cupoMaximoTokens = formData.cupoMaximoTokens

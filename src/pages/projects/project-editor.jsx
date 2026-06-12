@@ -45,6 +45,7 @@ export default function ProjectEditorPage() {
           defaultValues={{
             titulo: project.titulo,
             descripcion: project.descripcion,
+            rubro: project.rubro,
             montoRequerido: project.montoRequerido,
             plazo: project.plazo,
             gobernanzaComunidad: project.gobernanzaComunidad,

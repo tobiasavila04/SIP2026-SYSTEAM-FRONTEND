@@ -15,11 +15,19 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Coins, Calculator, Sparkles } from 'lucide-react'
 
 const projectSchema = z.object({
   titulo: z.string().min(1, 'El nombre del proyecto es obligatorio'),
   descripcion: z.string().min(1, 'La descripción es obligatoria'),
+  rubro: z.coerce.number().min(1, 'Debe seleccionar un rubro'),
   montoRequerido: z.coerce.number().min(0.01, 'La meta debe ser mayor a 0'),
   plazo: z.string().min(1, 'La fecha límite es obligatoria'),
   gobernanzaComunidad: z.boolean().optional(),
@@ -61,6 +69,7 @@ export function ProjectForm({ defaultValues, onSubmit, isEdit, projectState }) {
     defaultValues: {
       titulo: defaultValues?.titulo || '',
       descripcion: defaultValues?.descripcion || '',
+      rubro: defaultValues?.rubro || undefined,
       montoRequerido: defaultValues?.montoRequerido || undefined,
       plazo: defaultValues?.plazo || '',
       gobernanzaComunidad: defaultValues?.gobernanzaComunidad || false,
@@ -103,6 +112,29 @@ export function ProjectForm({ defaultValues, onSubmit, isEdit, projectState }) {
                   <FormControl>
                     <Input disabled={isDescriptionOnly} placeholder="ej: Sistema de Riego Inteligente" maxLength={200} required {...field} />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="rubro"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Rubro</FormLabel>
+                  <Select disabled={isDescriptionOnly} onValueChange={field.onChange} defaultValue={field.value?.toString()}>
+                    <FormControl>
+                      <SelectTrigger className="bg-[#151b2b] border-gray-800">
+                        <SelectValue placeholder="Seleccioná un rubro" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent className="bg-[#151b2b] border-gray-800 text-white">
+                      <SelectItem value="4">Agro</SelectItem>
+                      <SelectItem value="1">Tech</SelectItem>
+                      <SelectItem value="3">Inmobiliario</SelectItem>
+                      <SelectItem value="2">Gastro</SelectItem>
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
