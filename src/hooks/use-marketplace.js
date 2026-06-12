@@ -73,10 +73,10 @@ export function useBuyListing() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ id, cantidad }) =>
+    mutationFn: ({ id, cantidad, txHash }) =>
       apiRequest(`${API_ENDPOINTS.MARKETPLACE_LISTINGS}/${id}/buy`, {
         method: 'POST',
-        params: { cantidad },
+        params: { cantidad, txHash },
       }),
     onSuccess: () => {
       // Invalidate both listings and wallet queries to update quantities and balances

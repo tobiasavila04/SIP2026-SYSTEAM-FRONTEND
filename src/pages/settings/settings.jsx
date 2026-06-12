@@ -162,7 +162,6 @@ export default function SettingsPage() {
   const user = useAuthStore((s) => s.user)
   const setUser = useAuthStore((s) => s.setUser)
   const roles = useAuthStore((s) => s.roles)
-  const permissions = useAuthStore((s) => s.permissions)
   const updateUser = useUpdateUserPartial()
 
   const [activeSection, setActiveSection] = useState('profile')
@@ -383,18 +382,6 @@ export default function SettingsPage() {
                             </StatusBadge>
                           ))}
                         </div>
-                        {permissions.length > 0 && (
-                          <>
-                            <p className="text-xs text-slate-500 mt-3 mb-2">Permisos</p>
-                            <div className="flex gap-1 flex-wrap">
-                              {permissions.map((perm) => (
-                                <span key={perm} className="text-[10px] text-violet-400 bg-violet-500/10 px-1.5 py-0.5 rounded">
-                                  {perm}
-                                </span>
-                              ))}
-                            </div>
-                          </>
-                        )}
                       </div>
                     </div>
                   </div>

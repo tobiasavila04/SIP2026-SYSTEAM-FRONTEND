@@ -89,8 +89,16 @@ function WalletInfo({ collapsed }) {
 export function Sidebar({ collapsed, onToggle }) {
   const roles = useAuthStore((s) => s.roles)
   const isAdmin = roles.includes('ADMIN')
-  const { isCreator, isInvestor } = usePermissions()
+  const { isCreator, isInvestor, can } = usePermissions()
   const showGanancias = isCreator || isInvestor
+
+  const filteredMainNav = mainNav.filter(item => {
+    if (item.to === '/inversiones') return can('investment:read') || can('investment:create')
+    if (item.to === '/marketplace') return can('investment:create')
+    if (item.to === '/gobernanza') return can('investment:create')
+    if (item.to === '/billetera') return isCreator || isInvestor
+    return true
+  })
 
   return (
     <>
@@ -139,7 +147,7 @@ export function Sidebar({ collapsed, onToggle }) {
 
         <nav aria-label="Secciones" className="flex-1 p-2 space-y-1 overflow-y-auto">
           <NavSection label={collapsed ? undefined : 'Principal'}>
-            {mainNav.flatMap(({ to, label, icon: Icon }) => {
+            {filteredMainNav.flatMap(({ to, label, icon: Icon }) => {
               const items = [
                 <NavItem key={to} to={to} icon={Icon} label={label} collapsed={collapsed} />,
               ]

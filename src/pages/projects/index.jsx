@@ -73,8 +73,8 @@ export default function ProjectCatalogPage() {
   const [sortBy, setSortBy] = useState('reciente')
   const [page, setPage] = useState(0)
   const usuarioId = useAuthStore((s) => s.user?.id)
-  const { isCreator, isAdmin } = usePermissions()
-  const puedeCrear = isCreator || isAdmin
+  const { can } = usePermissions()
+  const puedeCrear = can('project:create')
 
   const { data: publicData, isLoading: publicLoading, isError: publicError, refetch: publicRefetch } = useProjects({
     search,

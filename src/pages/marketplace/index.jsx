@@ -26,7 +26,10 @@ import {
   CartesianGrid
 } from 'recharts'
 
+import { usePermissions } from '@/stores/auth-store'
+
 export default function MarketplacePage() {
+  const { can } = usePermissions()
   const [modalOpen, setModalOpen] = useState(false)
   const [buyingListing, setBuyingListing] = useState(null)
   const { data: listings, isLoading, isError, refetch } = useMarketplaceListings()
@@ -50,16 +53,7 @@ export default function MarketplacePage() {
   // Depth chart data mapping
   const chartData = useMemo(() => {
     if (activeListings.length === 0) {
-      // Fallback simulated depth curve if book is empty
-      return [
-        { precioTexto: '$1.10', precio: 1.10, volumenExacto: 100, volumenAcumulado: 100 },
-        { precioTexto: '$1.15', precio: 1.15, volumenExacto: 150, volumenAcumulado: 250 },
-        { precioTexto: '$1.20', precio: 1.20, volumenExacto: 350, volumenAcumulado: 600 },
-        { precioTexto: '$1.25', precio: 1.25, volumenExacto: 200, volumenAcumulado: 800 },
-        { precioTexto: '$1.35', precio: 1.35, volumenExacto: 400, volumenAcumulado: 1200 },
-        { precioTexto: '$1.40', precio: 1.40, volumenExacto: 300, volumenAcumulado: 1500 },
-        { precioTexto: '$1.45', precio: 1.45, volumenExacto: 500, volumenAcumulado: 2000 }
-      ]
+      return []
     }
     
     // Group by price to create a Depth Chart
@@ -123,12 +117,14 @@ export default function MarketplacePage() {
         title="Marketplace"
         description="Compra y vende sub-tokens de proyectos en el mercado secundario"
       >
-        <Button
-          onClick={() => setModalOpen(true)}
-          className="bg-violet-600 hover:bg-violet-500 text-white font-medium shadow-md shadow-violet-600/10 cursor-pointer"
-        >
-          + Publicar Venta
-        </Button>
+        {can('investment:create') && (
+          <Button
+            onClick={() => setModalOpen(true)}
+            className="bg-violet-600 hover:bg-violet-500 text-white font-medium shadow-md shadow-violet-600/10 cursor-pointer"
+          >
+            + Publicar Venta
+          </Button>
+        )}
       </PageHeader>
 
       {/* Gráfico del Mercado */}
@@ -241,16 +237,18 @@ export default function MarketplacePage() {
                         {listing.txHash ? <TxHashLink hash={listing.txHash} /> : <span className="text-xs text-slate-500">-</span>}
                       </td>
                       <td className="py-4 px-4 text-right">
-                        <Button
-                          size="sm"
-                          onClick={() => setBuyingListing(listing)}
-                          className="bg-violet-600 hover:bg-violet-500 text-white shadow-sm shadow-violet-600/10 cursor-pointer text-xs h-8 px-4"
-                        >
-                          <span className="flex items-center gap-1.5">
-                            <ShoppingCart className="w-3 h-3" />
-                            Comprar
-                          </span>
-                        </Button>
+                        {can('investment:create') && (
+                          <Button
+                            size="sm"
+                            onClick={() => setBuyingListing(listing)}
+                            className="bg-violet-600 hover:bg-violet-500 text-white shadow-sm shadow-violet-600/10 cursor-pointer text-xs h-8 px-4"
+                          >
+                            <span className="flex items-center gap-1.5">
+                              <ShoppingCart className="w-3 h-3" />
+                              Comprar
+                            </span>
+                          </Button>
+                        )}
                       </td>
                     </motion.tr>
                   )

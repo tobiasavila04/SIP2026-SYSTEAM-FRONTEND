@@ -282,7 +282,7 @@ export default function ProjectDetailPage() {
   const { id } = useParams()
   const projectId = Number(id)
   const usuarioId = useAuthStore((s) => s.user?.id)
-  const { isInvestor, isAdmin, isAuditor } = usePermissions()
+  const { can, isAdmin, isAuditor } = usePermissions()
 
   const { data: project, isLoading, isError, refetch } = useProject(projectId)
   const isCreator = project?.creadorId === usuarioId
@@ -467,7 +467,7 @@ export default function ProjectDetailPage() {
     return <ErrorState message="No se pudo cargar el proyecto." onRetry={() => refetch()} />
   }
 
-  const canInvest = isInvestor && project.estado === 'FINANCIAMIENTO'
+  const canInvest = can('investment:create') && project.estado === 'FINANCIAMIENTO'
   const daysRemaining = project.plazo ? differenceInDays(new Date(project.plazo), new Date()) : null
 
   return (

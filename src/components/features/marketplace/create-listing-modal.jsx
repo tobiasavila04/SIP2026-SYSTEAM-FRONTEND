@@ -9,6 +9,11 @@ import { Skeleton } from '@/components/shared/loading-skeleton'
 import { formatCurrency } from '@/lib/utils'
 import { Loader2, Coins, AlertTriangle } from 'lucide-react'
 import { toast } from 'sonner'
+import { useConfig, useWriteContract } from 'wagmi'
+import { waitForTransactionReceipt } from '@wagmi/core'
+import { parseUnits } from 'viem'
+import { ERC20_ABI, IDEA_MARKETPLACE_ABI } from '@/lib/abis'
+
 function toWeiString(value) {
   const normalized = String(value).replace(',', '.');
   const [intPart, decPart = ''] = normalized.split('.');
@@ -24,7 +29,12 @@ export function CreateListingModal({ open, onOpenChange }) {
   const [precioPorToken, setPrecioPorToken] = useState('')
   const [errors, setErrors] = useState({})
   const [isConfirming, setIsConfirming] = useState(false)
+  const [isTxPending, setIsTxPending] = useState(false)
   const createListing = useCreateListing()
+  
+  const config = useConfig()
+  const { writeContractAsync } = useWriteContract()
+
   // Dynamic cost evaluation
   const total = Number(cantidad || 0) * Number(String(precioPorToken).replace(',', '.') || 0)
   
@@ -54,12 +64,45 @@ export function CreateListingModal({ open, onOpenChange }) {
 
   const handleConfirm = async () => {
     setErrors({})
+    setIsTxPending(true)
     try {
+      const selectedToken = portfolio.find(p => String(p.subtokenId) === String(subtokenId))
+      if (!selectedToken || !selectedToken.contractAddress) {
+         throw new Error("No se pudo encontrar la direccin del token en la blockchain")
+      }
+      
+      const subtokenAddress = selectedToken.contractAddress
+      const marketplaceAddress = import.meta.env.VITE_IDEA_MARKETPLACE_ADDRESS
+      const amountWei = parseUnits(String(cantidad), 18)
+      const priceWei = parseUnits(String(precioPorToken).replace(',', '.'), 18)
+      
+      toast.loading('Aprobando el uso de tokens...', { id: 'list_tx' })
+      const approveHash = await writeContractAsync({
+        address: subtokenAddress,
+        abi: ERC20_ABI,
+        functionName: 'approve',
+        args: [marketplaceAddress, amountWei],
+      })
+      await waitForTransactionReceipt(config, { hash: approveHash })
+      
+      toast.loading('Publicando en el marketplace...', { id: 'list_tx' })
+      const listTxHash = await writeContractAsync({
+        address: marketplaceAddress,
+        abi: IDEA_MARKETPLACE_ABI,
+        functionName: 'listTokens',
+        args: [subtokenAddress, amountWei, priceWei],
+      })
+      await waitForTransactionReceipt(config, { hash: listTxHash })
+      
+      toast.loading('Guardando en el servidor...', { id: 'list_tx' })
       await createListing.mutateAsync({
         subtokenId: Number(subtokenId),
         cantidad: Math.round(Number(cantidad)),
         precioUnitario: toWeiString(precioPorToken),
+        txHash: listTxHash,
       })
+      
+      toast.success('Orden de venta publicada exitosamente', { id: 'list_tx' })
       
       // Close and clear form fields upon success
       onOpenChange(false)
@@ -69,11 +112,14 @@ export function CreateListingModal({ open, onOpenChange }) {
       setPrecioPorToken('')
       setErrors({})
     } catch (error) {
+      toast.dismiss('list_tx')
       if (error?.fieldErrors) {
         setErrors(error.fieldErrors)
       } else {
-        setErrors({ general: error?.message || 'Error al publicar la orden de venta' })
+        setErrors({ general: error?.message || error?.shortMessage || 'Error al publicar la orden de venta' })
       }
+    } finally {
+      setIsTxPending(false)
     }
   }
 
@@ -106,17 +152,18 @@ export function CreateListingModal({ open, onOpenChange }) {
                 type="button"
                 variant="outline"
                 onClick={() => setIsConfirming(false)}
+                disabled={isTxPending || createListing.isPending}
                 className="cursor-pointer border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
-                disabled={createListing.isPending}
               >
                 Cancelar
               </Button>
               <Button
+                type="button"
                 onClick={handleConfirm}
-                disabled={createListing.isPending}
-                className="bg-violet-600 hover:bg-violet-500 text-white cursor-pointer"
+                disabled={isTxPending || createListing.isPending}
+                className="bg-violet-600 hover:bg-violet-500 text-white min-w-[100px] cursor-pointer"
               >
-                {createListing.isPending ? (
+                {isTxPending || createListing.isPending ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin mr-2" />
                     Publicando...

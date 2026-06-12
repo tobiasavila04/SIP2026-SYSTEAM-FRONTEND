@@ -127,3 +127,35 @@ export const INVESTMENT_SWAP_ABI = [
     ],
   },
 ] as const
+
+export const IDEA_MARKETPLACE_ABI = [
+  {
+    type: 'function',
+    name: 'listTokens',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'subToken', type: 'address' },
+      { name: 'amount', type: 'uint256' },
+      { name: 'pricePerToken', type: 'uint256' }
+    ],
+    outputs: []
+  },
+  {
+    type: 'function',
+    name: 'buyTokens',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'listingId', type: 'uint256' },
+      { name: 'amount', type: 'uint256' }
+    ],
+    outputs: []
+  },
+  {
+    type: 'function',
+    name: 'cancelListing',
+    stateMutability: 'nonpayable',
+    inputs: [{ name: 'listingId', type: 'uint256' }],
+    outputs: []
+  }
+]
+

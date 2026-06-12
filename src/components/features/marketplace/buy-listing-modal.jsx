@@ -7,6 +7,11 @@ import { useBuyListing } from '@/hooks/use-marketplace'
 import { useWalletSummary } from '@/hooks/use-wallet'
 import { formatCurrency } from '@/lib/utils'
 import { Loader2, ShoppingCart, AlertTriangle } from 'lucide-react'
+import { useConfig, useWriteContract } from 'wagmi'
+import { waitForTransactionReceipt } from '@wagmi/core'
+import { parseUnits } from 'viem'
+import { ERC20_ABI, IDEA_MARKETPLACE_ABI } from '@/lib/abis'
+import { toast } from 'sonner'
 
 // Helper function to safely parse potential Wei values
 function parseWei(val) {
@@ -23,7 +28,11 @@ export function BuyListingModal({ open, onOpenChange, listing }) {
   const [cantidad, setCantidad] = useState('')
   const [errors, setErrors] = useState({})
   const [isConfirming, setIsConfirming] = useState(false)
+  const [isTxPending, setIsTxPending] = useState(false)
   const buyListing = useBuyListing()
+
+  const config = useConfig()
+  const { writeContractAsync } = useWriteContract()
 
   // Reset state when modal opens/closes or listing changes
   useEffect(() => {
@@ -66,20 +75,49 @@ export function BuyListingModal({ open, onOpenChange, listing }) {
 
   const handleConfirm = async () => {
     setErrors({})
+    setIsTxPending(true)
     try {
+      const marketplaceAddress = import.meta.env.VITE_IDEA_MARKETPLACE_ADDRESS
+      const ideaAddress = import.meta.env.VITE_IDEA_TOKEN_ADDRESS
+      const amountWei = parseUnits(String(cantidad), 18)
+      const totalCostWei = parseUnits(String(totalCost), 18)
+      
+      toast.loading('Aprobando el gasto de $IDEA...', { id: 'buy_tx' })
+      const approveHash = await writeContractAsync({
+        address: ideaAddress,
+        abi: ERC20_ABI,
+        functionName: 'approve',
+        args: [marketplaceAddress, totalCostWei],
+      })
+      await waitForTransactionReceipt(config, { hash: approveHash })
+      
+      toast.loading('Confirmando la compra en la red...', { id: 'buy_tx' })
+      const buyTxHash = await writeContractAsync({
+        address: marketplaceAddress,
+        abi: IDEA_MARKETPLACE_ABI,
+        functionName: 'buyTokens',
+        args: [BigInt(listing.onChainId || listing.id), amountWei],
+      })
+      await waitForTransactionReceipt(config, { hash: buyTxHash })
+
+      toast.loading('Guardando en el servidor...', { id: 'buy_tx' })
       await buyListing.mutateAsync({
         id: listing.id,
         cantidad: Math.round(Number(cantidad)),
+        txHash: buyTxHash,
       })
       
-      // Close modal upon success
+      toast.success('Compra de sub-tokens procesada con xito', { id: 'buy_tx' })
       onOpenChange(false)
     } catch (error) {
+      toast.dismiss('buy_tx')
       if (error?.fieldErrors) {
         setErrors(error.fieldErrors)
       } else {
-        setErrors({ general: error?.message || 'Error al procesar la compra' })
+        setErrors({ general: error?.message || error?.shortMessage || 'Error al procesar la compra' })
       }
+    } finally {
+      setIsTxPending(false)
     }
   }
 
@@ -114,23 +152,22 @@ export function BuyListingModal({ open, onOpenChange, listing }) {
                 variant="outline"
                 onClick={() => setIsConfirming(false)}
                 className="cursor-pointer border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
-                disabled={buyListing.isPending}
+                disabled={isTxPending || buyListing.isPending}
               >
                 Volver
               </Button>
               <Button
+                type="button"
                 onClick={handleConfirm}
-                disabled={buyListing.isPending}
-                className="bg-violet-600 hover:bg-violet-500 text-white cursor-pointer"
+                disabled={isTxPending || buyListing.isPending}
+                className="bg-emerald-600 hover:bg-emerald-500 text-white min-w-[100px] cursor-pointer"
               >
-                {buyListing.isPending ? (
+                {isTxPending || buyListing.isPending ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin mr-2" />
                     Procesando...
                   </>
-                ) : (
-                  'Confirmar Compra'
-                )}
+                ) : 'Confirmar y Pagar'}
               </Button>
             </div>
             {errors.general && (
