@@ -93,7 +93,7 @@ export function useAssignRole() {
 
   return useMutation({
     mutationFn: ({ userId, roleId }) =>
-      apiRequest(API_ENDPOINTS.USER_ROLE(userId, roleId), { method: 'POST' }),
+      apiRequest(API_ENDPOINTS.USER_ROLE(userId, roleId), { method: 'POST', body: JSON.stringify({}) }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: userKeys.all })
       toast.success('Rol asignado exitosamente')
@@ -107,7 +107,7 @@ export function useRevokeRole() {
 
   return useMutation({
     mutationFn: ({ userId, roleId }) =>
-      apiRequest(API_ENDPOINTS.USER_ROLE(userId, roleId), { method: 'DELETE' }),
+      apiRequest(API_ENDPOINTS.USER_ROLE(userId, roleId), { method: 'DELETE', body: JSON.stringify({}) }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: userKeys.all })
       toast.success('Rol revocado exitosamente')

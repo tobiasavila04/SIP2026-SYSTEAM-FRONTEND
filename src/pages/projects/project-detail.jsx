@@ -13,7 +13,9 @@ import { InvestmentModal } from '@/components/features/investment/investment-mod
 import { InvestmentDisclaimerModal } from '@/components/features/investment/investment-disclaimer-modal'
 import { OracleAuditPanel } from '@/components/features/oracle/oracle-audit-panel'
 import { OracleBillingForm } from '@/components/features/oracle/oracle-billing-form'
+import { AuditReviewDialog } from '@/components/features/oracle/audit-review-dialog'
 import { useOracleReport } from '@/hooks/use-oracle'
+import { useFindings } from '@/hooks/use-audit'
 import { TxHashLink } from '@/components/shared/tx-hash-link'
 import { ErrorState } from '@/components/shared/error-state'
 import { StatusBadge } from '@/components/shared/status-badge'
@@ -29,7 +31,7 @@ import { formatCurrency, formatDate } from '@/lib/utils'
 import { ERC20_ABI } from '@/lib/abis'
 import { toast } from 'sonner'
 import { differenceInDays } from 'date-fns'
-import { ArrowLeft, Target, Calendar, Coins, Wallet, Loader2, TrendingUp, Rocket, CheckCircle2, Ban, SquarePen, ExternalLink, RefreshCw, AlertTriangle, Star, StarOff, Sparkles, ShieldCheck, FileText } from 'lucide-react'
+import { ArrowLeft, Target, Calendar, Coins, Wallet, Loader2, TrendingUp, Rocket, CheckCircle2, Ban, SquarePen, ExternalLink, RefreshCw, AlertTriangle, Star, StarOff, Sparkles, ShieldCheck, FileText, Scale } from 'lucide-react'
 
 const VITE_INVESTMENT_SWAP_ADDRESS = import.meta.env.VITE_INVESTMENT_SWAP_ADDRESS
 
@@ -151,9 +153,9 @@ function PublishSuccessModal({ open, onOpenChange, tokenAddress }) {
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <span className="font-mono text-emerald-400 text-xs sm:text-sm break-all">{tokenAddress || 'Sincronizando...'}</span>
               {tokenAddress && tokenAddress.startsWith('0x') && (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => window.open(`https://sepolia.basescan.org/token/${tokenAddress}`, '_blank')}
                   className="shrink-0 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300"
                 >
@@ -172,7 +174,7 @@ function PublishSuccessModal({ open, onOpenChange, tokenAddress }) {
   )
 }
 
-function StatusActions({ project, isCreator, isAdmin, isAuditor, canInvest, onInvest, onRefund, onBoost, onDesboost, onTransition, onAudit, onPublish, onClose, onEvaluateStates, onReportBilling, transitioning, closing }) {
+function StatusActions({ project, isCreator, isAdmin, isAuditor, canAudit, canInvest, onInvest, onRefund, onBoost, onDesboost, onTransition, onAudit, onPublish, onClose, onEvaluateStates, onReportBilling, transitioning, closing }) {
   const failed = project.estado === 'CANCELADO' || project.estado === 'RECHAZADO' || (project.estado === 'FINALIZADO' && project.montoRecaudado < project.montoRequerido)
 
   return (
@@ -198,10 +200,23 @@ function StatusActions({ project, isCreator, isAdmin, isAuditor, canInvest, onIn
         </>
       )}
 
+      {isCreator && !project.esDestacado && project.estado !== 'FINALIZADO' && project.estado !== 'RECHAZADO' && project.estado !== 'CANCELADO' && (
+        <Button onClick={onBoost} variant="outline" size="sm" className="gap-2 border-amber-500/20 text-amber-400 hover:bg-amber-500/10">
+          <Star className="w-3.5 h-3.5" />
+          Destacar (100 $IDEA)
+        </Button>
+      )}
+      {isCreator && project.esDestacado && (
+        <Button onClick={onDesboost} variant="outline" size="sm" className="gap-2 border-amber-500/20 text-amber-400 hover:bg-amber-500/10">
+          <Star className="w-3.5 h-3.5 fill-amber-400" />
+          Quitar destacado
+        </Button>
+      )}
+
       {isCreator && project.estado === 'PREPARACION' && (
-        <Button onClick={() => onTransition('EN_AUDITORIA')} disabled={transitioning} className="bg-blue-600 hover:bg-blue-500 text-white gap-2 h-9 px-4 text-sm rounded-lg shadow-lg shadow-blue-600/20">
-          {transitioning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Target className="w-4 h-4" />}
-          {transitioning ? 'Enviando...' : 'Enviar a Auditoría'}
+        <Button onClick={() => onTransition('EN_AUDITORIA')} disabled={transitioning} className="bg-amber-600 hover:bg-amber-500 text-white gap-2 h-9 px-5 text-sm rounded-lg shadow-lg shadow-amber-600/20">
+          {transitioning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Scale className="w-4 h-4" />}
+          {transitioning ? 'Enviando...' : 'Solicitar auditoría'}
         </Button>
       )}
 
@@ -216,6 +231,13 @@ function StatusActions({ project, isCreator, isAdmin, isAuditor, canInvest, onIn
         <Button onClick={onPublish} disabled={transitioning} className="bg-emerald-600 hover:bg-emerald-500 text-white gap-2 h-9 px-4 text-sm rounded-lg shadow-lg shadow-emerald-600/20">
           {transitioning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Rocket className="w-4 h-4" />}
           {transitioning ? 'Publicando...' : 'Publicar'}
+        </Button>
+      )}
+
+      {canAudit && project.estado === 'EN_AUDITORIA' && (
+        <Button onClick={onAudit} className="bg-blue-600 hover:bg-blue-500 text-white gap-2 h-9 px-5 text-sm rounded-lg shadow-lg shadow-blue-600/20">
+          <ShieldCheck className="w-4 h-4" />
+          Auditar proyecto
         </Button>
       )}
 
@@ -291,6 +313,7 @@ export default function ProjectDetailPage() {
   const projectId = Number(id)
   const usuarioId = useAuthStore((s) => s.user?.id)
   const { can, isAdmin, isAuditor } = usePermissions()
+  const canAudit = can('project:audit')
 
   const { data: project, isLoading, isError, refetch } = useProject(projectId)
   const isCreator = project?.creadorId === usuarioId
@@ -317,14 +340,19 @@ export default function ProjectDetailPage() {
 
   const [showGasError, setShowGasError] = useState(false)
   const [showOracleBillingForm, setShowOracleBillingForm] = useState(false)
+  const [showAuditDialog, setShowAuditDialog] = useState(false)
   const [transitioning, setTransitioning] = useState(false)
 
   const [tokenInfo, setTokenInfo] = useState(null)
   const [loadingToken, setLoadingToken] = useState(false)
 
   const showOraclePanel = project?.estado === 'EJECUCION' || project?.estado === 'FINALIZADO'
+  const showAuditFindings = project?.estado === 'EN_AUDITORIA' || showOraclePanel
   const { data: oracleReport, isLoading: oracleLoading, isError: oracleError } = useOracleReport(
     showOraclePanel ? projectId : null
+  )
+  const { data: findings, isLoading: findingsLoading } = useFindings(
+    showAuditFindings ? projectId : null
   )
 
   const transitionTo = async (status) => {
@@ -533,6 +561,7 @@ export default function ProjectDetailPage() {
             isCreator={isCreator}
             isAdmin={isAdmin}
             isAuditor={isAuditor}
+            canAudit={canAudit}
             canInvest={canInvest}
             onInvest={() => setShowDisclaimerDialog(true)}
             onBoost={handleBoost}
@@ -542,6 +571,7 @@ export default function ProjectDetailPage() {
             onClose={() => closeProject.mutateAsync(projectId).then(refetch)}
             onEvaluateStates={() => evaluateStates.mutateAsync().then(refetch)}
             onReportBilling={() => setShowOracleBillingForm(true)}
+            onAudit={() => setShowAuditDialog(true)}
             transitioning={transitioning}
             closing={closeProject.isPending}
           />
@@ -623,11 +653,13 @@ export default function ProjectDetailPage() {
           </section>
         )}
 
-        {showOraclePanel && (
+        {showAuditFindings && (
           <OracleAuditPanel
             projectId={projectId}
+            projectStatus={project?.estado}
             report={oracleReport}
-            isLoading={oracleLoading}
+            findings={findings}
+            isLoading={oracleLoading || findingsLoading}
             isError={oracleError}
           />
         )}
@@ -688,6 +720,13 @@ export default function ProjectDetailPage() {
       <GasErrorModal
         open={showGasError}
         onOpenChange={setShowGasError}
+      />
+
+      <AuditReviewDialog
+        open={showAuditDialog}
+        onOpenChange={setShowAuditDialog}
+        projectId={projectId}
+        projectTitle={project?.titulo}
       />
     </div>
   )
