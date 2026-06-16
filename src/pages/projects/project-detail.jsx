@@ -172,7 +172,7 @@ function PublishSuccessModal({ open, onOpenChange, tokenAddress }) {
   )
 }
 
-function StatusActions({ project, isCreator, isAdmin, isAuditor, canInvest, onInvest, onRefund, onBoost, onDesboost, onTransition, onAudit, onPublish, onClose, onEvaluateStates, onReportBilling, transitioning, closing }) {
+function StatusActions({ project, isCreator, isAdmin, isAuditor, canInvest, onInvest, onRefund, onBoost, onTransition, onAudit, onPublish, onClose, onEvaluateStates, onReportBilling, transitioning, closing }) {
   const failed = project.estado === 'CANCELADO' || project.estado === 'RECHAZADO' || (project.estado === 'FINALIZADO' && project.montoRecaudado < project.montoRequerido)
 
   return (
@@ -239,13 +239,6 @@ function StatusActions({ project, isCreator, isAdmin, isAuditor, canInvest, onIn
           <Button onClick={onBoost} disabled={transitioning} variant="outline" className="gap-2 border-amber-500/20 text-amber-400 hover:bg-amber-500/10 h-9 px-4 text-sm rounded-lg shadow-sm shadow-amber-500/10">
             <Star className="w-4 h-4 fill-amber-500/50" />
             Sumar Boost (100 $IDEA)
-          </Button>
-        )}
-
-        {project.estado === 'FINANCIAMIENTO' && project.esDestacado && (
-          <Button onClick={onDesboost} disabled={transitioning} variant="outline" className="gap-2 border-amber-500/20 text-amber-400 hover:bg-amber-500/10 h-9 px-4 text-sm rounded-lg shadow-sm shadow-amber-500/10">
-            <StarOff className="w-4 h-4 text-amber-500/50" />
-            Quitar Boost
           </Button>
         )}
 
