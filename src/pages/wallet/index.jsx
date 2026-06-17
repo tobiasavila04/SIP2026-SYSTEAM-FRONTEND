@@ -6,6 +6,8 @@ import { PageHeader } from "@/components/shared/page-header";
 import { ErrorState } from "@/components/shared/error-state";
 import { Skeleton } from "@/components/shared/loading-skeleton";
 import { EmptyState } from "@/components/shared/empty-state";
+import { Button } from "@/components/ui/button";
+import { TransferModal } from "@/components/features/wallet/transfer-modal";
 import { formatCurrency } from "@/lib/utils";
 import {
   Wallet,
@@ -17,10 +19,12 @@ import {
   RotateCcw,
   History,
   Receipt,
+  Send,
 } from "lucide-react";
 
 export default function WalletPage() {
   const { data, isLoading, isError, refetch } = useWalletSummary();
+  const [transferOpen, setTransferOpen] = useState(false);
 
   const [inputDesde, setInputDesde] = useState("");
   const [inputHasta, setInputHasta] = useState("");
@@ -137,7 +141,15 @@ export default function WalletPage() {
         icon={Wallet}
         title="Mi Billetera"
         description="Resumen de tu saldo y portfolio de subtokens"
-      />
+      >
+        <Button
+          onClick={() => setTransferOpen(true)}
+          className="bg-violet-600 hover:bg-violet-500 text-white font-medium shadow-md shadow-violet-600/10 cursor-pointer"
+        >
+          <Send className="w-4 h-4 mr-2" />
+          Transferir $IDEA
+        </Button>
+      </PageHeader>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <BalanceCard
@@ -400,7 +412,7 @@ export default function WalletPage() {
                         <td className="px-4 py-3 text-center">
                           {item.txHash ? (
                             <a
-                              href={`https://sepolia.etherscan.io/tx/${item.txHash}`}
+                              href={`https://sepolia.basescan.org/tx/${item.txHash}`}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="inline-flex items-center text-violet-400 hover:text-violet-300 transition-colors"
@@ -420,6 +432,7 @@ export default function WalletPage() {
           </div>
         )}
       </div>
+      <TransferModal open={transferOpen} onOpenChange={setTransferOpen} />
     </motion.div>
   );
 }

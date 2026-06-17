@@ -233,14 +233,6 @@ function StatusActions({ project, isCreator, isAdmin, isAuditor, canAudit, canIn
           {transitioning ? 'Publicando...' : 'Publicar'}
         </Button>
       )}
-
-      {canAudit && project.estado === 'EN_AUDITORIA' && (
-        <Button onClick={onAudit} className="bg-blue-600 hover:bg-blue-500 text-white gap-2 h-9 px-5 text-sm rounded-lg shadow-lg shadow-blue-600/20">
-          <ShieldCheck className="w-4 h-4" />
-          Auditar proyecto
-        </Button>
-      )}
-
       {isCreator && project.estado === 'EJECUCION' && (
         <Button onClick={onClose} disabled={closing} className="bg-emerald-600 hover:bg-emerald-500 text-white gap-2 h-9 px-4 text-sm rounded-lg">
           {closing ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
@@ -334,6 +326,7 @@ export default function ProjectDetailPage() {
   const [showGasError, setShowGasError] = useState(false)
   const [showOracleBillingForm, setShowOracleBillingForm] = useState(false)
   const [showAuditDialog, setShowAuditDialog] = useState(false)
+  const [auditResultado, setAuditResultado] = useState(null)
   const [transitioning, setTransitioning] = useState(false)
 
   const [tokenInfo, setTokenInfo] = useState(null)
@@ -559,12 +552,11 @@ export default function ProjectDetailPage() {
             onInvest={() => setShowDisclaimerDialog(true)}
             onBoost={handleBoost}
             onTransition={transitionTo}
-            onAudit={(resultado) => setAuditDialogState({ open: true, resultado })}
             onPublish={publishProject}
             onClose={() => closeProject.mutateAsync(projectId).then(refetch)}
             onEvaluateStates={() => evaluateStates.mutateAsync().then(refetch)}
             onReportBilling={() => setShowOracleBillingForm(true)}
-            onAudit={() => setShowAuditDialog(true)}
+            onAudit={(resultado) => { setAuditResultado(resultado); setShowAuditDialog(true) }}
             transitioning={transitioning}
             closing={closeProject.isPending}
           />
@@ -720,6 +712,7 @@ export default function ProjectDetailPage() {
         onOpenChange={setShowAuditDialog}
         projectId={projectId}
         projectTitle={project?.titulo}
+        resultado={auditResultado}
       />
     </div>
   )

@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { useProjects, useMyProjects } from '@/hooks/use-projects'
+import { useProjects, useMyProjects, useAllProjects } from '@/hooks/use-projects'
 import { useDashboardStats } from '@/hooks/use-dashboard'
 import { useAuthStore } from '@/stores/auth-store'
 import { usePermissions } from '@/stores/auth-store'
@@ -20,6 +20,7 @@ import {
   ArrowUpDown,
   Users,
   Sparkles,
+  ShieldCheck,
 } from 'lucide-react'
 
 const STATUS_OPTIONS = [
@@ -73,8 +74,13 @@ export default function ProjectCatalogPage() {
   const [sortBy, setSortBy] = useState('reciente')
   const [page, setPage] = useState(0)
   const usuarioId = useAuthStore((s) => s.user?.id)
-  const { can } = usePermissions()
+  const { can, isAuditor } = usePermissions()
   const puedeCrear = can('project:create')
+
+  const { data: allProjectsData } = useAllProjects()
+  const auditPendingProjects = isAuditor
+    ? (allProjectsData?.content?.filter((p) => p.estado === 'EN_AUDITORIA') ?? [])
+    : []
 
   const { data: publicData, isLoading: publicLoading, isError: publicError, refetch: publicRefetch } = useProjects({
     search,
@@ -277,6 +283,35 @@ export default function ProjectCatalogPage() {
           </div>
         </div>
       </section>
+
+      {isAuditor && (
+        <section aria-label="Proyectos pendientes de auditoría">
+          <div className="flex items-center gap-2 mb-4">
+            <ShieldCheck className="w-4 h-4 text-amber-400" />
+            <h2 className="text-sm font-semibold text-amber-300 uppercase tracking-wider">
+              Pendientes de auditoría
+            </h2>
+            {auditPendingProjects.length > 0 && (
+              <span className="ml-1 inline-flex items-center justify-center rounded-full bg-amber-500/20 px-2 py-0.5 text-xs font-semibold text-amber-300">
+                {auditPendingProjects.length}
+              </span>
+            )}
+          </div>
+          {auditPendingProjects.length === 0 ? (
+            <p className="text-sm text-slate-500">No hay proyectos pendientes de auditoría.</p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-6">
+              {auditPendingProjects.map((p) => (
+                <ProjectCard
+                  key={p.id}
+                  project={p}
+                  isCreator={p.creadorId === usuarioId}
+                />
+              ))}
+            </div>
+          )}
+        </section>
+      )}
 
       {isError ? (
         <ErrorState onRetry={() => refetch()} />

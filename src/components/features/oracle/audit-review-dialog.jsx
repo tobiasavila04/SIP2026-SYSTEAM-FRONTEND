@@ -5,24 +5,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 
-const RESULTADOS = [
-  { value: 'APROBADO', label: 'Aprobar', icon: CheckCircle2, className: 'bg-emerald-600 hover:bg-emerald-500 text-white data-state-active:ring-2 data-state-active:ring-emerald-400' },
-  { value: 'RECHAZADO', label: 'Rechazar', icon: XCircle, className: 'bg-red-600 hover:bg-red-500 text-white data-state-active:ring-2 data-state-active:ring-red-400' },
-]
-
-export function AuditReviewDialog({ open, onOpenChange, projectId, projectTitle }) {
+export function AuditReviewDialog({ open, onOpenChange, projectId, projectTitle, resultado }) {
   const [kybUrl, setKybUrl] = useState('')
-  const [resultado, setResultado] = useState(null)
   const [observaciones, setObservaciones] = useState('')
   const mutation = useSubmitFinding(projectId)
 
   const handleSubmit = async () => {
     if (!kybUrl.trim()) {
       toast.error('La URL del documento KYB es obligatoria')
-      return
-    }
-    if (!resultado) {
-      toast.error('Seleccioná aprobar o rechazar')
       return
     }
 
@@ -38,7 +28,6 @@ export function AuditReviewDialog({ open, onOpenChange, projectId, projectTitle 
           : `Proyecto "${projectTitle}" rechazado`
       )
       setKybUrl('')
-      setResultado(null)
       setObservaciones('')
       onOpenChange(false)
     } catch (err) {
@@ -51,11 +40,13 @@ export function AuditReviewDialog({ open, onOpenChange, projectId, projectTitle 
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <ShieldCheck className="w-5 h-5 text-blue-400" />
-            Auditoría de proyecto
+            {resultado === 'APROBADO'
+              ? <><CheckCircle2 className="w-5 h-5 text-emerald-400" /> Aprobar Auditoría</>
+              : <><XCircle className="w-5 h-5 text-red-400" /> Rechazar Auditoría</>
+            }
           </DialogTitle>
           <DialogDescription>
-            Revisá la documentación y registrá el dictamen mediante el oráculo en la blockchain.
+            Registrá el dictamen mediante el oráculo en la blockchain.
           </DialogDescription>
         </DialogHeader>
 
@@ -81,31 +72,6 @@ export function AuditReviewDialog({ open, onOpenChange, projectId, projectTitle 
             <p className="text-[11px] text-slate-600">
               URL del documento KYB subido al bucket seguro
             </p>
-          </div>
-
-          {/* Resultado */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">
-              Dictamen *
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-              {RESULTADOS.map((r) => (
-                <button
-                  key={r.value}
-                  type="button"
-                  onClick={() => setResultado(r.value)}
-                  data-state={resultado === r.value ? 'active' : 'inactive'}
-                  className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
-                    resultado === r.value
-                      ? r.className
-                      : 'bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10 hover:text-white'
-                  }`}
-                >
-                  <r.icon className="w-4 h-4" />
-                  {r.label}
-                </button>
-              ))}
-            </div>
           </div>
 
           {/* Observaciones */}
@@ -135,7 +101,7 @@ export function AuditReviewDialog({ open, onOpenChange, projectId, projectTitle 
           <Button
             size="sm"
             onClick={handleSubmit}
-            disabled={mutation.isPending || !kybUrl.trim() || !resultado}
+            disabled={mutation.isPending || !kybUrl.trim()}
             className={resultado === 'APROBADO'
               ? 'bg-emerald-600 hover:bg-emerald-500 text-white gap-2'
               : resultado === 'RECHAZADO'

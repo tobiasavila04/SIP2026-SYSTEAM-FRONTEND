@@ -61,6 +61,16 @@ export function useMyProjects() {
   })
 }
 
+export function useAllProjects() {
+  return useQuery({
+    queryKey: ['projects', 'all'],
+    queryFn: async () => {
+      const data = await apiRequest(API_ENDPOINTS.PROJECTS_ALL, { params: { page: 0, size: 500 } })
+      return data
+    },
+  })
+}
+
 export function useCreateProject() {
   const queryClient = useQueryClient()
 

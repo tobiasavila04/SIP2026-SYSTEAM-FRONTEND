@@ -31,6 +31,14 @@ export function DashboardLayout() {
   })
 
   useEffect(() => {
+    if (!address || !isConnected) return
+    apiRequest(API_ENDPOINTS.WALLET_ADDRESS, {
+      method: 'PUT',
+      body: { walletAddress: address }
+    }).catch(() => {})
+  }, [address, isConnected])
+
+  useEffect(() => {
     if (isSuccess && balanceData !== undefined && !hasSyncedWallet) {
       const balance = Number(formatUnits(balanceData, 18))
       apiRequest(API_ENDPOINTS.WALLET_SYNC_IDEA, {
