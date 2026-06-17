@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api-client";
 import { API_ENDPOINTS } from "@/config/api";
 
@@ -9,6 +9,20 @@ export function useWalletSummary() {
     refetchInterval: 30_000,
     staleTime: 10_000,
   });
+}
+
+export function useTransferTokens() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (data) =>
+      apiRequest(API_ENDPOINTS.WALLET_TRANSFER, {
+        method: 'POST',
+        body: data,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['wallet'] })
+    },
+  })
 }
 
 export function useWalletHistory(desde, hasta) {

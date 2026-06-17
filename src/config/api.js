@@ -38,6 +38,7 @@ export const API_ENDPOINTS = {
   USERS: buildUrl("/api/users"),
   USER_ME: buildUrl("/api/users/me"),
   USER_BY_ID: (id) => buildUrl(`/api/users/${id}`),
+  USERS_SEARCH: buildUrl("/api/users/search"),
   USER_ROLE: (userId, roleId) =>
     buildUrl(`/api/users/${userId}/roles/${roleId}`),
 
@@ -77,8 +78,10 @@ export const API_ENDPOINTS = {
 
   WALLET_SUMMARY: buildProjectUrl("/api/wallet/summary"),
   WALLET_SYNC_IDEA: buildProjectUrl("/api/wallet/sync-idea"),
+  WALLET_ADDRESS: buildProjectUrl("/api/wallet/address"),
   WALLET_HISTORY: buildProjectUrl("/api/investments/history"),
   WALLET_MOVEMENT_HISTORY: buildProjectUrl("/api/wallet/history"),
+  WALLET_TRANSFER: buildProjectUrl("/api/wallet/transfer"),
 
   GOVERNANCE_PROPOSALS: buildProjectUrl("/api/governance/proposals"),
   GOVERNANCE_PROPOSAL: (id) =>
