@@ -412,7 +412,7 @@ export default function WalletPage() {
                         <td className="px-4 py-3 text-center">
                           {item.txHash ? (
                             <a
-                              href={`https://sepolia.etherscan.io/tx/${item.txHash}`}
+                              href={`https://sepolia.basescan.org/tx/${item.txHash}`}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="inline-flex items-center text-violet-400 hover:text-violet-300 transition-colors"
