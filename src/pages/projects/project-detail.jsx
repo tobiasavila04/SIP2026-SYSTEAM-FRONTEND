@@ -206,12 +206,7 @@ function StatusActions({ project, isCreator, isAdmin, isAuditor, canAudit, canIn
           Destacar (100 $IDEA)
         </Button>
       )}
-      {isCreator && project.esDestacado && (
-        <Button onClick={onDesboost} variant="outline" size="sm" className="gap-2 border-amber-500/20 text-amber-400 hover:bg-amber-500/10">
-          <Star className="w-3.5 h-3.5 fill-amber-400" />
-          Quitar destacado
-        </Button>
-      )}
+
 
       {isCreator && project.estado === 'PREPARACION' && (
         <Button onClick={() => onTransition('EN_AUDITORIA')} disabled={transitioning} className="bg-amber-600 hover:bg-amber-500 text-white gap-2 h-9 px-5 text-sm rounded-lg shadow-lg shadow-amber-600/20">
