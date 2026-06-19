@@ -97,6 +97,8 @@ export const API_ENDPOINTS = {
 
   DIVIDENDOS_PROYECTO: (id) =>
     buildProjectUrl(`/api/dividendos/proyecto/${id}`),
+  DIVIDENDOS_PENDIENTES: (id) =>
+    buildProjectUrl(`/api/dividendos/proyecto/${id}/pendientes`),
   DIVIDENDOS_MIS_RECLAMOS: buildProjectUrl("/api/dividendos/mis-reclamos"),
   DIVIDENDOS_RECLAMAR: (id) =>
     buildProjectUrl(`/api/dividendos/proyecto/${id}/reclamar`),

@@ -36,7 +36,7 @@ function StateLoading({ message, sub }) {
   )
 }
 
-function StateSuccess({ amount, subtokens, projectTitle, txHash, onClose, symbol }) {
+function StateSuccess({ amount, subtokens, descuentoPorcentaje, projectTitle, txHash, onClose, symbol }) {
   return (
     <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-300">
       <div className="flex flex-col items-center py-6 space-y-4">
@@ -58,8 +58,17 @@ function StateSuccess({ amount, subtokens, projectTitle, txHash, onClose, symbol
         </div>
         {subtokens != null && (
           <div className="flex justify-between items-center px-5 py-3.5">
-            <span className="text-sm text-slate-400">{symbol} recibidos</span>
+            <span className="text-sm text-slate-400">{symbol} de compra</span>
             <span className="text-sm font-semibold text-emerald-300">{subtokens.toLocaleString()}</span>
+          </div>
+        )}
+        {descuentoPorcentaje > 0 && (
+          <div className="flex justify-between items-center px-5 py-3.5 bg-gradient-to-r from-violet-500/5 to-fuchsia-500/5">
+            <span className="text-sm font-medium bg-gradient-to-r from-violet-400 to-fuchsia-400 bg-clip-text text-transparent flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-violet-400" />
+              Beneficio de Lealtad
+            </span>
+            <span className="text-sm font-bold text-fuchsia-400">-{descuentoPorcentaje}% descuento</span>
           </div>
         )}
         <div className="flex justify-between items-center px-5 py-3.5">
@@ -163,20 +172,23 @@ export function InvestmentModal({ open, onOpenChange, projectId, projectTitle, s
     ? ((suministroTotal - cupoRestante) / suministroTotal) * 100
     : 0
 
-  const numSubtokenCount = Number(subtokenCount) || 0
-  const effectiveAmount = precioActual ? (numSubtokenCount * precioActual).toFixed(2) : ''
-  const numEffectiveAmount = Number(effectiveAmount) || 0
-
   const validation = validateMutation.data
   const isValid = validation?.valido
   const validationMsg = validation?.mensaje
   const subTokensARecebir = validation?.subTokensARecebir
+  const descuentoPorcentaje = validation?.descuentoPorcentaje || 0
+
+  const numSubtokenCount = Number(subtokenCount) || 0
+  const baseAmount = precioActual ? numSubtokenCount * precioActual : 0
+  const discountMultiplier = descuentoPorcentaje > 0 ? (100 - descuentoPorcentaje) / 100 : 1
+  const effectiveAmount = baseAmount > 0 ? (baseAmount * discountMultiplier).toFixed(2) : ''
+  const numEffectiveAmount = Number(effectiveAmount) || 0
 
   useEffect(() => {
-    if (effectiveAmount && numEffectiveAmount > 0 && projectId) {
-      validateMutation.mutate({ proyectoId: projectId, montoIdea: numEffectiveAmount })
+    if (baseAmount > 0 && projectId) {
+      validateMutation.mutate({ proyectoId: projectId, montoIdea: baseAmount })
     }
-  }, [effectiveAmount, projectId])
+  }, [baseAmount, projectId])
 
   useEffect(() => {
     if (open && inputRef.current) {
@@ -291,6 +303,7 @@ export function InvestmentModal({ open, onOpenChange, projectId, projectTitle, s
             <StateSuccess
               amount={frozenAmount || effectiveAmount}
               subtokens={subTokensARecebir}
+              descuentoPorcentaje={validation?.descuentoPorcentaje}
               projectTitle={projectTitle}
               txHash={investHash}
               onClose={() => { reset(); setFrozenAmount(null); onOpenChange(false) }}
@@ -431,6 +444,14 @@ export function InvestmentModal({ open, onOpenChange, projectId, projectTitle, s
                           Con <span className="font-medium text-emerald-300">{numSubtokenCount.toLocaleString()}</span> {symbol}
                           {' '}necesitás <span className="font-medium text-emerald-300">{Number(effectiveAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} $IDEA</span>.
                         </p>
+                      )}
+                      {descuentoPorcentaje > 0 && (
+                        <div className="mt-2 ml-9 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-violet-500/10 to-fuchsia-500/10 border border-violet-500/20">
+                          <Sparkles className="w-3.5 h-3.5 text-fuchsia-400" />
+                          <span className="text-xs font-semibold bg-gradient-to-r from-violet-300 to-fuchsia-300 bg-clip-text text-transparent">
+                            ✨ {descuentoPorcentaje}% de descuento por Lealtad aplicado
+                          </span>
+                        </div>
                       )}
                     </div>
                   ) : validationMsg ? (

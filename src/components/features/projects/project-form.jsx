@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Coins, Calculator, Sparkles } from 'lucide-react'
+import { ProjectDisclaimerModal } from './project-disclaimer-modal'
 
 const projectSchema = z.object({
   titulo: z.string().min(1, 'El nombre del proyecto es obligatorio'),
@@ -70,6 +71,8 @@ export function ProjectForm({ defaultValues, onSubmit, isEdit, projectState }) {
   const [submitting, setSubmitting] = useState(false)
   const [supply, setSupply] = useState(defaultValues?.cupoMaximoTokens ?? '')
   const [price, setPrice] = useState(defaultValues?.valorNominalToken ?? '')
+  const [showDisclaimer, setShowDisclaimer] = useState(false)
+  const [pendingValues, setPendingValues] = useState(null)
   const total = (Number(supply) || 0) * (Number(price) || 0)
 
   const form = useForm({
@@ -88,10 +91,16 @@ export function ProjectForm({ defaultValues, onSubmit, isEdit, projectState }) {
     },
   })
 
-  const handleSubmit = async (values) => {
+  const handleSubmit = (values) => {
+    setPendingValues(values)
+    setShowDisclaimer(true)
+  }
+
+  const handleConfirmSubmit = async () => {
+    setShowDisclaimer(false)
     setSubmitting(true)
     try {
-      await onSubmit(values)
+      await onSubmit(pendingValues)
     } finally {
       setSubmitting(false)
     }
@@ -339,6 +348,12 @@ export function ProjectForm({ defaultValues, onSubmit, isEdit, projectState }) {
           </div>
         </form>
       </Form>
+
+      <ProjectDisclaimerModal 
+        open={showDisclaimer} 
+        onOpenChange={setShowDisclaimer} 
+        onConfirm={handleConfirmSubmit} 
+      />
     </div>
   )
 }

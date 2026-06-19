@@ -14,7 +14,7 @@ import { formatCurrency, cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import {
   TrendingUp, ExternalLink, Loader2, RefreshCw,
-  Wallet, CheckCircle2, ArrowRight
+  Wallet, CheckCircle2, ArrowRight, Sparkles
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -126,6 +126,7 @@ export default function InvestmentHistoryPage() {
                 <tr className="border-b border-white/5 text-left text-xs uppercase tracking-wider text-slate-500">
                   <th className="px-4 py-3 font-medium">Proyecto</th>
                   <th className="px-4 py-3 font-medium">Monto</th>
+                  <th className="px-4 py-3 font-medium">Descuento</th>
                   <th className="px-4 py-3 font-medium">Sub-tokens</th>
                   <th className="px-4 py-3 font-medium">Fecha</th>
                   <th className="px-4 py-3 font-medium">Comprobante</th>
@@ -148,7 +149,14 @@ export default function InvestmentHistoryPage() {
                         </Link>
                       </td>
                       <td className="px-4 py-3 text-slate-300 font-mono">
-                        {inv.montoIdea != null ? `${Number(inv.montoIdea).toLocaleString()} $IDEA` : '—'}
+                        {inv.montoIdea == 0 || (inv.txHash && inv.txHash.endsWith('-airdrop')) 
+                          ? <span className="text-pink-400 font-medium">Airdrop</span>
+                          : inv.montoIdea != null 
+                            ? `${Number(inv.montoIdea).toLocaleString()} $IDEA` 
+                            : '—'}
+                      </td>
+                      <td className="px-4 py-3 font-mono text-pink-400">
+                        {inv.descuentoPorcentaje > 0 ? `-${inv.descuentoPorcentaje}%` : '—'}
                       </td>
                       <td className="px-4 py-3 text-slate-400">
                         {inv.subTokensRecibidos ?? '—'}

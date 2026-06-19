@@ -159,3 +159,15 @@ export const IDEA_MARKETPLACE_ABI = [
   }
 ]
 
+export const DIVIDEND_DISTRIBUTOR_ABI = [
+  {
+    type: 'function',
+    name: 'claim',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'proyectoId', type: 'uint256' },
+    ],
+    outputs: [],
+  }
+] as const
+

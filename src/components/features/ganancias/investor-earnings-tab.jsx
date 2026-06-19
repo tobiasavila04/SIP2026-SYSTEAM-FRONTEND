@@ -1,7 +1,9 @@
 import { DollarSign, CheckCircle2, TrendingUp, Loader2 } from 'lucide-react'
-import { useAccount } from 'wagmi'
+import { useAccount, useWriteContract, useConfig } from 'wagmi'
+import { waitForTransactionReceipt } from '@wagmi/core'
+import { DIVIDEND_DISTRIBUTOR_ABI } from '@/lib/abis'
 import { toast } from 'sonner'
-import { useMisReclamos, useReclamarDividendos } from '@/hooks/use-dividendos'
+import { useMisReclamos, useReclamarDividendos, useDividendosPendientes } from '@/hooks/use-dividendos'
 import { useInvestmentHistory } from '@/hooks/use-investment-history'
 import { EmptyState } from '@/components/shared/empty-state'
 import { ErrorState } from '@/components/shared/error-state'
@@ -21,35 +23,79 @@ function SummaryCard({ icon: Icon, label, value }) {
   )
 }
 
-function ReclamarButton({ projectId, projectTitle }) {
+function ProjectClaimRow({ projectId, projectTitle }) {
   const { address } = useAccount()
+  const config = useConfig()
+  const { writeContractAsync } = useWriteContract()
   const mutation = useReclamarDividendos(projectId)
   const hasWallet = !!address
+  
+  const { data: pendientesData, isLoading: pendientesLoading } = useDividendosPendientes(projectId, address || '')
+  const pendientes = pendientesData?.pendientes ?? 0
+
+  const isPending = mutation.isPending
+  const canClaim = hasWallet && pendientes > 0
 
   const handleClaim = async () => {
     try {
-      await mutation.mutateAsync({ wallet: address })
+      // 1. Reclamo on-chain directo con MetaMask (gas fijo para evitar error de estimación)
+      const txHash = await writeContractAsync({
+        address: import.meta.env.VITE_DIVIDEND_DISTRIBUTOR_ADDRESS,
+        abi: DIVIDEND_DISTRIBUTOR_ABI,
+        functionName: 'claim',
+        args: [BigInt(projectId)],
+        gas: 200_000n
+      })
+
+      // 2. Esperar confirmación
+      await waitForTransactionReceipt(config, { hash: txHash })
+
+      // 3. Registrar en backend
+      await mutation.mutateAsync({ wallet: address, txHash })
       toast.success(`Dividendos reclamados para "${projectTitle}"`)
     } catch (err) {
-      toast.error(err?.message || 'Error al reclamar')
+      console.error(err)
+      const msg = err?.message || ''
+      if (
+        msg.includes('DD: no tokens') ||
+        msg.includes('nothing to claim') ||
+        msg.includes('reverted') ||
+        msg.includes('gas limit')
+      ) {
+        toast.error('No hay dividendos pendientes para reclamar en este proyecto.')
+      } else if (msg.includes('User rejected') || msg.includes('user rejected')) {
+        toast.error('Transacción cancelada en MetaMask')
+      } else {
+        toast.error('Error al reclamar dividendos en la blockchain')
+      }
     }
   }
 
   return (
-    <Button
-      size="sm"
-      onClick={handleClaim}
-      disabled={!hasWallet || mutation.isPending}
-      title={!hasWallet ? 'Conectá tu wallet para reclamar' : undefined}
-      className="gap-1.5 bg-violet-600 hover:bg-violet-500 text-white text-xs h-7 px-3 disabled:opacity-40 disabled:cursor-not-allowed"
-    >
-      {mutation.isPending ? (
-        <Loader2 className="w-3 h-3 animate-spin" />
-      ) : (
-        <CheckCircle2 className="w-3 h-3" />
-      )}
-      Reclamar
-    </Button>
+    <div className="flex items-center justify-between px-4 py-3 hover:bg-white/[0.02] transition-colors">
+      <span className="text-sm text-slate-300">{projectTitle}</span>
+      <div className="flex items-center gap-3">
+        {hasWallet && (
+          <span className="text-xs font-mono text-slate-400">
+            {pendientesLoading ? '...' : pendientes > 0 ? `${formatCurrency(pendientes)} pendientes` : 'Sin pendientes'}
+          </span>
+        )}
+        <Button
+          size="sm"
+          onClick={handleClaim}
+          disabled={!canClaim || isPending}
+          title={!hasWallet ? 'Conectá tu wallet para reclamar' : !canClaim ? 'No hay dividendos pendientes para este proyecto' : undefined}
+          className="gap-1.5 bg-violet-600 hover:bg-violet-500 text-white text-xs h-7 px-3 disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          {isPending ? (
+            <Loader2 className="w-3 h-3 animate-spin" />
+          ) : (
+            <CheckCircle2 className="w-3 h-3" />
+          )}
+          Reclamar
+        </Button>
+      </div>
+    </div>
   )
 }
 
@@ -139,13 +185,7 @@ export function InvestorEarningsTab() {
         </div>
         <div className="divide-y divide-white/5">
           {uniqueProjects.map(([projectId, projectTitle]) => (
-            <div
-              key={projectId}
-              className="flex items-center justify-between px-4 py-3 hover:bg-white/[0.02] transition-colors"
-            >
-              <span className="text-sm text-slate-300">{projectTitle}</span>
-              <ReclamarButton projectId={projectId} projectTitle={projectTitle} />
-            </div>
+            <ProjectClaimRow key={projectId} projectId={projectId} projectTitle={projectTitle} />
           ))}
         </div>
       </div>
