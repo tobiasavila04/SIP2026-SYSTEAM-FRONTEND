@@ -31,6 +31,16 @@ dist-ssr
 .pi/
 .superpowers/
 
+### VS Code ###
+.vscode/
+
+### Agent / Specs ###
+.atl/
+.claude/
+openspec/
+specs/
+supabase/
+
 # Environment files
 .env
 .env.*
