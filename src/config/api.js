@@ -110,6 +110,10 @@ export const API_ENDPOINTS = {
 
   DASHBOARD_STATS: buildProjectUrl("/api/dashboard/stats"),
   MODULES_STATUS: buildProjectUrl("/api/modules/status"),
+
+  NOTIFICATIONS: buildProjectUrl("/api/notifications"),
+  NOTIFICATIONS_UNREAD_COUNT: buildProjectUrl("/api/notifications/unread-count"),
+  NOTIFICATION_READ: (id) => buildProjectUrl(`/api/notifications/${id}/read`),
 };
 
 export const API_BASE = API_BASE_URL;

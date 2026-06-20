@@ -97,7 +97,10 @@ export default function ProjectCatalogPage() {
   const isError = isMyView ? myError : publicError
   const refetch = isMyView ? myRefetch : publicRefetch
 
-  const proyectos = isMyView ? (myData?.content || []) : (publicData?.content || [])
+  const allProyectos = isMyView ? (myData?.content || []) : (publicData?.content || [])
+  const proyectos = allProyectos.filter((p) =>
+    p.estado !== 'EN_AUDITORIA' || isAuditor || p.creadorId === usuarioId
+  )
 
   const proyectosFiltrados = useMemo(() => {
     let result = proyectos

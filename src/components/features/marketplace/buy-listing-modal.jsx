@@ -96,7 +96,7 @@ export function BuyListingModal({ open, onOpenChange, listing }) {
         address: marketplaceAddress,
         abi: IDEA_MARKETPLACE_ABI,
         functionName: 'buyTokens',
-        args: [BigInt(listing.onChainId || listing.id), amountWei],
+        args: [BigInt(listing.onChainId || listing.id), BigInt(Math.round(Number(cantidad)))],
       })
       await waitForTransactionReceipt(config, { hash: buyTxHash })
 

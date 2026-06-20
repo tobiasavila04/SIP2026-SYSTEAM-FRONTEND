@@ -14,7 +14,6 @@ import { cn } from '@/lib/utils'
 const STATUS_OPTIONS = [
   { value: '', label: 'Todos' },
   { value: 'PREPARACION', label: 'Preparación' },
-  { value: 'EN_AUDITORIA', label: 'En Auditoría' },
   { value: 'FINANCIAMIENTO', label: 'Financiamiento' },
   { value: 'EJECUCION', label: 'Ejecución' },
   { value: 'FINALIZADO', label: 'Finalizado' },
@@ -44,7 +43,7 @@ export default function PublicCatalogPage() {
     },
   })
 
-  const proyectos = data?.content || []
+  const proyectos = (data?.content || []).filter((p) => p.estado !== 'EN_AUDITORIA')
   const totalPages = data?.totalPages || 0
 
   const sortedProyectos = useMemo(() => {
