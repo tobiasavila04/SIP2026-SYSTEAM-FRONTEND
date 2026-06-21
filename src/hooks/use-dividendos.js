@@ -32,14 +32,16 @@ export function useReclamarDividendos(projectId) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ wallet, txHash }) =>
-      apiRequest(`${API_ENDPOINTS.DIVIDENDOS_RECLAMAR(projectId)}?wallet=${encodeURIComponent(wallet)}&txHash=${encodeURIComponent(txHash)}`, {
+    mutationFn: ({ wallet, txHash, amount }) =>
+      apiRequest(`${API_ENDPOINTS.DIVIDENDOS_RECLAMAR(projectId)}?wallet=${encodeURIComponent(wallet)}&txHash=${encodeURIComponent(txHash)}${amount != null ? `&amount=${encodeURIComponent(amount)}` : ''}`, {
         method: 'POST',
       }),
     onSuccess: (_, { wallet }) => {
       // Actualizar historial de reclamos
       queryClient.invalidateQueries({ queryKey: ['dividendos-mis-reclamos'] })
-      // MUY IMPORTANTE: invalidar pendientes para que el botón quede deshabilitado de inmediato
+      // MUY IMPORTANTE: Setear pendientes a 0 manualmente para evitar el lag del RPC
+      queryClient.setQueryData(['dividendos-pendientes', projectId, wallet], { pendientes: 0 })
+      // También invalidamos por las dudas para refresco posterior
       queryClient.invalidateQueries({ queryKey: ['dividendos-pendientes', projectId, wallet] })
     },
   })

@@ -4,7 +4,7 @@ import { useAccount, useWriteContract, useConfig } from 'wagmi'
 import { waitForTransactionReceipt } from '@wagmi/core'
 import { parseUnits } from 'viem'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
-import { useProject, useUpdateProjectStatus, useBoostProject, useEvaluateStates, useCloseProject, useSubmitAuditFinding } from '@/hooks/use-projects'
+import { useProject, useUpdateProjectStatus, useBoostProject, useEvaluateStates, useCloseProject, useSubmitAuditFinding, useCreatorProfile } from '@/hooks/use-projects'
 import { useTokenInfo } from '@/hooks/use-investment'
 import { useAuthStore, usePermissions } from '@/stores/auth-store'
 import { apiRequest } from '@/lib/api-client'
@@ -31,7 +31,7 @@ import { formatCurrency, formatDate } from '@/lib/utils'
 import { ERC20_ABI } from '@/lib/abis'
 import { toast } from 'sonner'
 import { differenceInDays } from 'date-fns'
-import { ArrowLeft, Target, Calendar, Coins, Wallet, Loader2, TrendingUp, Rocket, CheckCircle2, Ban, SquarePen, ExternalLink, RefreshCw, AlertTriangle, Star, StarOff, Sparkles, ShieldCheck, FileText, Scale } from 'lucide-react'
+import { ArrowLeft, Target, Calendar, Coins, Wallet, Loader2, TrendingUp, Rocket, CheckCircle2, Ban, SquarePen, ExternalLink, RefreshCw, AlertTriangle, Star, StarOff, Sparkles, ShieldCheck, FileText, Scale, User } from 'lucide-react'
 
 const VITE_INVESTMENT_SWAP_ADDRESS = import.meta.env.VITE_INVESTMENT_SWAP_ADDRESS
 
@@ -298,6 +298,8 @@ export default function ProjectDetailPage() {
   const { data: project, isLoading, isError, refetch } = useProject(projectId)
   const isCreator = project?.creadorId === usuarioId
   const updateStatus = useUpdateProjectStatus()
+  
+  const { data: creatorProfile } = useCreatorProfile(project?.creadorId)
   const boostProject = useBoostProject()
   const evaluateStates = useEvaluateStates()
   const closeProject = useCloseProject()
@@ -558,6 +560,17 @@ export default function ProjectDetailPage() {
         </div>
 
         <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <h3 className="text-xs font-medium text-slate-500 uppercase tracking-wider">Creador</h3>
+            <Link 
+              to={`/creators/${project.creadorId}`}
+              className="inline-flex items-center gap-1.5 text-sm text-indigo-400 hover:text-indigo-300 transition-colors bg-indigo-500/10 px-2 py-0.5 rounded-full border border-indigo-500/20"
+            >
+              <User className="w-3.5 h-3.5" />
+              {creatorProfile ? creatorProfile.name : `Cargando...`}
+            </Link>
+          </div>
+
           <div className="space-y-2">
             <h3 className="text-xs font-medium text-slate-500 uppercase tracking-wider">Descripción</h3>
             <p className="text-sm text-slate-300 leading-relaxed">{project.descripcion}</p>

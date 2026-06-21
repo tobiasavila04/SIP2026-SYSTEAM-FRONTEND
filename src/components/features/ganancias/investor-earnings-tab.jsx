@@ -51,7 +51,7 @@ function ProjectClaimRow({ projectId, projectTitle }) {
       await waitForTransactionReceipt(config, { hash: txHash })
 
       // 3. Registrar en backend
-      await mutation.mutateAsync({ wallet: address, txHash })
+      await mutation.mutateAsync({ wallet: address, txHash, amount: pendientes })
       toast.success(`Dividendos reclamados para "${projectTitle}"`)
     } catch (err) {
       console.error(err)
@@ -122,7 +122,7 @@ export function InvestorEarningsTab() {
   if (isError) {
     return (
       <ErrorState
-        message="No se pudieron cargar tus ganancias."
+        message={`No se pudieron cargar tus ganancias. Error: ${reclamosError?.message || ''} | ${historyError?.message || ''}`}
         onRetry={() => { refetchReclamos(); refetchHistory() }}
       />
     )
@@ -166,7 +166,7 @@ export function InvestorEarningsTab() {
         <SummaryCard
           icon={DollarSign}
           label="Total cobrado"
-          value={formatCurrency(totalCobrado)}
+          value={`${Number(totalCobrado).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} $IDEA`}
         />
         <SummaryCard
           icon={CheckCircle2}
@@ -211,6 +211,7 @@ export function InvestorEarningsTab() {
                   <th className="px-4 py-3 font-medium">Subtokens</th>
                   <th className="px-4 py-3 font-medium">Monto recibido</th>
                   <th className="px-4 py-3 font-medium">Fecha</th>
+                  <th className="px-4 py-3 font-medium">Comprobante</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
@@ -222,11 +223,23 @@ export function InvestorEarningsTab() {
                     <td className="px-4 py-3 text-slate-400 font-mono">
                       {reclamo.cantidadSubtokens ?? '—'}
                     </td>
-                    <td className="px-4 py-3 text-slate-300 font-mono">
-                      {reclamo.montoRecibido != null ? formatCurrency(reclamo.montoRecibido) : '—'}
+                    <td className="px-4 py-3 text-emerald-400 font-mono font-medium">
+                      {reclamo.montoRecibido != null ? `${Number(reclamo.montoRecibido).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} $IDEA` : '—'}
                     </td>
                     <td className="px-4 py-3 text-slate-400 whitespace-nowrap">
                       {reclamo.reclamadoEn ? formatDateTime(reclamo.reclamadoEn) : '—'}
+                    </td>
+                    <td className="px-4 py-3">
+                      {reclamo.txHash ? (
+                        <a
+                          href={`https://sepolia.basescan.org/tx/${reclamo.txHash}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-mono text-xs text-violet-400 hover:text-violet-300 transition-colors"
+                        >
+                          {reclamo.txHash.slice(0, 10)}...{reclamo.txHash.slice(-8)} ↗
+                        </a>
+                      ) : '—'}
                     </td>
                   </tr>
                 ))}

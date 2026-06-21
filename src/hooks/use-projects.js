@@ -176,3 +176,24 @@ export function useSubmitAuditFinding() {
     },
   })
 }
+
+export function useCreatorProfile(creatorId) {
+  return useQuery({
+    queryKey: ['users', creatorId, 'profile'],
+    queryFn: () => apiRequest(`/api/users/${creatorId}/profile`),
+    enabled: !!creatorId,
+  })
+}
+
+export function useCreatorProjects(creatorId, page = 0, size = 10) {
+  return useQuery({
+    queryKey: [...projectKeys.lists(), { creatorId, page, size }],
+    queryFn: () => {
+      const searchParams = new URLSearchParams()
+      searchParams.append('page', page)
+      searchParams.append('size', size)
+      return apiRequest(`${API_ENDPOINTS.PROJECTS}/creator/${creatorId}?${searchParams.toString()}`)
+    },
+    enabled: !!creatorId,
+  })
+}

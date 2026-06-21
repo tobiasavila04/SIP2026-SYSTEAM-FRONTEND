@@ -50,7 +50,7 @@ export function ProjectDisclaimerModal({ open, onOpenChange, onConfirm }) {
                 1. Etapa de Financiamiento
               </h4>
               <p className="text-xs text-slate-400 leading-relaxed">
-                Los fondos quedarán resguardados en la blockchain. El precio del sub-token es dinámico y <strong className="text-slate-300">aumenta por demanda tras alcanzar el 70% de recaudación</strong>. Los inversores recurrentes recibirán un <strong className="text-slate-300">Descuento por Lealtad</strong> que absorberás inicialmente, pero que recuperarás (y superarás) rápidamente gracias al margen extra del precio dinámico. Si no cumplís la meta en plazo, se reembolsará automáticamente.
+                Los fondos quedarán resguardados en la blockchain. El precio del sub-token es dinámico y <strong className="text-slate-300">aumenta por demanda tras alcanzar el 70% de recaudación</strong>. Los inversores recurrentes recibirán un <strong className="text-slate-300">Descuento por Lealtad (Cross-Rewards)</strong> que es <strong className="text-emerald-400">100% absorbido por IDEAFY</strong> mediante nuestro Fondo de Bonificación, asegurando que tu proyecto reciba el valor completo. Si no cumplís la meta en plazo, se reembolsará automáticamente.
               </p>
             </div>
           </div>
@@ -113,7 +113,7 @@ export function ProjectDisclaimerModal({ open, onOpenChange, onConfirm }) {
               "text-xs leading-relaxed select-none transition-colors",
               accepted ? "text-slate-300" : "text-slate-500 group-hover:text-slate-400"
             )}>
-              Entiendo que el margen extra del precio dinámico me permite absorber estratégicamente los descuentos de lealtad (generando un modelo win-win), y me comprometo al pago de dividendos en caso de éxito.
+              Entiendo que el Descuento por Lealtad (Cross-Rewards) para inversores es cubierto íntegramente por la plataforma (garantizando que mi proyecto reciba el 100% del valor), y me comprometo al pago de dividendos en caso de éxito.
             </span>
           </label>
 

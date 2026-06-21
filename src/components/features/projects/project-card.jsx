@@ -108,7 +108,7 @@ export function ProjectCard({ project, isCreator, showActions = true }) {
         {hasTokens && !isFailed && (
           <div className="flex items-center gap-1.5 text-[10px] text-slate-500">
             <Coins className="w-3 h-3" />
-            <span>{project.cupoMaximoTokens.toLocaleString()} tokens disponibles</span>
+            <span>{(project.cupoRestante ?? project.cupoMaximoTokens).toLocaleString()} tokens disponibles de {project.cupoMaximoTokens.toLocaleString()}</span>
           </div>
         )}
 
