@@ -76,8 +76,8 @@ function ProjectClaimRow({ projectId, projectTitle }) {
       <span className="text-sm text-slate-300">{projectTitle}</span>
       <div className="flex items-center gap-3">
         {hasWallet && (
-          <span className="text-xs font-mono text-slate-400">
-            {pendientesLoading ? '...' : pendientes > 0 ? `${formatCurrency(pendientes)} pendientes` : 'Sin pendientes'}
+          <span className="text-sm text-slate-400 min-w-[120px] text-right">
+            {pendientesLoading ? '...' : pendientes > 0 ? `${pendientes.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} $IDEA pendientes` : 'Sin pendientes'}
           </span>
         )}
         <Button

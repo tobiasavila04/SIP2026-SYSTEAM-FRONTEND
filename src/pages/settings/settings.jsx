@@ -5,6 +5,7 @@ import { API_ENDPOINTS } from '@/config/api'
 import { useAuthStore } from '@/stores/auth-store'
 import { useUpdateUserPartial } from '@/hooks/use-users'
 import { useWalletSummary } from '@/hooks/use-wallet'
+import { InvestorLevelCard } from '@/components/features/users/investor-level-card'
 import { PageHeader } from '@/components/shared/page-header'
 import { StatusBadge } from '@/components/shared/status-badge'
 import { Button } from '@/components/ui/button'
@@ -388,6 +389,7 @@ export default function SettingsPage() {
                 )}
               </div>
 
+              <InvestorLevelCard />
               <WalletPanel />
             </section>
           )}
