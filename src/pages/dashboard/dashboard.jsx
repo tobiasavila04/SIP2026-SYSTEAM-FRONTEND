@@ -380,10 +380,18 @@ export default function DashboardPage() {
   // RENDERIZADO PRINCIPAL
   return (
     <div className="space-y-8 pb-12">
-      <PageHeader
-        title={`Bienvenido, ${user?.name || 'Usuario'}`}
-        description="Resumen de tu actividad en la plataforma"
-      />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <PageHeader
+          title={`Bienvenido, ${user?.name || 'Usuario'}`}
+          description="Resumen de tu actividad en la plataforma"
+        />
+        <Button asChild size="lg" className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white shadow-lg shadow-indigo-500/20 border-0 group whitespace-nowrap">
+          <Link to="/wrapped">
+            <Play className="w-4 h-4 mr-2 fill-current group-hover:scale-110 transition-transform" />
+            Ver mi IdeaWrapped 2026
+          </Link>
+        </Button>
+      </div>
 
       {/* 1. Métricas Principales (Del código Original) */}
       {isAdmin && (

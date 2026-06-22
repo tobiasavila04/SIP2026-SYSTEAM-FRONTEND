@@ -110,6 +110,7 @@ export const API_ENDPOINTS = {
   ORACLE_SUBMIT: (id) => buildProjectUrl(`/api/oracle/report/${id}`),
 
   DASHBOARD_STATS: buildProjectUrl("/api/dashboard/stats"),
+  DASHBOARD_WRAPPED: buildProjectUrl("/api/dashboard/wrapped"),
   MODULES_STATUS: buildProjectUrl("/api/modules/status"),
 
   NOTIFICATIONS: buildProjectUrl("/api/notifications"),

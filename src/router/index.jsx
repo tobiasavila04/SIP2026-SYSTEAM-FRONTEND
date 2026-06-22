@@ -23,6 +23,7 @@ const AdminRolesPage = lazy(() => import('@/pages/admin/roles'))
 const MarketplacePage = lazy(() => import('@/pages/marketplace/index'))
 const ModulesPage = lazy(() => import('@/pages/modules/index'))
 const CreatorProfilePage = lazy(() => import('@/pages/creators/creator-profile'))
+const IdeaWrappedPage = lazy(() => import('@/pages/dashboard/idea-wrapped'))
 
 function ProtectedRoute({ children }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
@@ -68,6 +69,7 @@ export function AppRouter() {
       <Route path="/completar-perfil" element={<ProtectedRoute><CompleteProfilePage /></ProtectedRoute>} />
       <Route path="/explorar" element={<LazyPage Component={PublicCatalogPage} />} />
       <Route path="/creators/:id" element={<LazyPage Component={CreatorProfilePage} />} />
+      <Route path="/wrapped" element={<ProtectedRoute><LazyPage Component={IdeaWrappedPage} /></ProtectedRoute>} />
 
       <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
         <Route path="/dashboard" element={<LazyPage Component={DashboardPage} />} />

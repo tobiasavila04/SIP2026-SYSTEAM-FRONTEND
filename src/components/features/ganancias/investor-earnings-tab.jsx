@@ -38,13 +38,12 @@ function ProjectClaimRow({ projectId, projectTitle }) {
 
   const handleClaim = async () => {
     try {
-      // 1. Reclamo on-chain directo con MetaMask (gas fijo para evitar error de estimación)
+      // 1. Reclamo on-chain directo con MetaMask
       const txHash = await writeContractAsync({
         address: import.meta.env.VITE_DIVIDEND_DISTRIBUTOR_ADDRESS,
         abi: DIVIDEND_DISTRIBUTOR_ABI,
         functionName: 'claim',
-        args: [BigInt(projectId)],
-        gas: 200_000n
+        args: [BigInt(projectId)]
       })
 
       // 2. Esperar confirmación
