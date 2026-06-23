@@ -14,6 +14,7 @@ import {
   Vote,
   Store,
   BadgeDollarSign,
+  Calendar,
 } from 'lucide-react'
 import { useAccount, useReadContract, useBalance } from 'wagmi'
 import { formatUnits } from 'viem'
@@ -33,6 +34,7 @@ const mainNav = [
 const adminNav = [
   { to: '/admin/usuarios', label: 'Usuarios', icon: Users },
   { to: '/admin/roles', label: 'Roles', icon: KeyRound },
+  { to: '/admin/eventos', label: 'Eventos', icon: Calendar },
   // Permisos gestionados desde Roles
 ]
 
@@ -95,7 +97,7 @@ export function Sidebar({ collapsed, onToggle }) {
   const filteredMainNav = mainNav.filter(item => {
     if (item.to === '/inversiones') return can('investment:read') || can('investment:create')
     if (item.to === '/marketplace') return can('investment:create')
-    if (item.to === '/gobernanza') return can('investment:create')
+    if (item.to === '/gobernanza') return can('governance:read')
     if (item.to === '/billetera') return isCreator || isInvestor
     return true
   })

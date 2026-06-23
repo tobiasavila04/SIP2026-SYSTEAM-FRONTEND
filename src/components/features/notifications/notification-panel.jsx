@@ -4,7 +4,6 @@ import {
   Coins,
   ClipboardCheck,
   RefreshCw,
-  Vote,
   Store,
   BellOff,
 } from 'lucide-react'
@@ -17,7 +16,6 @@ const NOTIFICATION_ICONS = {
   DIVIDEND_DISTRIBUTED: Coins,
   PROJECT_AUDITED: ClipboardCheck,
   PROJECT_STATE_CHANGED: RefreshCw,
-  GOVERNANCE_PROPOSAL: Vote,
   MARKETPLACE: Store,
 }
 

@@ -63,6 +63,8 @@ export const API_ENDPOINTS = {
   PROJECT_EVALUATE_STATES: buildProjectUrl('/api/projects/evaluate-states'),
   PROJECT_CLOSE: (id) => buildProjectUrl(`/api/projects/${id}/close`),
   PROJECT_BOOST: (id) => buildProjectUrl(`/api/projects/${id}/boost`),
+  PROJECT_VOTE: (id) => buildUrl(`/api/projects/${id}/vote`),
+  PROJECT_VOTES_STREAM: (id) => buildProjectUrl(`/api/projects/${id}/votes/stream`),
 
   INVESTMENTS: buildProjectUrl("/api/investments"),
   INVESTMENTS_VALIDATE: buildProjectUrl("/api/investments/validate"),
@@ -84,10 +86,18 @@ export const API_ENDPOINTS = {
   WALLET_TRANSFER: buildProjectUrl("/api/wallet/transfer"),
 
   GOVERNANCE_PROPOSALS: buildProjectUrl("/api/governance/proposals"),
-  GOVERNANCE_PROPOSAL: (id) =>
-    buildProjectUrl(`/api/governance/proposals/${id}`),
+  GOVERNANCE_PROPOSAL: (id) => buildProjectUrl(`/api/governance/proposals/${id}`),
   GOVERNANCE_VOTE: buildProjectUrl("/api/governance/vote"),
+  GOVERNANCE_CONFIG: buildProjectUrl("/api/governance/config"),
+  GOVERNANCE_PROPOSAL_VOTES_STREAM: (id) => buildProjectUrl(`/api/governance/proposals/${id}/votes/stream`),
   GOVERNANCE_COUNT: buildProjectUrl("/api/governance/count"),
+
+  EVENTOS: buildProjectUrl("/api/eventos"),
+  EVENTO_BY_ID: (id) => buildProjectUrl(`/api/eventos/${id}`),
+  EVENTO_ASISTENCIA: (eventoId) =>
+    buildProjectUrl(`/api/eventos/${eventoId}/asistencia`),
+  EVENTO_ASISTENCIAS: (eventoId) =>
+    buildProjectUrl(`/api/eventos/${eventoId}/asistencias`),
 
   MARKETPLACE_LISTINGS: buildProjectUrl("/api/marketplace/listings"),
   MARKETPLACE_LISTING: (id) =>

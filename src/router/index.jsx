@@ -21,6 +21,8 @@ const WalletPage = lazy(() => import('@/pages/wallet/index'))
 const AdminUsersPage = lazy(() => import('@/pages/admin/users'))
 const AdminRolesPage = lazy(() => import('@/pages/admin/roles'))
 const MarketplacePage = lazy(() => import('@/pages/marketplace/index'))
+const GobernanzaPage = lazy(() => import('@/pages/gobernanza/index'))
+const AdminEventosPage = lazy(() => import('@/pages/admin/eventos'))
 const ModulesPage = lazy(() => import('@/pages/modules/index'))
 const CreatorProfilePage = lazy(() => import('@/pages/creators/creator-profile'))
 const IdeaWrappedPage = lazy(() => import('@/pages/dashboard/idea-wrapped'))
@@ -81,11 +83,13 @@ export function AppRouter() {
         <Route path="/ganancias" element={<LazyPage Component={GananciasPage} />} />
         <Route path="/billetera" element={<LazyPage Component={WalletPage} />} />
         <Route path="/marketplace" element={<LazyPage Component={MarketplacePage} />} />
+        <Route path="/gobernanza" element={<LazyPage Component={GobernanzaPage} />} />
         <Route path="/perfil" element={<Navigate to="/configuracion" replace />} />
         <Route path="/configuracion" element={<LazyPage Component={SettingsPage} />} />
 
         <Route path="/admin/usuarios" element={<AdminRoute><LazyPage Component={AdminUsersPage} /></AdminRoute>} />
         <Route path="/admin/roles" element={<AdminRoute><LazyPage Component={AdminRolesPage} /></AdminRoute>} />
+        <Route path="/admin/eventos" element={<AdminRoute><LazyPage Component={AdminEventosPage} /></AdminRoute>} />
         <Route path="/admin/modulos" element={<AdminRoute><LazyPage Component={ModulesPage} /></AdminRoute>} />
       </Route>
 
