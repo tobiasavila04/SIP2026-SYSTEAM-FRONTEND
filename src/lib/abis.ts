@@ -159,6 +159,19 @@ export const IDEA_MARKETPLACE_ABI = [
   }
 ]
 
+export const IDEA_GOVERNANCE_ABI = [
+  {
+    type: 'function',
+    name: 'vote',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'proposalId', type: 'uint256' },
+      { name: 'support', type: 'bool' },
+    ],
+    outputs: [],
+  },
+] as const
+
 export const DIVIDEND_DISTRIBUTOR_ABI = [
   {
     type: 'function',

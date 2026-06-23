@@ -25,12 +25,12 @@ export default defineConfig({
     },
     proxy: {
       '/auth': {
-        target: 'http://localhost:8080',
+        target: 'http://localhost:8989',
         changeOrigin: true,
         secure: false,
       },
       '/oauth2/authorization': {
-        target: 'http://localhost:8080',
+        target: 'http://localhost:8989',
         changeOrigin: true,
         secure: false,
       },

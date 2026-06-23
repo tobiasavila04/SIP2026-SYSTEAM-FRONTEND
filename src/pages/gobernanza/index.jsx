@@ -1,7 +1,11 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useConfig, useWriteContract, useAccount } from 'wagmi'
+import { waitForTransactionReceipt } from '@wagmi/core'
+import { useConnectModal } from '@rainbow-me/rainbowkit'
 import { apiRequest, getStoredToken } from '@/lib/api-client'
 import { API_ENDPOINTS } from '@/config/api'
+import { IDEA_GOVERNANCE_ABI } from '@/lib/abis'
 import { PageHeader } from '@/components/shared/page-header'
 import { ErrorState } from '@/components/shared/error-state'
 import { CardSkeleton } from '@/components/shared/loading-skeleton'
@@ -11,8 +15,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import { Link } from 'react-router-dom'
 import {
-  Vote, Loader2, Sparkles, ThumbsUp, ThumbsDown, Clock,
+  Vote, Loader2, Sparkles, ThumbsUp, ThumbsDown, Clock, ExternalLink,
 } from 'lucide-react'
 
 /* -------------------------------------------------------------------------- */
@@ -114,9 +119,18 @@ function ProjectCard({ project, onVote, votingId }) {
           <Vote className="w-5 h-5 text-amber-400" />
         </div>
         <div className="min-w-0 flex-1">
-          <h3 className="text-base font-semibold text-white group-hover:text-amber-300 transition-colors truncate">
-            {project.titulo}
-          </h3>
+          <div className="flex items-center gap-2">
+            <h3 className="text-base font-semibold text-white group-hover:text-amber-300 transition-colors truncate">
+              {project.titulo}
+            </h3>
+            <Link
+              to={`/proyectos/${project.id}`}
+              className="shrink-0 text-slate-500 hover:text-amber-400 transition-colors"
+              title="Ver detalle del proyecto"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+            </Link>
+          </div>
           <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">
             {project.descripcion}
           </p>
@@ -183,8 +197,14 @@ function ProjectCard({ project, onVote, votingId }) {
 /* -------------------------------------------------------------------------- */
 export default function VotingPage() {
   const queryClient = useQueryClient()
+  const config = useConfig()
+  const { writeContractAsync } = useWriteContract()
+  const { isConnected } = useAccount()
+  const { openConnectModal } = useConnectModal()
   const [voteDialog, setVoteDialog] = useState({ open: false, project: null, support: null })
   const [votingId, setVotingId] = useState(null)
+
+  const governanceAddress = import.meta.env.VITE_IDEA_GOVERNANCE_ADDRESS
 
   /* ── Config (cost / reward) ───────────────────────────────────────── */
   const { data: govConfig } = useQuery({
@@ -208,16 +228,16 @@ export default function VotingPage() {
     refetchInterval: 15_000,
   })
   const projects = Array.isArray(projectsData) ? projectsData : projectsData?.content ?? []
-
-  /* ── Vote counts update via refetchInterval (every 15s) ─────────── */
-  /* SSE connections removed: opening one per project exhausts the
-     browser's 6-connection-per-domain limit and blocks vote requests. */
   const mergedProjects = projects
 
   /* ── Vote flow ─────────────────────────────────────────────────────── */
   const handleVoteClick = useCallback((project, support) => {
+    if (!isConnected) {
+      openConnectModal?.()
+      return
+    }
     setVoteDialog({ open: true, project, support })
-  }, [])
+  }, [isConnected, openConnectModal])
 
   const confirmVote = useCallback(async () => {
     const { project, support } = voteDialog
@@ -227,7 +247,24 @@ export default function VotingPage() {
     setVoteDialog({ open: false, project: null, support: null })
 
     try {
-      toast.loading('Emitiendo voto...', { id: 'vote' })
+      toast.loading('Preparando voto on-chain...', { id: 'vote' })
+
+      const prepareRes = await apiRequest(API_ENDPOINTS.PROJECT_VOTE_PREPARE(project.id))
+      const onChainProposalId = prepareRes.onChainProposalId
+
+      toast.loading('Confirmá la transacción en MetaMask...', { id: 'vote' })
+
+      const txHash = await writeContractAsync({
+        address: governanceAddress,
+        abi: IDEA_GOVERNANCE_ABI,
+        functionName: 'vote',
+        args: [BigInt(onChainProposalId), support],
+      })
+
+      toast.loading('Esperando confirmación on-chain...', { id: 'vote' })
+      await waitForTransactionReceipt(config, { hash: txHash })
+
+      toast.loading('Registrando voto en el servidor...', { id: 'vote' })
 
       const token = getStoredToken()
       const response = await fetch(API_ENDPOINTS.PROJECT_VOTE(project.id), {
@@ -236,39 +273,22 @@ export default function VotingPage() {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ support }),
+        body: JSON.stringify({ support, txHash }),
       })
-
-      if (response.status === 403) {
-        throw new Error('No tenés permiso para votar (governance:vote)')
-      }
-
-      if (response.status === 409) {
-        const errorBody = await response.text().catch(() => '')
-        let errorMsg
-        try {
-          errorMsg = JSON.parse(errorBody).error || JSON.parse(errorBody).message || errorBody
-        } catch {
-          errorMsg = errorBody || 'Conflicto al votar'
-        }
-        throw new Error(errorMsg)
-      }
 
       if (!response.ok) {
         const errorBody = await response.text().catch(() => '')
         let errorMsg
         try {
-          errorMsg = JSON.parse(errorBody).error || errorBody
+          errorMsg = JSON.parse(errorBody).error || JSON.parse(errorBody).message || errorBody
         } catch {
           errorMsg = errorBody || `Error ${response.status}`
         }
         throw new Error(errorMsg)
       }
 
-      const txHash = await response.text()
-      console.debug('Vote txHash:', txHash)
-
       queryClient.invalidateQueries({ queryKey: ['projects-voting'] })
+      queryClient.invalidateQueries({ queryKey: ['wallet'] })
 
       toast.success(
         support
@@ -278,20 +298,25 @@ export default function VotingPage() {
       )
     } catch (err) {
       toast.dismiss('vote')
-      const msg = err?.message?.toLowerCase() || ''
-      if (msg.includes('saldo insuficiente') || msg.includes('insufficient')) {
+      const msg = err?.shortMessage || err?.message || ''
+      const lower = msg.toLowerCase()
+      if (lower.includes('user rejected') || lower.includes('denied')) {
+        toast.error('Transacción cancelada por el usuario')
+      } else if (lower.includes('saldo insuficiente') || lower.includes('insufficient')) {
         toast.error('No tenés saldo suficiente de $IDEA para votar')
-      } else if (msg.includes('ya votó') || msg.includes('already voted')) {
+      } else if (lower.includes('ya votó') || lower.includes('already voted')) {
         toast.error('Ya votaste en este proyecto')
-      } else if (msg.includes('ejecucion') || msg.includes('execution')) {
+      } else if (lower.includes('ejecucion') || lower.includes('execution')) {
         toast.error('Este proyecto no está en estado de ejecución')
+      } else if (lower.includes('401') || lower.includes('no autenticado')) {
+        toast.error('Sesión expirada. Recargá la página e intentá de nuevo.')
       } else {
-        toast.error(err?.message || 'Error al emitir el voto')
+        toast.error(msg || 'Error al emitir el voto')
       }
     } finally {
       setVotingId(null)
     }
-  }, [voteDialog, queryClient])
+  }, [voteDialog, queryClient, config, writeContractAsync, governanceAddress])
 
   /* ── Render ────────────────────────────────────────────────────────── */
   return (
@@ -301,6 +326,22 @@ export default function VotingPage() {
         title="Votación de Proyectos"
         description={`Votá por los proyectos en ejecución usando tus tokens $IDEA. Cada voto cuesta ${voteCost} $IDEA y recibís ${voteReward} $IDEA de recompensa.`}
       />
+
+      {!isConnected && (
+        <section className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-sm text-amber-200">
+              Conectá tu wallet para poder votar on-chain.
+            </p>
+            <Button
+              onClick={() => openConnectModal?.()}
+              className="bg-amber-600 hover:bg-amber-500 text-white text-sm shrink-0"
+            >
+              Conectar Wallet
+            </Button>
+          </div>
+        </section>
+      )}
 
       <section className="rounded-xl border border-white/5 bg-card p-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
