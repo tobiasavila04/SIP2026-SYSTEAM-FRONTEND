@@ -15,6 +15,7 @@ import {
   Store,
   BadgeDollarSign,
   Calendar,
+  Trophy,
 } from 'lucide-react'
 import { useAccount, useReadContract, useBalance } from 'wagmi'
 import { formatUnits } from 'viem'
@@ -28,6 +29,8 @@ const mainNav = [
   { to: '/billetera', label: 'Billetera', icon: Wallet },
   { to: '/marketplace', label: 'Marketplace', icon: Store },
   { to: '/gobernanza', label: 'Gobernanza', icon: Vote },
+  { to: '/eventos', label: 'Eventos', icon: Calendar },
+  { to: '/recompensas', label: 'Recompensas', icon: Trophy },
   { to: '/configuracion', label: 'Configuración', icon: Settings },
 ]
 

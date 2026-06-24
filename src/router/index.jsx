@@ -26,6 +26,8 @@ const AdminEventosPage = lazy(() => import('@/pages/admin/eventos'))
 const ModulesPage = lazy(() => import('@/pages/modules/index'))
 const CreatorProfilePage = lazy(() => import('@/pages/creators/creator-profile'))
 const IdeaWrappedPage = lazy(() => import('@/pages/dashboard/idea-wrapped'))
+const EventosPage = lazy(() => import('@/pages/eventos/index'))
+const RecompensasPage = lazy(() => import('@/pages/recompensas/index'))
 
 function ProtectedRoute({ children }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
@@ -84,6 +86,8 @@ export function AppRouter() {
         <Route path="/billetera" element={<LazyPage Component={WalletPage} />} />
         <Route path="/marketplace" element={<LazyPage Component={MarketplacePage} />} />
         <Route path="/gobernanza" element={<LazyPage Component={GobernanzaPage} />} />
+        <Route path="/eventos" element={<LazyPage Component={EventosPage} />} />
+        <Route path="/recompensas" element={<LazyPage Component={RecompensasPage} />} />
         <Route path="/perfil" element={<Navigate to="/configuracion" replace />} />
         <Route path="/configuracion" element={<LazyPage Component={SettingsPage} />} />
 

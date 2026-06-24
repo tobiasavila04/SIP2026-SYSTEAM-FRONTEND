@@ -44,6 +44,9 @@ export function useCreateEvento() {
       queryClient.invalidateQueries({ queryKey: eventoKeys.all })
       toast.success('Evento creado exitosamente')
     },
+    onError: () => {
+      toast.error('Error al crear el evento')
+    },
   })
 }
 

@@ -124,6 +124,9 @@ export const API_ENDPOINTS = {
   DASHBOARD_WRAPPED: buildProjectUrl("/api/dashboard/wrapped"),
   MODULES_STATUS: buildProjectUrl("/api/modules/status"),
 
+  REWARDS_HISTORY: buildProjectUrl("/api/rewards/history"),
+  REWARDS_SUMMARY: buildProjectUrl("/api/rewards/summary"),
+
   NOTIFICATIONS: buildProjectUrl("/api/notifications"),
   NOTIFICATIONS_UNREAD_COUNT: buildProjectUrl("/api/notifications/unread-count"),
   NOTIFICATION_READ: (id) => buildProjectUrl(`/api/notifications/${id}/read`),

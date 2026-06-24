@@ -23,7 +23,7 @@ import {
 /* -------------------------------------------------------------------------- */
 /*  ConfirmVoteDialog                                                          */
 /* -------------------------------------------------------------------------- */
-function ConfirmVoteDialog({ open, onOpenChange, project, support, onConfirm, loading, voteCost, voteReward }) {
+function ConfirmVoteDialog({ open, onOpenChange, project, support, onConfirm, loading, voteCost, voteReward, hasDiscount, baseCost }) {
   const label = support === true ? 'a favor' : 'en contra'
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -48,6 +48,11 @@ function ConfirmVoteDialog({ open, onOpenChange, project, support, onConfirm, lo
           <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-200 space-y-1">
             <p>
               <strong>Costo:</strong> {voteCost} $IDEA
+              {hasDiscount && (
+                <span className="ml-1 text-emerald-400">
+                  (base: {baseCost}, descuento inversor: -{(baseCost - voteCost).toFixed(0)})
+                </span>
+              )}
             </p>
             <p>
               <strong>Recompensa:</strong> {voteReward} $IDEA
@@ -212,8 +217,11 @@ export default function VotingPage() {
     queryFn: () => apiRequest(API_ENDPOINTS.GOVERNANCE_CONFIG),
     staleTime: 5 * 60 * 1000,
   })
-  const voteCost = Number(govConfig?.voteCost ?? 10)
+  const baseCost = Number(govConfig?.voteCost ?? 10)
+  const voteCost = Number(govConfig?.userVoteCost ?? govConfig?.voteCost ?? 10)
   const voteReward = Number(govConfig?.voteReward ?? 5)
+  const investmentCount = Number(govConfig?.investmentCount ?? 0)
+  const hasDiscount = investmentCount > 0 && voteCost < baseCost
 
   /* ── Projects in EJECUCION ─────────────────────────────────────────── */
   const {
@@ -324,7 +332,7 @@ export default function VotingPage() {
       <PageHeader
         icon={Vote}
         title="Votación de Proyectos"
-        description={`Votá por los proyectos en ejecución usando tus tokens $IDEA. Cada voto cuesta ${voteCost} $IDEA y recibís ${voteReward} $IDEA de recompensa.`}
+        description={`Votá por los proyectos en ejecución usando tus tokens $IDEA. Cada voto cuesta ${voteCost} $IDEA${hasDiscount ? ` (base: ${baseCost})` : ''} y recibís ${voteReward} $IDEA de recompensa.`}
       />
 
       {!isConnected && (
@@ -352,9 +360,19 @@ export default function VotingPage() {
             <div>
               <p className="text-sm font-medium text-white">
                 Votar cuesta {voteCost} $IDEA
+                {hasDiscount && (
+                  <span className="ml-2 text-xs text-emerald-400 font-normal">
+                    (descuento inversor: -{(baseCost - voteCost).toFixed(0)} $IDEA)
+                  </span>
+                )}
               </p>
               <p className="text-xs text-slate-500">
                 Recibís {voteReward} $IDEA de recompensa por cada voto emitido
+                {hasDiscount && (
+                  <span className="block mt-0.5 text-emerald-500/70">
+                    Invertiste en {investmentCount} proyecto{investmentCount !== 1 ? 's' : ''} — tu voto tiene descuento
+                  </span>
+                )}
               </p>
             </div>
           </div>
@@ -401,6 +419,8 @@ export default function VotingPage() {
         loading={votingId === voteDialog.project?.id}
         voteCost={voteCost}
         voteReward={voteReward}
+        hasDiscount={hasDiscount}
+        baseCost={baseCost}
       />
     </div>
   )

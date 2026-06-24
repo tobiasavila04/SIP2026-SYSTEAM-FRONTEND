@@ -137,6 +137,10 @@ export default function WalletPage() {
       label: "Recompensa de voto",
       classes: "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20",
     },
+    EVENTO_RECOMPENSA: {
+      label: "Evento recompensa",
+      classes: "bg-cyan-500/10 text-cyan-400 border border-cyan-500/20",
+    },
   };
 
   return (
@@ -330,6 +334,9 @@ export default function WalletPage() {
                 </option>
                 <option value="VOTO_RECOMPENSA" className="bg-slate-900">
                   Recompensa de voto
+                </option>
+                <option value="EVENTO_RECOMPENSA" className="bg-slate-900">
+                  Evento recompensa
                 </option>
               </select>
             </div>
