@@ -6,6 +6,8 @@ import {
   RefreshCw,
   Store,
   BellOff,
+  Trophy,
+  Award,
 } from 'lucide-react'
 import { useNotifications, useMarkAsRead } from '@/hooks/use-notifications'
 import { cn } from '@/lib/utils'
@@ -17,6 +19,8 @@ const NOTIFICATION_ICONS = {
   PROJECT_AUDITED: ClipboardCheck,
   PROJECT_STATE_CHANGED: RefreshCw,
   MARKETPLACE: Store,
+  VOTE_REWARD: Trophy,
+  EVENT_REWARD: Award,
 }
 
 function timeAgo(dateString) {

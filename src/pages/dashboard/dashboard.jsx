@@ -35,6 +35,7 @@ import {
   YAxis,
   Tooltip
 } from 'recharts'
+import { RewardsSummaryWidget } from '@/components/features/rewards/rewards-summary-widget'
 
 // --- CONSTANTES Y COMPONENTES AUXILIARES ---
 
@@ -540,6 +541,11 @@ export default function DashboardPage() {
             )}
           </div>
         </div>
+      </section>
+
+      {/* 5. Rewards Summary Widget */}
+      <section aria-label="Recompensas">
+        <RewardsSummaryWidget />
       </section>
 
       {/* 6. Actividad y Accesos Rápidos (Del código Original) */}

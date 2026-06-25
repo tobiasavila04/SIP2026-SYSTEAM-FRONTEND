@@ -24,7 +24,10 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useProjects } from '@/hooks/use-projects'
 import { formatDateTime } from '@/lib/utils'
-import { Plus, Pencil, Trash2, Users, Loader2, Calendar } from 'lucide-react'
+import { Plus, Pencil, Trash2, Users, Loader2, Calendar, Search, X } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+import { apiRequest } from '@/lib/api-client'
+import { API_ENDPOINTS } from '@/config/api'
 import { format } from 'date-fns'
 
 const columnHelper = createColumnHelper()
@@ -35,6 +38,7 @@ function EventoFormDialog({ open, onOpenChange, onSubmit, initialData, loading, 
   const [fechaEvento, setFechaEvento] = useState(initialData?.fechaEvento || '')
   const [rewardAmount, setRewardAmount] = useState(initialData?.rewardAmount ?? '')
   const [proyectoId, setProyectoId] = useState(initialData?.proyectoId != null ? String(initialData.proyectoId) : 'none')
+  const [cronograma, setCronograma] = useState(initialData?.cronograma ? JSON.parse(initialData.cronograma) : [])
 
   const { data: proyectosData } = useProjects({ page: 0, size: 200 })
   const proyectos = proyectosData?.content ?? []
@@ -51,13 +55,14 @@ function EventoFormDialog({ open, onOpenChange, onSubmit, initialData, loading, 
       fechaEvento: new Date(fechaEvento).toISOString(),
       rewardAmount: rewardAmount ? Number(rewardAmount) : 0,
       proyectoId: proyectoId && proyectoId !== 'none' ? Number(proyectoId) : null,
+      cronograma: cronograma.length > 0 ? JSON.stringify(cronograma) : null,
     }
     onSubmit(body)
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Calendar className="w-5 h-5 text-violet-400" />
@@ -76,7 +81,7 @@ function EventoFormDialog({ open, onOpenChange, onSubmit, initialData, loading, 
               onChange={(e) => setTitulo(e.target.value)}
               placeholder="Ej: Presentación Q3"
               required
-              className="bg-slate-950 border-slate-700 text-white placeholder:text-slate-600"
+              className="bg-card border-white/10 text-white placeholder:text-slate-600"
             />
           </div>
           <div className="space-y-2">
@@ -87,7 +92,7 @@ function EventoFormDialog({ open, onOpenChange, onSubmit, initialData, loading, 
               onChange={(e) => setDescripcion(e.target.value)}
               placeholder="Descripción del evento..."
               rows={3}
-              className="bg-slate-950 border-slate-700 text-white placeholder:text-slate-600"
+              className="bg-card border-white/10 text-white placeholder:text-slate-600"
             />
           </div>
           <div className="space-y-2">
@@ -98,7 +103,7 @@ function EventoFormDialog({ open, onOpenChange, onSubmit, initialData, loading, 
               value={fechaEvento}
               onChange={(e) => setFechaEvento(e.target.value)}
               required
-              className="bg-slate-950 border-slate-700 text-white"
+              className="bg-card border-white/10 text-white"
             />
           </div>
           <div className="space-y-2">
@@ -111,16 +116,16 @@ function EventoFormDialog({ open, onOpenChange, onSubmit, initialData, loading, 
               value={rewardAmount}
               onChange={(e) => setRewardAmount(e.target.value)}
               placeholder="0 = sin recompensa"
-              className="bg-slate-950 border-slate-700 text-white placeholder:text-slate-600"
+              className="bg-card border-white/10 text-white placeholder:text-slate-600"
             />
           </div>
           <div className="space-y-2">
             <Label className="text-slate-300">Proyecto asociado</Label>
             <Select value={proyectoId} onValueChange={setProyectoId}>
-              <SelectTrigger className="bg-slate-950 border-slate-700 text-white">
+              <SelectTrigger className="bg-card border-white/10 text-white">
                 <SelectValue placeholder="Ninguno (opcional)" />
               </SelectTrigger>
-              <SelectContent className="bg-slate-900 border-slate-700 text-white">
+              <SelectContent className="bg-card border-white/10 text-white">
                 <SelectItem value="none">Ninguno</SelectItem>
                 {proyectos.map((p) => (
                   <SelectItem key={p.id} value={String(p.id)}>
@@ -129,6 +134,54 @@ function EventoFormDialog({ open, onOpenChange, onSubmit, initialData, loading, 
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div className="space-y-2">
+            <Label className="text-slate-300">Cronograma</Label>
+            <div className="space-y-2">
+              {cronograma.map((item, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <Input
+                    type="time"
+                    value={item.hora}
+                    onChange={(e) => {
+                      const updated = [...cronograma]
+                      updated[index] = { ...updated[index], hora: e.target.value }
+                      setCronograma(updated)
+                    }}
+                    className="bg-card border-white/10 text-white w-28"
+                  />
+                  <Input
+                    value={item.tema}
+                    onChange={(e) => {
+                      const updated = [...cronograma]
+                      updated[index] = { ...updated[index], tema: e.target.value }
+                      setCronograma(updated)
+                    }}
+                    placeholder="Tema..."
+                    className="bg-card border-white/10 text-white placeholder:text-slate-600 flex-1"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    className="text-slate-500 hover:text-red-400 shrink-0"
+                    onClick={() => setCronograma(cronograma.filter((_, i) => i !== index))}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              ))}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="gap-1 text-slate-400"
+                onClick={() => setCronograma([...cronograma, { hora: '', tema: '' }])}
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Agregar item
+              </Button>
+            </div>
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
@@ -149,15 +202,31 @@ function EventoFormDialog({ open, onOpenChange, onSubmit, initialData, loading, 
 }
 
 function AsistenciasDialog({ open, onOpenChange, eventoId }) {
-  const { data: asistencias, isLoading, refetch } = useAsistencias(eventoId)
-  const [userId, setUserId] = useState('')
+  const { data: asistencias, isLoading } = useAsistencias(eventoId)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [selectedUser, setSelectedUser] = useState(null)
+  const [showSuggestions, setShowSuggestions] = useState(false)
   const confirmAttendance = useConfirmAttendance()
 
+  const { data: suggestions = [], isFetching: isSearching } = useQuery({
+    queryKey: ['users-search', searchQuery],
+    queryFn: () => apiRequest(`${API_ENDPOINTS.USERS_SEARCH}?username=${encodeURIComponent(searchQuery)}`),
+    enabled: searchQuery.length >= 2,
+    staleTime: 30 * 1000,
+  })
+
+  const handleSelectUser = (user) => {
+    setSelectedUser(user)
+    setSearchQuery(user.username)
+    setShowSuggestions(false)
+  }
+
   const handleConfirm = async () => {
-    if (!userId) return
+    if (!selectedUser) return
     try {
-      await confirmAttendance.mutateAsync({ eventoId, userId: Number(userId) })
-      setUserId('')
+      await confirmAttendance.mutateAsync({ eventoId, userId: selectedUser.id })
+      setSelectedUser(null)
+      setSearchQuery('')
     } catch { /* handled by hook */ }
   }
 
@@ -172,29 +241,73 @@ function AsistenciasDialog({ open, onOpenChange, eventoId }) {
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="flex items-end gap-2">
-            <div className="flex-1 space-y-1">
-              <Label htmlFor="userId-asistencia" className="text-xs text-slate-400">User ID</Label>
-              <Input
-                id="userId-asistencia"
-                type="number"
-                value={userId}
-                onChange={(e) => setUserId(e.target.value)}
-                placeholder="ID del usuario"
-                className="bg-slate-950 border-slate-700 text-white placeholder:text-slate-600 h-9"
-              />
+          <div className="space-y-1">
+            <Label className="text-xs text-slate-400">Buscar usuario</Label>
+            <div className="flex items-end gap-2">
+              <div className="flex-1 relative">
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500" />
+                  <Input
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value)
+                      setSelectedUser(null)
+                      setShowSuggestions(true)
+                    }}
+                    onFocus={() => searchQuery.length >= 2 && setShowSuggestions(true)}
+                    placeholder="Nombre o email..."
+                    className="bg-card border-white/10 text-white placeholder:text-slate-600 h-9 pl-8"
+                  />
+                </div>
+
+                {showSuggestions && searchQuery.length >= 2 && (
+                  <div className="absolute z-50 top-full left-0 right-0 mt-1 rounded-lg border border-white/10 bg-card shadow-xl max-h-48 overflow-y-auto">
+                    {isSearching ? (
+                      <div className="flex items-center justify-center py-4">
+                        <Loader2 className="w-4 h-4 animate-spin text-slate-500" />
+                      </div>
+                    ) : suggestions.length === 0 ? (
+                      <p className="text-xs text-slate-500 text-center py-3">Sin resultados</p>
+                    ) : (
+                      suggestions.map((user) => (
+                        <button
+                          key={user.id}
+                          type="button"
+                          onClick={() => handleSelectUser(user)}
+                          className="w-full text-left px-3 py-2 hover:bg-white/5 transition-colors flex items-center justify-between gap-2"
+                        >
+                          <div className="min-w-0">
+                            <p className="text-sm text-white truncate">{user.username}</p>
+                            {user.walletAddress && (
+                              <p className="text-[10px] text-slate-500 font-mono truncate">
+                                {user.walletAddress.slice(0, 6)}...{user.walletAddress.slice(-4)}
+                              </p>
+                            )}
+                          </div>
+                          <span className="text-[10px] text-slate-500 shrink-0">#{user.id}</span>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+              <Button
+                onClick={handleConfirm}
+                disabled={confirmAttendance.isPending || !selectedUser}
+                className="bg-emerald-600 hover:bg-emerald-500 text-white h-9"
+              >
+                {confirmAttendance.isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  'Confirmar'
+                )}
+              </Button>
             </div>
-            <Button
-              onClick={handleConfirm}
-              disabled={confirmAttendance.isPending || !userId}
-              className="bg-emerald-600 hover:bg-emerald-500 text-white h-9"
-            >
-              {confirmAttendance.isPending ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                'Confirmar'
-              )}
-            </Button>
+            {selectedUser && (
+              <p className="text-[11px] text-emerald-400 mt-1">
+                Seleccionado: {selectedUser.username} (#{selectedUser.id})
+              </p>
+            )}
           </div>
 
           <div className="border-t border-white/5 pt-4">
@@ -256,8 +369,8 @@ export default function AdminEventosPage() {
   const createEvento = useCreateEvento()
   const updateEvento = useUpdateEvento(editingEvento?.id)
 
-  const eventos = eventosData?.content ?? []
-  const totalPages = eventosData?.totalPages ?? 0
+  const eventos = eventosData?.content ?? (Array.isArray(eventosData) ? eventosData : [])
+  const totalPages = eventosData?.totalPages ?? 1
 
   const filteredEventos = useMemo(() => {
     if (!search) return eventos
@@ -445,6 +558,7 @@ export default function AdminEventosPage() {
       </div>
 
       <EventoFormDialog
+        key={editingEvento?.id ?? 'new'}
         open={showFormDialog}
         onOpenChange={(open) => {
           setShowFormDialog(open)

@@ -129,6 +129,18 @@ export default function WalletPage() {
       classes:
         "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20",
     },
+    VOTO: {
+      label: "Voto",
+      classes: "bg-amber-500/10 text-amber-400 border border-amber-500/20",
+    },
+    VOTO_RECOMPENSA: {
+      label: "Recompensa de voto",
+      classes: "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20",
+    },
+    EVENTO_RECOMPENSA: {
+      label: "Evento recompensa",
+      classes: "bg-cyan-500/10 text-cyan-400 border border-cyan-500/20",
+    },
   };
 
   return (
@@ -317,6 +329,15 @@ export default function WalletPage() {
                 <option value="DIVIDENDO" className="bg-slate-900">
                   Dividendo
                 </option>
+                <option value="VOTO" className="bg-slate-900">
+                  Voto
+                </option>
+                <option value="VOTO_RECOMPENSA" className="bg-slate-900">
+                  Recompensa de voto
+                </option>
+                <option value="EVENTO_RECOMPENSA" className="bg-slate-900">
+                  Evento recompensa
+                </option>
               </select>
             </div>
           </div>
@@ -376,7 +397,7 @@ export default function WalletPage() {
                     };
                     return (
                       <tr
-                        key={item.txHash || index}
+                        key={`${item.tipo}-${item.txHash || index}`}
                         className="hover:bg-white/[0.02] transition-colors"
                       >
                         <td className="px-4 py-3 text-white font-medium">

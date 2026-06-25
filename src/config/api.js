@@ -63,7 +63,8 @@ export const API_ENDPOINTS = {
   PROJECT_EVALUATE_STATES: buildProjectUrl('/api/projects/evaluate-states'),
   PROJECT_CLOSE: (id) => buildProjectUrl(`/api/projects/${id}/close`),
   PROJECT_BOOST: (id) => buildProjectUrl(`/api/projects/${id}/boost`),
-  PROJECT_VOTE: (id) => buildUrl(`/api/projects/${id}/vote`),
+  PROJECT_VOTE_PREPARE: (id) => buildProjectUrl(`/api/projects/${id}/vote/prepare`),
+  PROJECT_VOTE: (id) => buildProjectUrl(`/api/projects/${id}/vote`),
   PROJECT_VOTES_STREAM: (id) => buildProjectUrl(`/api/projects/${id}/votes/stream`),
 
   INVESTMENTS: buildProjectUrl("/api/investments"),
@@ -122,6 +123,9 @@ export const API_ENDPOINTS = {
   DASHBOARD_STATS: buildProjectUrl("/api/dashboard/stats"),
   DASHBOARD_WRAPPED: buildProjectUrl("/api/dashboard/wrapped"),
   MODULES_STATUS: buildProjectUrl("/api/modules/status"),
+
+  REWARDS_HISTORY: buildProjectUrl("/api/rewards/history"),
+  REWARDS_SUMMARY: buildProjectUrl("/api/rewards/summary"),
 
   NOTIFICATIONS: buildProjectUrl("/api/notifications"),
   NOTIFICATIONS_UNREAD_COUNT: buildProjectUrl("/api/notifications/unread-count"),
