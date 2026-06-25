@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import {
-  Vote, Loader2, Sparkles, ThumbsUp, ThumbsDown, Clock,
+  Vote, Loader2, Sparkles, ThumbsUp, ThumbsDown, Clock, Zap
 } from 'lucide-react'
 
 /* -------------------------------------------------------------------------- */
@@ -317,9 +317,20 @@ export default function VotingPage() {
               </p>
             </div>
           </div>
-          <Badge variant="outline" className="text-xs text-slate-400 border-slate-600">
-            {projects.length} proyecto{projects.length !== 1 ? 's' : ''} en ejecución
-          </Badge>
+          
+          <div className="flex items-center gap-4">
+            {/* Governance x2 Badge */}
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-cyan-500/10 border border-cyan-400/30 rounded-full animate-pulse-slow">
+              <Zap className="w-4 h-4 text-cyan-400" />
+              <span className="text-xs font-bold text-cyan-400 tracking-wide">
+                VOTO x2 ACTIVADO
+              </span>
+            </div>
+
+            <Badge variant="outline" className="text-xs text-slate-400 border-slate-600">
+              {projects.length} proyecto{projects.length !== 1 ? 's' : ''} en ejecución
+            </Badge>
+          </div>
         </div>
       </section>
 

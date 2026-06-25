@@ -1,5 +1,5 @@
 import { useGamification } from '@/hooks/use-gamification'
-import { Star, Shield, Trophy, Crown, CheckCircle2, Loader2, Info } from 'lucide-react'
+import { Star, Shield, Trophy, Crown, CheckCircle2, Loader2, Info, Zap } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 
@@ -11,8 +11,8 @@ const LEVELS = {
     borderColor: 'border-emerald-500/20',
     icon: Star,
     benefits: [
-      'Cross-rewards boost x1',
-      'Poder de voto x1 en la gobernanza',
+      'Cross-Rewards x1',
+      'Impacto de Boost x1',
       'Acceso al IdeaWrapped Básico'
     ]
   },
@@ -158,8 +158,8 @@ export function InvestorLevelCard() {
                     <div>
                       <h4 className="text-xs font-semibold text-emerald-500/70 uppercase tracking-wider mb-3">Beneficios</h4>
                       <ul className="space-y-3">
-                        <li className="flex items-start gap-2 text-sm text-slate-300"><CheckCircle2 className="w-4 h-4 text-emerald-500/50 shrink-0 mt-0.5" /> Boost de ganancias x1</li>
-                        <li className="flex items-start gap-2 text-sm text-slate-300"><CheckCircle2 className="w-4 h-4 text-emerald-500/50 shrink-0 mt-0.5" /> Poder de voto x1</li>
+                        <li className="flex items-start gap-2 text-sm text-slate-300"><CheckCircle2 className="w-4 h-4 text-emerald-500/50 shrink-0 mt-0.5" /> Cross-Rewards x1</li>
+                        <li className="flex items-start gap-2 text-sm text-slate-300"><CheckCircle2 className="w-4 h-4 text-emerald-500/50 shrink-0 mt-0.5" /> Impacto de Boost x1</li>
                         <li className="flex items-start gap-2 text-sm text-slate-300"><CheckCircle2 className="w-4 h-4 text-emerald-500/50 shrink-0 mt-0.5" /> IdeaWrapped Básico</li>
                       </ul>
                     </div>
@@ -184,15 +184,15 @@ export function InvestorLevelCard() {
                       <ul className="space-y-2">
                         <li className="flex items-start gap-2 text-sm text-slate-300"><span className="text-blue-500/50 mt-0.5">•</span> 3+ Proyectos fondeados</li>
                         <li className="flex items-start gap-2 text-sm text-slate-300"><span className="text-blue-500/50 mt-0.5">•</span> 2+ Creadores distintos</li>
-                        <li className="flex items-start gap-2 text-sm text-slate-300"><span className="text-blue-500/50 mt-0.5">•</span> +USD 2.000 invertidos</li>
+                        <li className="flex items-start gap-2 text-sm text-slate-300"><span className="text-blue-500/50 mt-0.5">•</span> +IDEA 1.000 invertidos</li>
                       </ul>
                     </div>
                     <div className="h-px bg-white/5 w-full"></div>
                     <div>
                       <h4 className="text-xs font-semibold text-blue-500/70 uppercase tracking-wider mb-3">Beneficios</h4>
                       <ul className="space-y-3">
-                        <li className="flex items-start gap-2 text-sm text-white font-medium"><CheckCircle2 className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" /> Boost de ganancias x1.5</li>
-                        <li className="flex items-start gap-2 text-sm text-white font-medium"><CheckCircle2 className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" /> Poder de voto x1.25</li>
+                        <li className="flex items-start gap-2 text-sm text-white font-medium"><CheckCircle2 className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" /> Cross-Rewards x1.5</li>
+                        <li className="flex items-start gap-2 text-sm text-white font-medium"><CheckCircle2 className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" /> Impacto de Boost x1.25</li>
                         <li className="flex items-start gap-2 text-sm text-slate-300"><CheckCircle2 className="w-4 h-4 text-blue-500/50 shrink-0 mt-0.5" /> IdeaWrapped Completo</li>
                       </ul>
                     </div>
@@ -217,17 +217,16 @@ export function InvestorLevelCard() {
                       <h4 className="text-xs font-semibold text-amber-500/50 uppercase tracking-wider mb-3">Requisitos</h4>
                       <ul className="space-y-2">
                         <li className="flex items-start gap-2 text-sm text-slate-200"><span className="text-amber-500/50 mt-0.5">•</span> 7+ Proyectos fondeados</li>
-                        <li className="flex items-start gap-2 text-sm text-slate-200"><span className="text-amber-500/50 mt-0.5">•</span> 5+ Creadores distintos</li>
-                        <li className="flex items-start gap-2 text-sm text-slate-200"><span className="text-amber-500/50 mt-0.5">•</span> +USD 10.000 invertidos</li>
+                        <li className="flex items-start gap-2 text-sm text-slate-200"><span className="text-amber-500/50 mt-0.5">•</span> Activar "Diversificador"</li>
+                        <li className="flex items-start gap-2 text-sm text-slate-200"><span className="text-amber-500/50 mt-0.5">•</span> +IDEA 5.000 invertidos</li>
                       </ul>
                     </div>
                     <div className="h-px bg-amber-500/10 w-full"></div>
                     <div>
                       <h4 className="text-xs font-semibold text-amber-400 uppercase tracking-wider mb-3">Beneficios Top</h4>
                       <ul className="space-y-3">
-                        <li className="flex items-start gap-2 text-sm text-white font-medium"><CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" /> Boost de ganancias x2</li>
-                        <li className="flex items-start gap-2 text-sm text-white font-medium"><CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" /> Poder de voto x2</li>
-                        <li className="flex items-start gap-2 text-sm text-amber-100 font-medium"><CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" /> Preview de Proyectos (24hs antes)</li>
+                        <li className="flex items-start gap-2 text-sm text-white font-medium"><CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" /> Cross-Rewards x2</li>
+                        <li className="flex items-start gap-2 text-sm text-white font-medium"><CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" /> Impacto de Boost x2</li>
                         <li className="flex items-start gap-2 text-sm text-slate-300"><CheckCircle2 className="w-4 h-4 text-amber-500/50 shrink-0 mt-0.5" /> IdeaWrapped + Ranking Global</li>
                       </ul>
                     </div>
@@ -260,7 +259,7 @@ export function InvestorLevelCard() {
                       <ul className="space-y-2">
                         <li className="flex items-start gap-2 text-sm text-white font-medium"><span className="text-violet-400 mt-0.5">•</span> 15+ Proyectos fondeados</li>
                         <li className="flex items-start gap-2 text-sm text-white font-medium"><span className="text-violet-400 mt-0.5">•</span> 10+ Creadores distintos</li>
-                        <li className="flex items-start gap-2 text-sm text-white font-medium"><span className="text-violet-400 mt-0.5">•</span> +USD 50.000 invertidos</li>
+                        <li className="flex items-start gap-2 text-sm text-white font-medium"><span className="text-violet-400 mt-0.5">•</span> +IDEA 12.000 invertidos</li>
                       </ul>
                     </div>
                     <div className="h-px bg-violet-500/20 w-full"></div>
@@ -269,9 +268,8 @@ export function InvestorLevelCard() {
                         Beneficios Exclusivos
                       </h4>
                       <ul className="space-y-3">
-                        <li className="flex items-start gap-2 text-sm text-white font-bold"><CheckCircle2 className="w-4 h-4 text-violet-400 shrink-0 mt-0.5" /> Boost de ganancias x3</li>
-                        <li className="flex items-start gap-2 text-sm text-white font-bold"><CheckCircle2 className="w-4 h-4 text-violet-400 shrink-0 mt-0.5" /> Poder de voto x3</li>
-                        <li className="flex items-start gap-2 text-sm text-violet-200 font-semibold"><CheckCircle2 className="w-4 h-4 text-violet-400 shrink-0 mt-0.5" /> Preview + Exclusividad 48hs</li>
+                        <li className="flex items-start gap-2 text-sm text-white font-bold"><CheckCircle2 className="w-4 h-4 text-violet-400 shrink-0 mt-0.5" /> Cross-Rewards x3</li>
+                        <li className="flex items-start gap-2 text-sm text-white font-bold"><CheckCircle2 className="w-4 h-4 text-violet-400 shrink-0 mt-0.5" /> Impacto de Boost x3</li>
                         <li className="flex items-start gap-2 text-sm text-violet-200 font-semibold"><CheckCircle2 className="w-4 h-4 text-violet-400 shrink-0 mt-0.5" /> IdeaWrapped + Badge Élite</li>
                       </ul>
                     </div>

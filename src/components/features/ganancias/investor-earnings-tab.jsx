@@ -99,6 +99,8 @@ function ProjectClaimRow({ projectId, projectTitle }) {
 }
 
 export function InvestorEarningsTab() {
+  const { address } = useAccount()
+  const hasWallet = !!address
   const { data: reclamos, isLoading: reclamosLoading, isError: reclamosError, refetch: refetchReclamos } = useMisReclamos()
   const { data: historyPage, isLoading: historyLoading, isError: historyError, refetch: refetchHistory } = useInvestmentHistory(0, 100)
 
@@ -176,11 +178,22 @@ export function InvestorEarningsTab() {
 
       {/* Reclamar dividendos section */}
       <div className="rounded-xl border border-white/5 bg-card overflow-hidden">
-        <div className="px-4 py-3 border-b border-white/5">
-          <h3 className="text-sm font-semibold text-white">Reclamar dividendos</h3>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Reclamá los dividendos pendientes de tus proyectos invertidos
-          </p>
+        <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-semibold text-white">Reclamar dividendos</h3>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Reclamá los dividendos pendientes de tus proyectos invertidos
+            </p>
+          </div>
+          {!hasWallet && (
+            <div className="text-xs text-amber-500/90 bg-amber-500/10 px-3 py-1.5 rounded-full flex items-center gap-1.5 border border-amber-500/20">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+              </span>
+              Conectá tu billetera para ver y reclamar pendientes
+            </div>
+          )}
         </div>
         <div className="divide-y divide-white/5">
           {uniqueProjects.map(([projectId, projectTitle]) => (

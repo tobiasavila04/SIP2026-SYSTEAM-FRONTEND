@@ -96,6 +96,9 @@ export function ProjectForm({ defaultValues, onSubmit, isEdit, projectState }) {
     setShowDisclaimer(true)
   }
 
+  const goal = Number(form.watch('montoRequerido')) || 0;
+  const isInvalidTotal = total !== goal && goal > 0;
+
   const handleConfirmSubmit = async () => {
     setShowDisclaimer(false)
     setSubmitting(true)
@@ -295,21 +298,18 @@ export function ProjectForm({ defaultValues, onSubmit, isEdit, projectState }) {
             </div>
 
             {supply && price && (() => {
-                const total = supply * price;
-                const goal = Number(form.watch('montoRequerido')) || 0;
-                const isInvalid = total !== goal && goal > 0;
                 return (
-                  <div className={`rounded-lg border p-4 flex flex-col gap-2 ${isInvalid ? 'bg-red-500/5 border-red-500/20' : 'bg-indigo-500/5 border-indigo-500/10'}`}>
+                  <div className={`rounded-lg border p-4 flex flex-col gap-2 ${isInvalidTotal ? 'bg-red-500/5 border-red-500/20' : 'bg-indigo-500/5 border-indigo-500/10'}`}>
                     <div className="flex items-center justify-between">
-                      <div className={`flex items-center gap-2 text-sm ${isInvalid ? 'text-red-400' : 'text-gray-400'}`}>
-                        <Calculator className={`w-4 h-4 ${isInvalid ? 'text-red-400' : 'text-indigo-400'}`} />
+                      <div className={`flex items-center gap-2 text-sm ${isInvalidTotal ? 'text-red-400' : 'text-gray-400'}`}>
+                        <Calculator className={`w-4 h-4 ${isInvalidTotal ? 'text-red-400' : 'text-indigo-400'}`} />
                         <span>Capital total si se venden todos los tokens</span>
                       </div>
-                      <span className={`text-lg font-bold ${isInvalid ? 'text-red-400' : 'text-indigo-300'}`}>
+                      <span className={`text-lg font-bold ${isInvalidTotal ? 'text-red-400' : 'text-indigo-300'}`}>
                         {formatCurrency(total)}
                       </span>
                     </div>
-                    {isInvalid && (
+                    {isInvalidTotal && (
                       <p className="text-xs text-red-400 mt-1">
                         El capital total emitido debe ser exactamente igual a la meta de financiamiento ({formatCurrency(goal)}). Ajustá la cantidad o el precio de los tokens.
                       </p>
@@ -342,7 +342,7 @@ export function ProjectForm({ defaultValues, onSubmit, isEdit, projectState }) {
               <Button type="button" variant="ghost" onClick={() => window.history.back()} className="text-gray-400 hover:text-white">
                 Cancelar
               </Button>
-              <Button type="submit" className="bg-indigo-600 hover:bg-indigo-500 text-white px-6" disabled={submitting}>
+              <Button type="submit" className="bg-indigo-600 hover:bg-indigo-500 text-white px-6" disabled={submitting || isInvalidTotal}>
                 {submitting ? 'Guardando...' : isEdit ? 'Guardar Cambios' : 'Crear Proyecto'}
               </Button>
             </div>
