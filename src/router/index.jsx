@@ -30,10 +30,14 @@ const IdeaWrappedPage = lazy(() => import('@/pages/dashboard/idea-wrapped'))
 const CollectorDashboard = lazy(() => import('@/components/gamification/CollectorDashboard').then(m => ({ default: m.CollectorDashboard })))
 const EventosPage = lazy(() => import('@/pages/eventos/index'))
 const RecompensasPage = lazy(() => import('@/pages/recompensas/index'))
+const NotFoundPage = lazy(() => import('@/pages/not-found/index'))
 
 function ProtectedRoute({ children }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const { isLoading } = useAuth()
   const location = useLocation()
+  
+  if (isLoading) return <PageSkeleton />
   if (!isAuthenticated) return <Navigate to="/" state={{ from: location }} replace />
   return <>{children}</>
 }
@@ -41,6 +45,9 @@ function ProtectedRoute({ children }) {
 function GuestRoute({ children }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const roles = useAuthStore((s) => s.roles)
+  const { isLoading } = useAuth()
+  
+  if (isLoading) return <PageSkeleton />
   if (isAuthenticated && roles.some(r => ['INVESTOR', 'CREATOR', 'ADMIN'].includes(r)))
     return <Navigate to="/dashboard" replace />
   return <>{children}</>
@@ -101,7 +108,7 @@ export function AppRouter() {
         <Route path="/admin/modulos" element={<AdminRoute><LazyPage Component={ModulesPage} /></AdminRoute>} />
       </Route>
 
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      <Route path="*" element={<LazyPage Component={NotFoundPage} />} />
     </Routes>
   )
 }

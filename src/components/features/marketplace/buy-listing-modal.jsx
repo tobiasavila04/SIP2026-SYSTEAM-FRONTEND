@@ -82,7 +82,7 @@ export function BuyListingModal({ open, onOpenChange, listing }) {
       const amountWei = parseUnits(String(cantidad), 18)
       const totalCostWei = parseUnits(String(totalCost), 18)
       
-      toast.loading('Aprobando el gasto de $IDEA...', { id: 'buy_tx' })
+      toast.loading('Firma en billetera: Aprobá el gasto de $IDEA...', { id: 'buy_tx' })
       const approveHash = await writeContractAsync({
         address: ideaAddress,
         abi: ERC20_ABI,
@@ -91,12 +91,12 @@ export function BuyListingModal({ open, onOpenChange, listing }) {
       })
       await waitForTransactionReceipt(config, { hash: approveHash })
       
-      toast.loading('Confirmando la compra en la red...', { id: 'buy_tx' })
+      toast.loading('Firma en billetera: Confirmá la compra en la red...', { id: 'buy_tx' })
       const buyTxHash = await writeContractAsync({
         address: marketplaceAddress,
         abi: IDEA_MARKETPLACE_ABI,
         functionName: 'buyTokens',
-        args: [BigInt(listing.onChainId || listing.id), BigInt(Math.round(Number(cantidad)))],
+        args: [BigInt(listing.onChainId || listing.id), amountWei],
       })
       await waitForTransactionReceipt(config, { hash: buyTxHash })
 

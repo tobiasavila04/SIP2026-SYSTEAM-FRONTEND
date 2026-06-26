@@ -11,7 +11,7 @@ import { Loader2, Coins, AlertTriangle } from 'lucide-react'
 import { toast } from 'sonner'
 import { useConfig, useWriteContract } from 'wagmi'
 import { waitForTransactionReceipt } from '@wagmi/core'
-import { parseUnits } from 'viem'
+import { parseUnits, decodeEventLog } from 'viem'
 import { ERC20_ABI, IDEA_MARKETPLACE_ABI } from '@/lib/abis'
 
 function toWeiString(value) {
@@ -89,7 +89,7 @@ export function CreateListingModal({ open, onOpenChange }) {
       const numPrecio = Number(String(precioPorToken).replace(',', '.'))
       const unscaledPrice = BigInt(Math.floor(numPrecio))
       
-      toast.loading('Aprobando el uso de tokens...', { id: 'list_tx' })
+      toast.loading('Firma en billetera: Aprobá el uso de tokens...', { id: 'list_tx' })
       const approveHash = await writeContractAsync({
         address: subtokenAddress,
         abi: ERC20_ABI,
@@ -98,21 +98,37 @@ export function CreateListingModal({ open, onOpenChange }) {
       })
       await waitForTransactionReceipt(config, { hash: approveHash })
       
-      toast.loading('Publicando orden en la red...', { id: 'list_tx' })
+      toast.loading('Firma en billetera: Publicá la orden en la red...', { id: 'list_tx' })
       const listTxHash = await writeContractAsync({
         address: marketplaceAddress,
         abi: IDEA_MARKETPLACE_ABI,
         functionName: 'listTokens',
         args: [subtokenAddress, amountWei, unscaledPrice],
       })
-      await waitForTransactionReceipt(config, { hash: listTxHash })
+      const receipt = await waitForTransactionReceipt(config, { hash: listTxHash })
       
+      let onChainId = null;
+      for (const log of receipt.logs) {
+        try {
+          const decoded = decodeEventLog({
+            abi: IDEA_MARKETPLACE_ABI,
+            data: log.data,
+            topics: log.topics,
+          })
+          if (decoded.eventName === 'Listed') {
+            onChainId = Number(decoded.args.listingId);
+            break;
+          }
+        } catch (e) {}
+      }
+
       toast.loading('Guardando en el servidor...', { id: 'list_tx' })
       await createListing.mutateAsync({
         subtokenId: Number(subtokenId),
         cantidad: Math.round(Number(cantidad)),
         precioUnitario: toWeiString(precioPorToken),
         txHash: listTxHash,
+        onChainId: onChainId
       })
       
       toast.success('Orden de venta publicada exitosamente', { id: 'list_tx' })

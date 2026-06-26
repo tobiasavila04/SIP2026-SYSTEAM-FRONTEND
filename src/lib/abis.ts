@@ -156,6 +156,17 @@ export const IDEA_MARKETPLACE_ABI = [
     stateMutability: 'nonpayable',
     inputs: [{ name: 'listingId', type: 'uint256' }],
     outputs: []
+  },
+  {
+    type: 'event',
+    name: 'Listed',
+    inputs: [
+      { name: 'listingId', type: 'uint256', indexed: true },
+      { name: 'seller', type: 'address', indexed: true },
+      { name: 'subToken', type: 'address', indexed: true },
+      { name: 'amount', type: 'uint256', indexed: false },
+      { name: 'pricePerToken', type: 'uint256', indexed: false }
+    ]
   }
 ]
 

@@ -266,7 +266,7 @@ export default function DashboardPage() {
   }
 
   const getCellColor = (name) => {
-    const colors = { PREPARACION: '#f59e0b', EN_AUDITORIA: '#f59e0b', AUDITADO: '#10b981', FINANCIAMIENTO: '#8b5cf6', EJECUCION: '#10b981', FINALIZADO: '#3b82f6', CANCELADO: '#ef4444' }
+    const colors = { PREPARACION: '#94a3b8', EN_AUDITORIA: '#f97316', AUDITADO: '#ec4899', FINANCIAMIENTO: '#8b5cf6', EJECUCION: '#10b981', FINALIZADO: '#3b82f6', CANCELADO: '#ef4444' }
     return colors[name] || '#64748b'
   }
 

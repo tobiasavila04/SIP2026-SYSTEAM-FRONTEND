@@ -7,6 +7,13 @@ import { ErrorState } from "@/components/shared/error-state";
 import { Skeleton } from "@/components/shared/loading-skeleton";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { TransferModal } from "@/components/features/wallet/transfer-modal";
 import { formatCurrency } from "@/lib/utils";
 import {
@@ -113,7 +120,7 @@ export default function WalletPage() {
     },
     VENTA: {
       label: "Venta",
-      classes: "bg-amber-500/10 text-amber-400 border border-amber-500/20",
+      classes: "bg-sky-500/10 text-sky-400 border border-sky-500/20",
     },
     TRANSFERENCIA_ENVIADA: {
       label: "Transferencia enviada",
@@ -283,7 +290,8 @@ export default function WalletPage() {
                 type="date"
                 value={inputDesde}
                 onChange={(e) => setInputDesde(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500/50 transition-colors [color-scheme:dark]"
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-violet-500/50 transition-colors [&::-webkit-calendar-picker-indicator]:invert"
+                style={{ colorScheme: 'dark', color: 'white' }}
               />
             </div>
             <div>
@@ -292,53 +300,30 @@ export default function WalletPage() {
                 type="date"
                 value={inputHasta}
                 onChange={(e) => setInputHasta(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500/50 transition-colors [color-scheme:dark]"
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-violet-500/50 transition-colors [&::-webkit-calendar-picker-indicator]:invert"
+                style={{ colorScheme: 'dark', color: 'white' }}
               />
             </div>
             <div>
               <label className="block text-xs text-slate-400 mb-1">
                 Tipo de movimiento
               </label>
-              <select
-                value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500/50 transition-colors appearance-none"
-                style={{
-                  backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>")`,
-                  backgroundPosition: "right 0.75rem center",
-                  backgroundSize: "1rem",
-                  backgroundRepeat: "no-repeat",
-                  paddingRight: "2.5rem",
-                }}
-              >
-                <option value="TODOS" className="bg-slate-900">
-                  Todos
-                </option>
-                <option value="COMPRA" className="bg-slate-900">
-                  Compra
-                </option>
-                <option value="VENTA" className="bg-slate-900">
-                  Venta
-                </option>
-                <option value="TRANSFERENCIA_ENVIADA" className="bg-slate-900">
-                  Transferencia enviada
-                </option>
-                <option value="TRANSFERENCIA_RECIBIDA" className="bg-slate-900">
-                  Transferencia recibida
-                </option>
-                <option value="DIVIDENDO" className="bg-slate-900">
-                  Dividendo
-                </option>
-                <option value="VOTO" className="bg-slate-900">
-                  Voto
-                </option>
-                <option value="VOTO_RECOMPENSA" className="bg-slate-900">
-                  Recompensa de voto
-                </option>
-                <option value="EVENTO_RECOMPENSA" className="bg-slate-900">
-                  Evento recompensa
-                </option>
-              </select>
+              <Select value={typeFilter} onValueChange={setTypeFilter}>
+                <SelectTrigger className="w-full bg-white/5 border-white/10 text-white hover:bg-white/10 focus:border-violet-500/50 focus:ring-violet-500/50 h-[38px] transition-colors">
+                  <SelectValue placeholder="Tipo de movimiento" />
+                </SelectTrigger>
+                <SelectContent className="bg-[#13172B] border-[#1E2240] text-[#F1F5F9]">
+                  <SelectItem value="TODOS" className="text-[#F1F5F9] focus:bg-violet-500/20 focus:text-white cursor-pointer">Todos</SelectItem>
+                  <SelectItem value="COMPRA" className="text-[#F1F5F9] focus:bg-violet-500/20 focus:text-white cursor-pointer">Compra</SelectItem>
+                  <SelectItem value="VENTA" className="text-[#F1F5F9] focus:bg-violet-500/20 focus:text-white cursor-pointer">Venta</SelectItem>
+                  <SelectItem value="TRANSFERENCIA_ENVIADA" className="text-[#F1F5F9] focus:bg-violet-500/20 focus:text-white cursor-pointer">Transferencia enviada</SelectItem>
+                  <SelectItem value="TRANSFERENCIA_RECIBIDA" className="text-[#F1F5F9] focus:bg-violet-500/20 focus:text-white cursor-pointer">Transferencia recibida</SelectItem>
+                  <SelectItem value="DIVIDENDO" className="text-[#F1F5F9] focus:bg-violet-500/20 focus:text-white cursor-pointer">Dividendo</SelectItem>
+                  <SelectItem value="VOTO" className="text-[#F1F5F9] focus:bg-violet-500/20 focus:text-white cursor-pointer">Voto</SelectItem>
+                  <SelectItem value="VOTO_RECOMPENSA" className="text-[#F1F5F9] focus:bg-violet-500/20 focus:text-white cursor-pointer">Recompensa de voto</SelectItem>
+                  <SelectItem value="EVENTO_RECOMPENSA" className="text-[#F1F5F9] focus:bg-violet-500/20 focus:text-white cursor-pointer">Evento recompensa</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <div className="flex gap-2">

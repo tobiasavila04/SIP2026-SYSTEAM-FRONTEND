@@ -458,7 +458,7 @@ export default function ProfilePage() {
                         <p className="text-xs text-slate-500 mb-2">Roles</p>
                         <div className="flex gap-1.5 flex-wrap">
                           {roles.map((role) => (
-                            <StatusBadge key={role} variant={role === 'ADMIN' ? 'default' : role === 'CREATOR' ? 'warning' : 'info'}>
+                            <StatusBadge key={role} variant={role === 'ADMIN' ? 'default' : role === 'CREATOR' ? 'warning' : role === 'INVESTOR' ? 'success' : 'info'}>
                               {role}
                             </StatusBadge>
                           ))}
