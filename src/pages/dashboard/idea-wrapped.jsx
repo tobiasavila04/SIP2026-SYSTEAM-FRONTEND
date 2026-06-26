@@ -21,12 +21,18 @@ export default function IdeaWrappedPage() {
 
   // Auto-advance slides every 6 seconds unless it's the last one
   useEffect(() => {
-    if (!data || data.proyectosFondeados === 0 || currentSlide >= totalSlides - 1) return;
+    if (!data || data.proyectosFondeados === 0) return;
     
-    const timer = setTimeout(() => {
-      setCurrentSlide(prev => prev + 1);
-    }, 6000);
-    return () => clearTimeout(timer);
+    let timer;
+    if (currentSlide < totalSlides - 1) {
+      timer = setTimeout(() => {
+        setCurrentSlide(prev => prev + 1);
+      }, 6000);
+    }
+    
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
   }, [currentSlide, data, totalSlides]);
 
 
@@ -187,7 +193,9 @@ export default function IdeaWrappedPage() {
         
         <div className="bg-fuchsia-500/10 border border-fuchsia-500/20 rounded-3xl p-6 w-full max-w-md shadow-2xl">
           <p className="text-fuchsia-300 font-medium mb-2 uppercase tracking-widest text-sm">Volumen Operado</p>
-          <p className="text-5xl font-black text-emerald-400">${Number(data.volumenMarketplace).toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+          <p className="text-5xl font-black text-emerald-400 break-all line-clamp-2">
+            ${Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 2 }).format(data.volumenMarketplace)}
+          </p>
         </div>
       </div>
     )] : []),
@@ -248,7 +256,7 @@ export default function IdeaWrappedPage() {
             <svg viewBox="0 0 24 24" aria-hidden="true" className="w-5 h-5 mr-2 fill-current"><g><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path></g></svg>
             Compartir en X
           </Button>
-          <Button onClick={() => navigate('/dashboard')} variant="ghost" className="h-12 text-slate-400 hover:text-white relative z-50">
+          <Button onClick={() => navigate('/dashboard')} size="lg" variant="secondary" className="h-14 bg-white hover:bg-slate-200 !text-black font-bold rounded-xl shadow-lg relative z-50">
             Volver al Dashboard
           </Button>
         </div>
@@ -312,13 +320,17 @@ export default function IdeaWrappedPage() {
       <div className="absolute top-0 left-0 w-full p-4 flex gap-2 z-50 pointer-events-none">
         {slides.map((_, idx) => (
           <div key={idx} className="h-1.5 flex-1 bg-white/20 rounded-full overflow-hidden">
-            <div 
-              className={`h-full bg-white transition-all duration-[6000ms] ease-linear`}
-              style={{ 
-                width: currentSlide > idx ? '100%' : currentSlide === idx ? '100%' : '0%',
-                transitionDuration: currentSlide === idx ? '6s' : '0s'
-              }}
-            ></div>
+            {currentSlide === idx ? (
+              <div 
+                key={`active-${idx}-${currentSlide}`}
+                className="h-full bg-white animate-[fill-bar_6s_linear_forwards]"
+              ></div>
+            ) : (
+              <div 
+                className="h-full bg-white"
+                style={{ width: currentSlide > idx ? '100%' : '0%' }}
+              ></div>
+            )}
           </div>
         ))}
       </div>

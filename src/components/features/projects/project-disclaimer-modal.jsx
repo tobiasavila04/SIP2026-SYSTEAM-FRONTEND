@@ -20,10 +20,10 @@ export function ProjectDisclaimerModal({ open, onOpenChange, onConfirm }) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] p-0 bg-gradient-to-b from-[#0B0E1A] to-[#070912] border border-white/[0.08] shadow-2xl shadow-black/80">
+      <DialogContent className="sm:max-w-[600px] max-h-[95vh] flex flex-col p-0 bg-gradient-to-b from-[#0B0E1A] to-[#070912] border border-white/[0.08] shadow-2xl shadow-black/80 overflow-hidden">
         <div className="absolute top-0 left-8 right-8 h-px bg-gradient-to-r from-transparent via-violet-500/40 to-transparent" />
         
-        <DialogHeader className="px-6 pt-8 pb-4">
+        <DialogHeader className="px-6 pt-8 pb-4 shrink-0">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center border border-amber-500/20 shadow-inner">
               <AlertCircle className="w-5 h-5 text-amber-400" />
@@ -37,7 +37,7 @@ export function ProjectDisclaimerModal({ open, onOpenChange, onConfirm }) {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="px-6 py-4 space-y-4">
+        <div className="px-6 py-4 space-y-4 overflow-y-auto flex-1 min-h-0">
           {/* Sección 1 */}
           <div className="flex gap-4 p-4 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:bg-white/[0.04] transition-colors">
             <div className="mt-1 shrink-0">
