@@ -35,6 +35,8 @@ export const API_ENDPOINTS = {
   AUTH_REFRESH: buildUrl("/auth/refresh"),
   AUTH_CHANGE_PASSWORD: buildUrl("/auth/change-password"),
 
+  KYC_CREATE_SESSION: buildUrl("/api/kyc/create-session"),
+
   USERS: buildUrl("/api/users"),
   USER_ME: buildUrl("/api/users/me"),
   USER_BY_ID: (id) => buildUrl(`/api/users/${id}`),

@@ -5,7 +5,7 @@ import {
   LayoutDashboard,
   FolderKanban,
   TrendingUp,
-  Settings,
+  User,
   Users,
   KeyRound,
   ChevronLeft,
@@ -17,6 +17,7 @@ import {
   Calendar,
   Crown,
   Trophy,
+  ShieldCheck,
 } from 'lucide-react'
 import { useAccount, useReadContract, useBalance } from 'wagmi'
 import { formatUnits } from 'viem'
@@ -33,12 +34,13 @@ const mainNav = [
   { to: '/gobernanza', label: 'Gobernanza', icon: Vote },
   { to: '/eventos', label: 'Eventos', icon: Calendar },
   { to: '/recompensas', label: 'Recompensas', icon: Trophy },
-  { to: '/configuracion', label: 'Configuración', icon: Settings },
+  { to: '/perfil', label: 'Perfil', icon: User },
 ]
 
 const adminNav = [
   { to: '/admin/usuarios', label: 'Usuarios', icon: Users },
   { to: '/admin/roles', label: 'Roles', icon: KeyRound },
+  { to: '/auditoria', label: 'Auditoría', icon: ShieldCheck },
   { to: '/admin/eventos', label: 'Eventos', icon: Calendar },
   // Permisos gestionados desde Roles
 ]
