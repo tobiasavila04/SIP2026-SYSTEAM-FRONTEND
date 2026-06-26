@@ -2,18 +2,47 @@ import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { ShieldCheck, ArrowUpRight, Loader2, Info } from 'lucide-react'
+import { ShieldCheck, ArrowUpRight, Loader2, Info, RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
 import { apiRequest } from '@/lib/api-client'
+import { useReadContract } from 'wagmi'
 import { formatCurrency } from '@/lib/utils'
+
+// ABI mínimo para leer el mapping 'escrows(uint256) => address' del OfferingContract
+const OFFERING_ABI = [
+  {
+    "inputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "name": "escrows",
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]
 
 export function EscrowPanel({ project, isCreator, isAuditor, refetch }) {
   const [amount, setAmount] = useState('')
   const [loading, setLoading] = useState(false)
 
-  // Asumimos que el Escrow Address viene en el tokenInfo o guardado temporalmente.
-  // Para MVP, el auditor pedirá el contrato al hacer la liberación manual.
-  const [escrowAddress, setEscrowAddress] = useState('')
+  // Obtener la dirección del OfferingContract de las variables de entorno
+  const offeringContractAddress = import.meta.env.VITE_OFFERING_CONTRACT_ADDRESS
+
+  // Leer la dirección del Escrow automáticamente de la blockchain
+  const { data: fetchedEscrowAddress, isLoading: loadingEscrow, refetch: refetchEscrow } = useReadContract({
+    address: offeringContractAddress,
+    abi: OFFERING_ABI,
+    functionName: 'escrows',
+    args: [project.id],
+    query: {
+      enabled: !!offeringContractAddress && (project.estado === 'EJECUCION' || project.estado === 'FINALIZADO'),
+    }
+  })
+
+  // Usar el estado solo si el usuario quiere sobrescribirlo manualmente (fallback)
+  const [manualAddress, setManualAddress] = useState('')
+  
+  const escrowAddress = fetchedEscrowAddress && fetchedEscrowAddress !== '0x0000000000000000000000000000000000000000' 
+    ? fetchedEscrowAddress 
+    : manualAddress
 
   if (project.estado !== 'EJECUCION' && project.estado !== 'FINALIZADO') {
     return null
@@ -68,12 +97,20 @@ export function EscrowPanel({ project, isCreator, isAuditor, refetch }) {
             <h4 className="text-sm font-semibold text-slate-200">Panel de Auditor: Liberación de Fondos</h4>
             <p className="text-xs text-slate-400">Ingrese la dirección del contrato Escrow desplegado y el monto a liberar (en IDEA) hacia el creador.</p>
             <div className="flex flex-col sm:flex-row gap-3">
-              <Input
-                placeholder="0x... (Escrow Address)"
-                value={escrowAddress}
-                onChange={(e) => setEscrowAddress(e.target.value)}
-                className="bg-slate-950 border-slate-700 font-mono text-sm"
-              />
+              <div className="relative w-full">
+                <Input
+                  placeholder="0x... (Escrow Address)"
+                  value={escrowAddress}
+                  onChange={(e) => setManualAddress(e.target.value)}
+                  className="bg-slate-950 border-slate-700 font-mono text-sm pr-10"
+                  readOnly={fetchedEscrowAddress && fetchedEscrowAddress !== '0x0000000000000000000000000000000000000000'}
+                />
+                {loadingEscrow && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <Loader2 className="w-4 h-4 animate-spin text-slate-500" />
+                  </div>
+                )}
+              </div>
               <Input
                 type="number"
                 placeholder="Monto IDEA"
