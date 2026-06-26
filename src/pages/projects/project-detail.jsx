@@ -9,11 +9,13 @@ import { useTokenInfo } from '@/hooks/use-investment'
 import { useAuthStore, usePermissions } from '@/stores/auth-store'
 import { apiRequest } from '@/lib/api-client'
 import { API_ENDPOINTS } from '@/config/api'
+import { useSignMessage } from 'wagmi'
 import { InvestmentModal } from '@/components/features/investment/investment-modal'
 import { InvestmentDisclaimerModal } from '@/components/features/investment/investment-disclaimer-modal'
 import { OracleAuditPanel } from '@/components/features/oracle/oracle-audit-panel'
 import { OracleBillingForm } from '@/components/features/oracle/oracle-billing-form'
 import { AuditReviewDialog } from '@/components/features/oracle/audit-review-dialog'
+import { EscrowPanel } from '@/components/features/projects/EscrowPanel'
 import { useOracleReport } from '@/hooks/use-oracle'
 import { useFindings } from '@/hooks/use-audit'
 import { TxHashLink } from '@/components/shared/tx-hash-link'
@@ -35,7 +37,37 @@ import { ArrowLeft, Target, Calendar, Coins, Wallet, Loader2, TrendingUp, Rocket
 
 const VITE_INVESTMENT_SWAP_ADDRESS = import.meta.env.VITE_INVESTMENT_SWAP_ADDRESS
 
-
+function PublishSignatureModal({ open, onOpenChange, onConfirm, signing }) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <ShieldCheck className="w-5 h-5 text-indigo-500" />
+            Firma Digital (Gratuita)
+          </DialogTitle>
+          <DialogDescription>
+            ¡Último paso! Para publicar tu proyecto necesitamos que firmes digitalmente tu propuesta.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="p-4 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-sm text-indigo-200">
+            Esto <strong>no tiene ningún costo</strong> (cero comisiones). Es solo tu sello personal que garantiza que estos datos son tuyos y reales. Al aceptar, tu proyecto pasará a revisión por nuestro equipo.
+          </div>
+          <div className="flex justify-end gap-2 pt-4">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={signing} className="border-white/10">
+              Cancelar
+            </Button>
+            <Button onClick={onConfirm} disabled={signing} className="bg-indigo-600 hover:bg-indigo-500 text-white gap-2">
+              {signing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wallet className="w-4 h-4" />}
+              {signing ? 'Firmando en Metamask...' : 'Firmar y Enviar'}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
 
 function GasErrorModal({ open, onOpenChange }) {
   return (
@@ -323,8 +355,10 @@ export default function ProjectDetailPage() {
   const [showGasError, setShowGasError] = useState(false)
   const [showOracleBillingForm, setShowOracleBillingForm] = useState(false)
   const [showAuditDialog, setShowAuditDialog] = useState(false)
+  const [showSignatureModal, setShowSignatureModal] = useState(false)
   const [auditResultado, setAuditResultado] = useState(null)
   const [transitioning, setTransitioning] = useState(false)
+  const { signMessageAsync } = useSignMessage()
 
   const [tokenInfo, setTokenInfo] = useState(null)
   const [loadingToken, setLoadingToken] = useState(false)
@@ -339,6 +373,15 @@ export default function ProjectDetailPage() {
   )
 
   const transitionTo = async (status) => {
+    if (status === 'EN_AUDITORIA') {
+      if (!isConnected || !address) {
+        toast.error('Conectá tu wallet primero')
+        return
+      }
+      setShowSignatureModal(true)
+      return
+    }
+
     setTransitioning(true)
     try {
       await updateStatus.mutateAsync({ id: projectId, status })
@@ -352,6 +395,31 @@ export default function ProjectDetailPage() {
       refetch()
     } catch (e) {
       toast.error(e?.message || 'Error al cambiar estado')
+    } finally {
+      setTransitioning(false)
+    }
+  }
+
+  const handleSignatureConfirm = async () => {
+    setTransitioning(true)
+    try {
+      const message = `Publicar proyecto: ${project.titulo}`
+      const signature = await signMessageAsync({ message })
+      
+      await apiRequest(`/api/projects/${projectId}/publish`, {
+        method: 'PATCH',
+        body: JSON.stringify({ signature, walletAddress: address })
+      })
+      
+      toast.success('Proyecto enviado a auditoría con tu firma digital')
+      setShowSignatureModal(false)
+      refetch()
+    } catch (e) {
+      if (e?.name === 'UserRejectedRequestError') {
+        toast.error('Rechazaste la firma en Metamask')
+      } else {
+        toast.error(e?.message || 'Error al enviar firma')
+      }
     } finally {
       setTransitioning(false)
     }
@@ -584,6 +652,13 @@ export default function ProjectDetailPage() {
           )}
         </div>
 
+        <EscrowPanel 
+          project={project} 
+          isCreator={isCreator} 
+          isAuditor={isAuditor || isAdmin} 
+          refetch={refetch}
+        />
+
         {project.montoRecaudado != null && (
           <section aria-label="Progreso de financiamiento" className="pt-2">
             <FundingProgress raised={project.montoRecaudado} required={project.montoRequerido} />
@@ -721,6 +796,13 @@ export default function ProjectDetailPage() {
         projectId={projectId}
         projectTitle={project?.titulo}
         resultado={auditResultado}
+      />
+
+      <PublishSignatureModal
+        open={showSignatureModal}
+        onOpenChange={setShowSignatureModal}
+        onConfirm={handleSignatureConfirm}
+        signing={transitioning}
       />
     </div>
   )
