@@ -1,5 +1,6 @@
 import { useEffect, createContext, useContext, useCallback, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/auth-store'
 import { apiRequest, clearStoredAuth, getStoredToken, setStoredTokens, setStoredUserId } from '@/lib/api-client'
 import { decodeJwt } from '@/lib/utils'
@@ -22,7 +23,9 @@ export function AuthProvider({ children }) {
 
   const needsProfile = isAuthenticated && !roles.some(r => ['INVESTOR', 'CREATOR', 'ADMIN'].includes(r))
 
+  const queryClient = useQueryClient()
   const fetchUserRef = useRef(0)
+  const checkInFiredRef = useRef(false)
 
   const fetchUser = useCallback(async () => {
     const version = ++fetchUserRef.current
@@ -69,6 +72,15 @@ export function AuthProvider({ children }) {
     }
   }, [isAuthenticated, fetchUser])
 
+  useEffect(() => {
+    if (isAuthenticated && !checkInFiredRef.current) {
+      checkInFiredRef.current = true
+      apiRequest(API_ENDPOINTS.STREAK_CHECK_IN, { method: 'POST' })
+        .then(() => queryClient.invalidateQueries({ queryKey: ['streak', 'me'] }))
+        .catch(err => console.error('[streak] check-in failed:', err?.message ?? err))
+    }
+  }, [isAuthenticated, queryClient])
+
   const login = async (data) => {
     // Invalidate any in-flight fetchUser calls
     ++fetchUserRef.current
@@ -96,6 +108,17 @@ export function AuthProvider({ children }) {
       roles: userData.roles || [],
       permissions: userData.permissions || [],
     })
+
+    // fire-and-forget: redeem referral if pending
+    try {
+      const pendingRef = localStorage.getItem('pending_referral_code')
+      if (pendingRef) {
+        await apiRequest(API_ENDPOINTS.REFERRALS_REDEEM, { method: 'POST', body: { code: pendingRef } })
+        localStorage.removeItem('pending_referral_code')
+      }
+    } catch (err) {
+      console.error('[referral] redeem failed:', err?.message ?? err)
+    }
   }
 
   const register = async (data) => {

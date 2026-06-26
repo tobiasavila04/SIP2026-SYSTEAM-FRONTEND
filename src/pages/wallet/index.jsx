@@ -141,6 +141,14 @@ export default function WalletPage() {
       label: "Evento recompensa",
       classes: "bg-cyan-500/10 text-cyan-400 border border-cyan-500/20",
     },
+    REFERRAL_RECOMPENSA: {
+      label: "Referido",
+      classes: "bg-violet-500/10 text-violet-400 border border-violet-500/20",
+    },
+    RACHA_RECOMPENSA: {
+      label: "Racha diaria",
+      classes: "bg-orange-500/10 text-orange-400 border border-orange-500/20",
+    },
   };
 
   return (
@@ -337,6 +345,12 @@ export default function WalletPage() {
                 </option>
                 <option value="EVENTO_RECOMPENSA" className="bg-slate-900">
                   Evento recompensa
+                </option>
+                <option value="REFERRAL_RECOMPENSA" className="bg-slate-900">
+                  Referido
+                </option>
+                <option value="RACHA_RECOMPENSA" className="bg-slate-900">
+                  Racha diaria
                 </option>
               </select>
             </div>

@@ -130,6 +130,12 @@ export const API_ENDPOINTS = {
   NOTIFICATIONS: buildProjectUrl("/api/notifications"),
   NOTIFICATIONS_UNREAD_COUNT: buildProjectUrl("/api/notifications/unread-count"),
   NOTIFICATION_READ: (id) => buildProjectUrl(`/api/notifications/${id}/read`),
+
+  REFERRALS_MY_LINK: buildProjectUrl('/api/referrals/my-link'),
+  REFERRALS_REDEEM: buildProjectUrl('/api/referrals/redeem'),
+  REFERRALS_STATS: buildProjectUrl('/api/referrals/my-stats'),
+  STREAK_CHECK_IN: buildProjectUrl('/api/streaks/check-in'),
+  STREAK_ME: buildProjectUrl('/api/streaks/me'),
 };
 
 export const API_BASE = API_BASE_URL;
