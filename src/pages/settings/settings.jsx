@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { apiRequest } from '@/lib/api-client'
 import { API_ENDPOINTS } from '@/config/api'
@@ -20,10 +21,10 @@ import {
 } from 'lucide-react'
 
 const SECTIONS = [
-  { id: 'profile', label: 'Perfil', icon: User },
-  { id: 'security', label: 'Seguridad', icon: Shield },
+  { id: 'profile', label: 'Datos Personales', icon: User },
+  { id: 'kyc', label: 'Verificación de Identidad', icon: Shield },
+  { id: 'security', label: 'Seguridad', icon: Key },
   { id: 'notifications', label: 'Notificaciones', icon: Bell },
-  { id: 'api', label: 'API Keys', icon: Key },
 ]
 
 function NavItem({ section, active, onSelect }) {
@@ -159,13 +160,92 @@ function WalletPanel() {
   )
 }
 
-export default function SettingsPage() {
+function KycPanel() {
+  const user = useAuthStore((s) => s.user)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  const handleStartVerification = async () => {
+    setLoading(true)
+    setError('')
+    try {
+      const { url } = await apiRequest(API_ENDPOINTS.KYC_CREATE_SESSION, {
+        method: 'POST',
+      })
+      if (url) {
+        window.location.href = url
+      } else {
+        throw new Error('No se recibió la URL de verificación')
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al iniciar verificación')
+      setLoading(false)
+    }
+  }
+
+  const kycStatus = user?.kycStatus || 'PENDING'
+  
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="rounded-xl border border-white/5 bg-card overflow-hidden"
+    >
+      <div className="p-6">
+        <h3 className="text-sm font-semibold text-white mb-1">Verificación de Identidad (KYC)</h3>
+        <p className="text-sm text-slate-400 mb-6">
+          Para crear proyectos y recaudar fondos, por motivos regulatorios debes validar tu identidad.
+        </p>
+
+        {error && (
+          <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg flex items-center gap-3 text-sm text-red-400">
+            <AlertCircle className="w-5 h-5 shrink-0" />
+            <p>{error}</p>
+          </div>
+        )}
+
+        <div className="space-y-6">
+          <div className="flex items-center justify-between p-4 bg-white/[0.02] rounded-xl border border-white/5">
+            <div>
+              <p className="text-sm font-medium text-white mb-1">Estado de Verificación</p>
+              {kycStatus === 'PENDING' && <p className="text-xs text-slate-400">No iniciada</p>}
+              {kycStatus === 'SUBMITTED' && <p className="text-xs text-yellow-400">En revisión por proveedor</p>}
+              {kycStatus === 'VERIFIED' && <p className="text-xs text-emerald-400">Identidad Verificada</p>}
+              {kycStatus === 'REJECTED' && <p className="text-xs text-red-400">Verificación rechazada. Intenta de nuevo.</p>}
+            </div>
+            
+            {kycStatus === 'VERIFIED' ? (
+              <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                <Shield className="w-5 h-5 text-emerald-400" />
+              </div>
+            ) : (
+              <button
+                onClick={handleStartVerification}
+                disabled={loading || kycStatus === 'SUBMITTED'}
+                className="px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+                {kycStatus === 'SUBMITTED' ? 'Procesando...' : 'Verificar ahora'}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  )
+}
+
+export default function ProfilePage() {
   const user = useAuthStore((s) => s.user)
   const setUser = useAuthStore((s) => s.setUser)
   const roles = useAuthStore((s) => s.roles)
   const updateUser = useUpdateUserPartial()
 
-  const [activeSection, setActiveSection] = useState('profile')
+  const [searchParams] = useSearchParams()
+  const [activeSection, setActiveSection] = useState(
+    searchParams.get('tab') || 'profile'
+  )
   const [success, setSuccess] = useState('')
   const [error, setError] = useState('')
 
@@ -250,7 +330,7 @@ export default function SettingsPage() {
 
   return (
     <div className="max-w-4xl space-y-6">
-      <PageHeader title="Configuración" description="Administrá tu cuenta y preferencias" />
+      <PageHeader title="Perfil" description="Administrá tu cuenta, identidad y preferencias" />
 
       <div className="flex gap-6">
         <nav className="hidden md:flex flex-col gap-1 w-48 shrink-0">
@@ -393,6 +473,9 @@ export default function SettingsPage() {
               <WalletPanel />
             </section>
           )}
+
+          {/* KYC Section */}
+          {activeSection === 'kyc' && <KycPanel />}
 
           {/* Security Section */}
           {activeSection === 'security' && (

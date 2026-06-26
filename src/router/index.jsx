@@ -14,12 +14,13 @@ const PublicCatalogPage = lazy(() => import('@/pages/projects/public-catalog'))
 const ProjectCatalogPage = lazy(() => import('@/pages/projects/index'))
 const ProjectDetailPage = lazy(() => import('@/pages/projects/project-detail'))
 const ProjectEditorPage = lazy(() => import('@/pages/projects/project-editor'))
-const SettingsPage = lazy(() => import('@/pages/settings/settings'))
+const ProfilePage = lazy(() => import('@/pages/settings/settings'))
 const InvestmentHistoryPage = lazy(() => import('@/pages/inversiones/index'))
 const GananciasPage = lazy(() => import('@/pages/ganancias/index'))
 const WalletPage = lazy(() => import('@/pages/wallet/index'))
 const AdminUsersPage = lazy(() => import('@/pages/admin/users'))
 const AdminRolesPage = lazy(() => import('@/pages/admin/roles'))
+const AuditsPage = lazy(() => import('@/pages/audits/index'))
 const MarketplacePage = lazy(() => import('@/pages/marketplace/index'))
 const GobernanzaPage = lazy(() => import('@/pages/gobernanza/index'))
 const AdminEventosPage = lazy(() => import('@/pages/admin/eventos'))
@@ -90,11 +91,12 @@ export function AppRouter() {
         <Route path="/gobernanza" element={<LazyPage Component={GobernanzaPage} />} />
         <Route path="/eventos" element={<LazyPage Component={EventosPage} />} />
         <Route path="/recompensas" element={<LazyPage Component={RecompensasPage} />} />
-        <Route path="/perfil" element={<Navigate to="/configuracion" replace />} />
-        <Route path="/configuracion" element={<LazyPage Component={SettingsPage} />} />
+        <Route path="/perfil" element={<LazyPage Component={ProfilePage} />} />
+        <Route path="/configuracion" element={<Navigate to="/perfil" replace />} />
 
         <Route path="/admin/usuarios" element={<AdminRoute><LazyPage Component={AdminUsersPage} /></AdminRoute>} />
         <Route path="/admin/roles" element={<AdminRoute><LazyPage Component={AdminRolesPage} /></AdminRoute>} />
+        <Route path="/auditoria" element={<AdminRoute><LazyPage Component={AuditsPage} /></AdminRoute>} />
         <Route path="/admin/eventos" element={<AdminRoute><LazyPage Component={AdminEventosPage} /></AdminRoute>} />
         <Route path="/admin/modulos" element={<AdminRoute><LazyPage Component={ModulesPage} /></AdminRoute>} />
       </Route>
