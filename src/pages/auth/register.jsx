@@ -44,14 +44,16 @@ export default function RegisterPage() {
 
     setLoading(true)
     setError('')
+    const ref = new URLSearchParams(window.location.search).get('ref')
     try {
-      await registerUser({ 
-        name: formData.get('name'), 
-        email: formData.get('email'), 
+      await registerUser({
+        name: formData.get('name'),
+        email: formData.get('email'),
         password: password,
         fechaNacimiento: fechaNacimiento
       })
       setSuccess(true)
+      if (ref) localStorage.setItem('pending_referral_code', ref)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al registrarse')
     } finally {

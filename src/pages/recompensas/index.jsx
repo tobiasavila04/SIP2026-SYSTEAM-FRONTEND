@@ -4,6 +4,8 @@ import { useQuery } from '@tanstack/react-query'
 import { apiRequest } from '@/lib/api-client'
 import { API_ENDPOINTS } from '@/config/api'
 import { useRewardsHistory } from '@/hooks/use-rewards'
+import { useMyReferralLink } from '@/hooks/use-referrals'
+import { useStreakStatus } from '@/hooks/use-streaks'
 import { RewardsSummaryWidget } from '@/components/features/rewards/rewards-summary-widget'
 import { PageHeader } from '@/components/shared/page-header'
 import { ErrorState } from '@/components/shared/error-state'
@@ -19,16 +21,24 @@ import {
   ChevronRight,
   Receipt,
   TrendingDown,
+  Flame,
+  Share2,
+  Copy,
+  Check,
 } from 'lucide-react'
 
 const REASON_LABELS = {
   VOTE_REWARD: 'Recompensa de voto',
   EVENT_ATTENDANCE: 'Asistencia a evento',
+  REFERRAL_REWARD: 'Recompensa de referido',
+  DAILY_STREAK: 'Racha diaria',
 }
 
 const REASON_BADGES = {
   VOTE_REWARD: 'bg-amber-500/10 text-amber-400 border border-amber-500/20',
   EVENT_ATTENDANCE: 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20',
+  REFERRAL_REWARD: 'bg-violet-500/10 text-violet-400 border border-violet-500/20',
+  DAILY_STREAK: 'bg-orange-500/10 text-orange-400 border border-orange-500/20',
 }
 
 function formatFecha(fechaStr) {
@@ -65,6 +75,18 @@ export default function RecompensasPage() {
   const investmentCount = Number(govConfig?.investmentCount ?? 0)
   const hasDiscount = investmentCount > 0 && userVoteCost < baseCost
 
+  const { data: streakData } = useStreakStatus()
+  const { data: referralLink } = useMyReferralLink()
+  const [copied, setCopied] = useState(false)
+
+  const handleCopy = () => {
+    if (referralLink?.link) {
+      navigator.clipboard.writeText(referralLink.link)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
+  }
+
   const { data, isLoading, isError, refetch } = useRewardsHistory(page, size)
 
   const rewards = data?.content ?? (Array.isArray(data) ? data : [])
@@ -86,6 +108,62 @@ export default function RecompensasPage() {
         title="Mis Recompensas"
         description="Historial de recompensas obtenidas y verificacion blockchain"
       />
+
+      {/* Streak Card */}
+      <div className="rounded-xl border border-orange-500/20 bg-orange-500/5 p-4">
+        <div className="flex items-start gap-3">
+          <div className="w-9 h-9 rounded-lg bg-orange-500/10 border border-orange-500/20 flex items-center justify-center shrink-0">
+            <Flame className="w-4 h-4 text-orange-400" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-medium text-white">Racha diaria</p>
+            {streakData ? (
+              <div className="flex gap-6 mt-2">
+                <div>
+                  <p className="text-2xl font-bold text-orange-400">{streakData.currentStreak}</p>
+                  <p className="text-xs text-slate-500">Racha actual</p>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-slate-300">{streakData.longestStreak}</p>
+                  <p className="text-xs text-slate-500">Mejor racha</p>
+                </div>
+              </div>
+            ) : (
+              <p className="text-xs text-slate-500 mt-1">Cargando...</p>
+            )}
+            <p className="text-xs text-orange-300/70 mt-2">Ganá 10 $IDEA por cada día que ingreses a la plataforma</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Referral Card */}
+      <div className="rounded-xl border border-violet-500/20 bg-violet-500/5 p-4">
+        <div className="flex items-start gap-3">
+          <div className="w-9 h-9 rounded-lg bg-violet-500/10 border border-violet-500/20 flex items-center justify-center shrink-0">
+            <Share2 className="w-4 h-4 text-violet-400" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-white">Referidos</p>
+            <p className="text-xs text-violet-300 mt-0.5">Ganá 50 $IDEA por cada amigo que se registre con tu código</p>
+            {referralLink ? (
+              <div className="flex items-center gap-2 mt-3">
+                <span className="flex-1 min-w-0 bg-black/20 border border-violet-500/20 rounded-lg px-3 py-1.5 text-xs text-slate-300 truncate font-mono">
+                  {referralLink.link}
+                </span>
+                <button
+                  onClick={handleCopy}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-600 hover:bg-violet-500 text-white rounded-lg text-xs font-medium transition-colors shrink-0"
+                >
+                  {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copied ? 'Copiado' : 'Copiar'}
+                </button>
+              </div>
+            ) : (
+              <p className="text-xs text-slate-500 mt-2">Cargando enlace...</p>
+            )}
+          </div>
+        </div>
+      </div>
 
       {/* Summary Widget */}
       <RewardsSummaryWidget />
@@ -153,6 +231,8 @@ export default function RecompensasPage() {
             <option value="TODOS" className="bg-slate-900">Todas</option>
             <option value="VOTE_REWARD" className="bg-slate-900">Recompensa de voto</option>
             <option value="EVENT_ATTENDANCE" className="bg-slate-900">Asistencia a evento</option>
+            <option value="REFERRAL_REWARD" className="bg-slate-900">Recompensa de referido</option>
+            <option value="DAILY_STREAK" className="bg-slate-900">Racha diaria</option>
           </select>
         </div>
       </div>
