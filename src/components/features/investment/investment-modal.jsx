@@ -160,10 +160,10 @@ export function InvestmentModal({ open, onOpenChange, projectId, projectTitle, s
   const config = useConfig()
   const { writeContractAsync } = useWriteContract()
 
-  const precioActual = tokenPrice?.precioActual
-    ? Number(tokenPrice.precioActual)
-    : tokenInfo?.precioActual
-      ? Number(tokenInfo.precioActual)
+  const precioActual = tokenPrice?.precioBase
+    ? Number(tokenPrice.precioBase)
+    : tokenInfo?.precioBase
+      ? Number(tokenInfo.precioBase)
       : null
 
   const cupoRestante = tokenPrice?.cupoRestante ?? tokenInfo?.cupoRestante ?? null
@@ -179,10 +179,12 @@ export function InvestmentModal({ open, onOpenChange, projectId, projectTitle, s
   const descuentoPorcentaje = validation?.descuentoPorcentaje || 0
 
   const numSubtokenCount = Number(subtokenCount) || 0
+  // Siempre se manda el monto completo (sin descuento) al Smart Contract.
+  // El cashback de Gamificación se envía DESPUÉS como Airdrop desde la Tesorería.
   const baseAmount = precioActual ? numSubtokenCount * precioActual : 0
-  const discountMultiplier = descuentoPorcentaje > 0 ? (100 - descuentoPorcentaje) / 100 : 1
-  const effectiveAmount = baseAmount > 0 ? (baseAmount * discountMultiplier).toFixed(2) : ''
+  const effectiveAmount = baseAmount > 0 ? baseAmount.toFixed(2) : ''
   const numEffectiveAmount = Number(effectiveAmount) || 0
+  const cashbackAmount = descuentoPorcentaje > 0 ? (baseAmount * descuentoPorcentaje / 100).toFixed(2) : 0
 
   useEffect(() => {
     if (baseAmount > 0 && projectId) {
