@@ -58,6 +58,8 @@ export function BuyListingModal({ open, onOpenChange, listing }) {
     
     if (!qty || qty <= 0) {
       newErrors.cantidad = 'La cantidad debe ser mayor a 0'
+    } else if (!Number.isInteger(qty)) {
+      newErrors.cantidad = 'La cantidad de tokens debe ser un número entero'
     } else if (qty > maxAvailable) {
       newErrors.cantidad = `Solo hay ${maxAvailable.toLocaleString()} sub-tokens disponibles`
     } else if (totalCost > userSaldoIdea) {

@@ -40,6 +40,8 @@ export function EscrowPanel({ project, isCreator, isAuditor, refetch }) {
     ? fetchedEscrowAddress 
     : manualAddress
 
+  const isFetchingEscrow = loadingEscrow || (project.estado === 'EJECUCION' && (!fetchedEscrowAddress || fetchedEscrowAddress === '0x0000000000000000000000000000000000000000'))
+
   const releaseHitoMutation = useReleaseHito(project.id)
 
   if (project.estado !== 'EJECUCION' && project.estado !== 'FINALIZADO') {
@@ -92,11 +94,11 @@ export function EscrowPanel({ project, isCreator, isAuditor, refetch }) {
           <div className="flex items-center gap-3">
              <div className="relative w-full max-w-sm">
                 <Input
-                  placeholder="0x... (Escrow Address)"
+                  placeholder={isFetchingEscrow ? "Esperando address de la blockchain..." : "0x... (Escrow Address)"}
                   value={escrowAddress}
                   onChange={(e) => setManualAddress(e.target.value)}
                   className="bg-slate-950 border-slate-700 font-mono text-sm pr-10"
-                  readOnly={fetchedEscrowAddress && fetchedEscrowAddress !== '0x0000000000000000000000000000000000000000'}
+                  readOnly={!isFetchingEscrow && escrowAddress.startsWith('0x')}
                 />
                 {loadingEscrow && (
                   <div className="absolute right-3 top-1/2 -translate-y-1/2">

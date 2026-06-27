@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { useAccount, useWriteContract, useConfig } from 'wagmi'
+import { useAccount, useWriteContract, useConfig, useReadContract } from 'wagmi'
 import { waitForTransactionReceipt } from '@wagmi/core'
 import { parseUnits } from 'viem'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
@@ -30,10 +30,10 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { statusVariants, statusLabels, FundingProgress } from '@/lib/project-constants'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { ERC20_ABI } from '@/lib/abis'
+import { ERC20_ABI, OFFERING_ABI } from '@/lib/abis'
 import { toast } from 'sonner'
 import { differenceInDays } from 'date-fns'
-import { ArrowLeft, Target, Calendar, Coins, Wallet, Loader2, TrendingUp, Rocket, CheckCircle2, Ban, SquarePen, ExternalLink, RefreshCw, AlertTriangle, Star, StarOff, Sparkles, ShieldCheck, FileText, Scale, User } from 'lucide-react'
+import { ArrowLeft, Target, Calendar, Coins, Wallet, Loader2, TrendingUp, Rocket, CheckCircle2, Ban, SquarePen, ExternalLink, RefreshCw, AlertTriangle, Star, StarOff, Sparkles, ShieldCheck, FileText, Scale, User, Lock } from 'lucide-react'
 
 const VITE_INVESTMENT_SWAP_ADDRESS = import.meta.env.VITE_INVESTMENT_SWAP_ADDRESS
 
@@ -206,9 +206,7 @@ function PublishSuccessModal({ open, onOpenChange, tokenAddress }) {
   )
 }
 
-function StatusActions({ project, isCreator, isAdmin, isAuditor, canAudit, canInvest, onInvest, onRefund, onBoost, onTransition, onAudit, onPublish, onClose, onEvaluateStates, onReportBilling, transitioning, closing }) {
-  const failed = project.estado === 'CANCELADO' || project.estado === 'RECHAZADO' || (project.estado === 'FINALIZADO' && project.montoRecaudado < project.montoRequerido)
-
+function StatusActions({ project, isCreator, isAdmin, isAuditor, canAudit, canInvest, onInvest, onRefund, onBoost, onTransition, onAudit, onPublish, onClose, onEvaluateStates, onReportBilling, onFinalizeOffering, transitioning, closing, canCloseProject, hasEscrow }) {
   return (
     <div className="flex items-center gap-2 flex-wrap">
       {/* 1. Acciones principales de transición de estado e inversión */}
@@ -264,13 +262,31 @@ function StatusActions({ project, isCreator, isAdmin, isAuditor, canAudit, canIn
         </div>
       )}
       {isCreator && project.estado === 'EJECUCION' && (
-        <Button onClick={onClose} disabled={closing} className="bg-emerald-600 hover:bg-emerald-500 text-white gap-2 h-9 px-4 text-sm rounded-lg">
-          {closing ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-          {closing ? 'Cerrando...' : 'Cerrar proyecto'}
-        </Button>
+        <div className="relative group">
+          <Button 
+            onClick={onClose} 
+            disabled={closing || !canCloseProject} 
+            className="bg-emerald-600 hover:bg-emerald-500 text-white gap-2 h-9 px-4 text-sm rounded-lg disabled:opacity-50"
+          >
+            {closing ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+            {closing ? 'Cerrando...' : 'Cerrar proyecto'}
+          </Button>
+          {!canCloseProject && (
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-xs px-2 py-1 bg-slate-800 text-slate-200 text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity">
+              Debes completar todos los hitos para cerrar el proyecto
+            </div>
+          )}
+        </div>
       )}
 
       {/* 2. Acciones secundarias y gestión */}
+      {isCreator && (project.estado === 'FINANCIAMIENTO' || project.estado === 'EJECUCION') && project.montoRecaudado >= project.montoRequerido && !hasEscrow && (
+        <Button onClick={onFinalizeOffering} disabled={transitioning} className="bg-fuchsia-600 hover:bg-fuchsia-500 text-white gap-2 h-9 px-4 text-sm rounded-lg shadow-sm shadow-fuchsia-500/20">
+          {transitioning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
+          Finalizar Recaudación (Crear Escrow)
+        </Button>
+      )}
+
       {isCreator && project.estado === 'EJECUCION' && (
         <Button onClick={onReportBilling} variant="outline" className="gap-2 border-blue-500/20 text-blue-400 hover:bg-blue-500/10 h-9 px-4 text-sm rounded-lg">
           <FileText className="w-4 h-4" />
@@ -379,6 +395,22 @@ export default function ProjectDetailPage() {
     showAuditFindings ? projectId : null
   )
 
+  const canCloseProject = project?.estado === 'EJECUCION' && 
+    project?.hitos?.length > 0 && 
+    project.hitos.every(h => h.estado === 'COMPLETADO')
+
+  const offeringContractAddress = import.meta.env.VITE_OFFERING_CONTRACT_ADDRESS
+  const { data: fetchedEscrowAddress } = useReadContract({
+    address: offeringContractAddress,
+    abi: OFFERING_ABI,
+    functionName: 'escrows',
+    args: [project?.id],
+    query: {
+      enabled: !!offeringContractAddress && !!project?.id && project.estado === 'EJECUCION',
+    }
+  })
+  const hasEscrow = fetchedEscrowAddress && fetchedEscrowAddress !== '0x0000000000000000000000000000000000000000'
+
   const transitionTo = async (status) => {
     if (status === 'EN_AUDITORIA') {
       if (!isConnected || !address) {
@@ -472,6 +504,37 @@ export default function ProjectDetailPage() {
         setShowGasError(true)
       } else {
         toast.error(e?.shortMessage || e?.message || 'Error al publicar el proyecto en blockchain')
+      }
+    } finally {
+      setTransitioning(false)
+    }
+  }
+
+  const handleFinalizeOffering = async () => {
+    setTransitioning(true)
+    try {
+      toast.loading('Finalizando el offering en la blockchain...', { id: 'finalize_tx' })
+      
+      await apiRequest(`/api/projects/${projectId}/finalize`, {
+        method: 'POST'
+      })
+      
+      toast.success('Offering finalizado y Escrow creado con éxito', { id: 'finalize_tx' })
+      refetch()
+    } catch (e) {
+      toast.dismiss('finalize_tx')
+      const msg = (e?.shortMessage || e?.message || '').toLowerCase()
+      
+      if (msg.includes('user rejected') || msg.includes('denied')) {
+        toast.error('Transacción cancelada por el usuario')
+      } else if (msg.includes('still active')) {
+        toast.error('La fecha límite del proyecto todavía no pasó. Debes esperar a que venza el plazo.')
+      } else if (msg.includes('already finalized')) {
+        toast.error('El proyecto ya fue finalizado previamente.')
+      } else if (msg.includes('not authorized') || msg.includes('missing role')) {
+        toast.error('No tenés permisos para finalizar este proyecto en la blockchain.')
+      } else {
+        toast.error('Error al finalizar el offering: ' + (e?.shortMessage || 'Error desconocido'))
       }
     } finally {
       setTransitioning(false)
@@ -572,8 +635,6 @@ export default function ProjectDetailPage() {
     )
   }
 
-  console.log('DEBUG project:', project)
-  console.log('DEBUG simbolo:', project?.simbolo)
   if (isError || !project) {
     return <ErrorState message="No se pudo cargar el proyecto." onRetry={() => refetch()} />
   }
@@ -629,8 +690,11 @@ export default function ProjectDetailPage() {
             onEvaluateStates={() => evaluateStates.mutateAsync().then(refetch)}
             onReportBilling={() => setShowOracleBillingForm(true)}
             onAudit={(resultado) => { setAuditResultado(resultado); setShowAuditDialog(true) }}
+            onFinalizeOffering={handleFinalizeOffering}
             transitioning={transitioning}
             closing={closeProject.isPending}
+            canCloseProject={canCloseProject}
+            hasEscrow={hasEscrow}
           />
         </div>
 

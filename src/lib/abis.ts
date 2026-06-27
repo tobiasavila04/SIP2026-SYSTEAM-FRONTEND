@@ -195,3 +195,13 @@ export const DIVIDEND_DISTRIBUTOR_ABI = [
   }
 ] as const
 
+export const OFFERING_ABI = [
+  {
+    "inputs": [{ "internalType": "uint256", "name": "proyectoId", "type": "uint256" }],
+    "name": "finalize",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+] as const
+

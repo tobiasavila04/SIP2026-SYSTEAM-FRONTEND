@@ -209,6 +209,10 @@ export function InvestmentModal({ open, onOpenChange, projectId, projectTitle, s
       toast.error(`Ingresá una cantidad válida de ${symbol}`)
       return
     }
+    if (!Number.isInteger(numSubtokenCount)) {
+      toast.error(`Los tokens (${symbol}) deben ser números enteros`)
+      return
+    }
     if (!isConnected || !address) {
       toast.error('Conectá tu wallet primero')
       return
@@ -223,6 +227,7 @@ export function InvestmentModal({ open, onOpenChange, projectId, projectTitle, s
       const amountWei = parseUnits(String(numEffectiveAmount), 18)
 
       // 1. Approve
+      toast.loading('Firma 1 de 2: Autorizando el uso de tus $IDEA...', { id: 'invest_tx' })
       const approveHash = await writeContractAsync({
         address: ideaTokenAddress,
         abi: ERC20_ABI,
@@ -233,6 +238,7 @@ export function InvestmentModal({ open, onOpenChange, projectId, projectTitle, s
       await waitForTransactionReceipt(config, { hash: approveHash })
 
       // 2. Invest
+      toast.loading('Firma 2 de 2: Confirmando la inversión en la red...', { id: 'invest_tx' })
       const investTxHash = await writeContractAsync({
         address: swapAddress,
         abi: INVESTMENT_SWAP_ABI,
@@ -242,7 +248,8 @@ export function InvestmentModal({ open, onOpenChange, projectId, projectTitle, s
 
       await waitForTransactionReceipt(config, { hash: investTxHash })
       setInvestHash(investTxHash)
-
+      
+      toast.loading('Guardando inversión en el servidor...', { id: 'invest_tx' })
       await createInvestment.mutateAsync({
         proyectoId: projectId,
         montoIdea: numEffectiveAmount,
@@ -251,12 +258,14 @@ export function InvestmentModal({ open, onOpenChange, projectId, projectTitle, s
       })
 
       setStep('done')
-      toast.success('Inversión realizada con éxito')
+      toast.success('Inversión realizada con éxito', { id: 'invest_tx' })
       onSuccess?.()
     } catch (e) {
+      toast.dismiss('invest_tx')
       const msg = e?.message || ''
-      if (msg.includes('User rejected') || msg.includes('user rejected')) {
+      if (msg.includes('User rejected') || msg.includes('user rejected') || msg.includes('denied')) {
         setErrorInfo({ message: 'Transacción cancelada' })
+        toast.error('Cancelaste la firma en tu billetera')
       } else {
         setErrorInfo({ message: msg || 'Error al procesar la inversión' })
       }
