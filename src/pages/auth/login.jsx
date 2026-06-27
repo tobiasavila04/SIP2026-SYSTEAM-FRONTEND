@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label'
 import { PasswordInput } from '@/components/ui/password-input'
 import { AuthLayout } from '@/components/features/auth/auth-layout'
 import { Loader2 } from 'lucide-react'
+import { API_BASE } from '@/config/api'
 
 export default function LoginPage() {
   const navigate = useNavigate()
@@ -23,14 +24,19 @@ export default function LoginPage() {
       await login({ email: formData.get('email'), password: formData.get('password') })
       navigate('/dashboard')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al iniciar sesión')
+      if (err.fieldErrors) {
+        const msgs = Object.values(err.fieldErrors).join('. ');
+        setError(msgs);
+      } else {
+        setError(err instanceof Error ? err.message : 'Error al iniciar sesión')
+      }
     } finally {
       setLoading(false)
     }
   }
 
   const handleGoogleLogin = () => {
-    window.location.href = 'http://localhost:8080/oauth2/authorization/google';
+    window.location.href = `${API_BASE}/oauth2/authorization/google`;
   };
 
   return (

@@ -55,7 +55,12 @@ export default function RegisterPage() {
       setSuccess(true)
       if (ref) localStorage.setItem('pending_referral_code', ref)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al registrarse')
+      if (err.fieldErrors) {
+        const msgs = Object.values(err.fieldErrors).join('. ');
+        setError(msgs);
+      } else {
+        setError(err instanceof Error ? err.message : 'Error al registrarse')
+      }
     } finally {
       setLoading(false)
     }

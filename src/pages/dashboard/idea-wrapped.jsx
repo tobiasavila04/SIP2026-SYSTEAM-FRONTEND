@@ -76,7 +76,7 @@ export default function IdeaWrappedPage() {
           <p className="text-lg text-slate-300 mb-8 leading-relaxed">
             Este año fue de preparación. El próximo año es tuyo. Mirá los proyectos que están rompiéndola ahora mismo y empezá a construir tu portafolio.
           </p>
-          <Button onClick={() => navigate('/explorar')} size="lg" className="w-full h-14 text-lg font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-[0_0_20px_rgba(79,70,229,0.3)] rounded-xl transition-all">
+          <Button onClick={() => navigate('/proyectos')} size="lg" className="w-full h-14 text-lg font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-[0_0_20px_rgba(79,70,229,0.3)] rounded-xl transition-all">
             Explorar Catálogo <ExternalLink className="ml-2 w-5 h-5" />
           </Button>
         </div>
