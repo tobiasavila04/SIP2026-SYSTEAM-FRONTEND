@@ -75,8 +75,8 @@ export default function RecompensasPage() {
   const investmentCount = Number(govConfig?.investmentCount ?? 0)
   const hasDiscount = investmentCount > 0 && userVoteCost < baseCost
 
-  const { data: streakData } = useStreakStatus()
-  const { data: referralLink } = useMyReferralLink()
+  const { data: streakData, isLoading: isStreakLoading } = useStreakStatus()
+  const { data: referralLink, isLoading: isReferralLoading } = useMyReferralLink()
   const [copied, setCopied] = useState(false)
 
   const handleCopy = () => {
@@ -117,7 +117,9 @@ export default function RecompensasPage() {
           </div>
           <div className="flex-1">
             <p className="text-sm font-medium text-white">Racha diaria</p>
-            {streakData ? (
+            {isStreakLoading ? (
+              <p className="text-xs text-slate-500 mt-1">Cargando...</p>
+            ) : streakData && typeof streakData.currentStreak !== 'undefined' ? (
               <div className="flex gap-6 mt-2">
                 <div>
                   <p className="text-2xl font-bold text-orange-400">{streakData.currentStreak}</p>
@@ -129,7 +131,7 @@ export default function RecompensasPage() {
                 </div>
               </div>
             ) : (
-              <p className="text-xs text-slate-500 mt-1">Cargando...</p>
+              <p className="text-xs text-slate-500 mt-1">Comenzá tu racha ingresando todos los días.</p>
             )}
             <p className="text-xs text-orange-300/70 mt-2">Ganá 10 $IDEA por cada día que ingreses a la plataforma</p>
           </div>
@@ -145,7 +147,9 @@ export default function RecompensasPage() {
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-white">Referidos</p>
             <p className="text-xs text-violet-300 mt-0.5">Ganá 50 $IDEA por cada amigo que se registre con tu código</p>
-            {referralLink ? (
+            {isReferralLoading ? (
+              <p className="text-xs text-slate-500 mt-2">Cargando enlace...</p>
+            ) : referralLink?.link ? (
               <div className="flex items-center gap-2 mt-3">
                 <span className="flex-1 min-w-0 bg-black/20 border border-violet-500/20 rounded-lg px-3 py-1.5 text-xs text-slate-300 truncate font-mono">
                   {referralLink.link}
@@ -159,7 +163,7 @@ export default function RecompensasPage() {
                 </button>
               </div>
             ) : (
-              <p className="text-xs text-slate-500 mt-2">Cargando enlace...</p>
+              <p className="text-xs text-slate-500 mt-2">No tenés un código de referido activo.</p>
             )}
           </div>
         </div>

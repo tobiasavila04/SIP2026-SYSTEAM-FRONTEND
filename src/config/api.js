@@ -68,6 +68,7 @@ export const API_ENDPOINTS = {
   PROJECT_VOTE_PREPARE: (id) => buildProjectUrl(`/api/projects/${id}/vote/prepare`),
   PROJECT_VOTE: (id) => buildProjectUrl(`/api/projects/${id}/vote`),
   PROJECT_VOTES_STREAM: (id) => buildProjectUrl(`/api/projects/${id}/votes/stream`),
+  PROJECT_HITO_RELEASE: (id, hitoId) => buildProjectUrl(`/api/projects/${id}/hitos/${hitoId}/release`),
 
   INVESTMENTS: buildProjectUrl("/api/investments"),
   INVESTMENTS_VALIDATE: buildProjectUrl("/api/investments/validate"),

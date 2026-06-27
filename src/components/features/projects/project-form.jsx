@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Button } from '@/components/ui/button'
@@ -22,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Coins, Calculator, Sparkles } from 'lucide-react'
+import { Coins, Calculator, Sparkles, ListTodo, Plus, Trash2 } from 'lucide-react'
 import { ProjectDisclaimerModal } from './project-disclaimer-modal'
 
 const projectSchema = z.object({
@@ -37,12 +37,71 @@ const projectSchema = z.object({
   cupoMaximoTokens: z.coerce.number().int().min(2, 'Debe emitirse al menos 2 tokens'),
   valorNominalToken: z.coerce.number().min(0.01, 'El valor nominal debe ser mayor a 0'),
   simbolo: z.string().min(2, 'Mínimo 2 caracteres').max(5, 'Máximo 5 caracteres').toUpperCase(),
+  hitos: z.array(z.object({
+    titulo: z.string().min(1, 'El título es obligatorio'),
+    porcentaje: z.coerce.number().min(0.01, 'Mínimo 0.01%').max(60, 'Ningún hito puede superar el 60%'),
+    plazo: z.string().min(1, 'La fecha estimada es obligatoria').refine((val) => new Date(val) > new Date(), {
+      message: 'Debe ser en el futuro'
+    })
+  })).min(2, 'Debe haber al menos 2 hitos')
 }).refine((data) => {
   const maxRecaudacion = (data.cupoMaximoTokens || 0) * (data.valorNominalToken || 0);
   return maxRecaudacion >= data.montoRequerido;
 }, {
   message: 'El valor total de los tokens no alcanza la meta de financiamiento',
   path: ['cupoMaximoTokens'],
+}).refine((data) => {
+  const sum = data.hitos.reduce((acc, hito) => acc + (hito.porcentaje || 0), 0)
+  return Math.abs(sum - 100) < 0.01
+}, {
+  message: 'La suma de los porcentajes de los hitos debe ser exactamente 100%',
+  path: ['hitos'],
+}).refine((data) => {
+  if (!data.plazo) return true;
+  const plazoDateStr = data.plazo.substring(0, 10);
+  let previousDate = new Date(plazoDateStr + 'T00:00:00');
+  // Remove time portion for fair date comparison
+  previousDate.setHours(0, 0, 0, 0);
+  
+  for (const hito of data.hitos) {
+    if (!hito.plazo) continue;
+    const hitoDateStr = hito.plazo.substring(0, 10);
+    const hitoDate = new Date(hitoDateStr + 'T00:00:00');
+    hitoDate.setHours(0, 0, 0, 0);
+    
+    const minRequiredDate = new Date(previousDate);
+    minRequiredDate.setDate(minRequiredDate.getDate() + 7);
+    
+    if (hitoDate < minRequiredDate) {
+      return false;
+    }
+    previousDate = hitoDate;
+  }
+  return true;
+}, {
+  message: 'Cada hito debe tener un plazo de al menos 7 días respecto al cierre de campaña o al hito anterior, y deben estar en orden cronológico',
+  path: ['hitos'],
+}).refine((data) => {
+  if (!data.plazo) return true;
+  const plazoDateStr = data.plazo.substring(0, 10);
+  const projectPlazoDate = new Date(plazoDateStr + 'T00:00:00');
+  projectPlazoDate.setHours(0, 0, 0, 0);
+  const absoluteMaxDate = new Date(projectPlazoDate);
+  absoluteMaxDate.setMonth(absoluteMaxDate.getMonth() + 24);
+  
+  for (const hito of data.hitos) {
+    if (!hito.plazo) continue;
+    const hitoDateStr = hito.plazo.substring(0, 10);
+    const hitoDate = new Date(hitoDateStr + 'T00:00:00');
+    hitoDate.setHours(0, 0, 0, 0);
+    if (hitoDate > absoluteMaxDate) {
+      return false;
+    }
+  }
+  return true;
+}, {
+  message: 'Ningún hito puede extenderse más allá de 24 meses (2 años) desde el cierre de la campaña',
+  path: ['hitos'],
 })
 
 function Card({ icon: Icon, title, description, children }) {
@@ -88,16 +147,37 @@ export function ProjectForm({ defaultValues, onSubmit, isEdit, projectState }) {
       cupoMaximoTokens: defaultValues?.cupoMaximoTokens || undefined,
       valorNominalToken: defaultValues?.valorNominalToken || undefined,
       simbolo: defaultValues?.simbolo || '',
+      hitos: defaultValues?.hitos?.length > 0 ? defaultValues.hitos : [
+        { titulo: '', porcentaje: 50, plazo: '' }, 
+        { titulo: '', porcentaje: 50, plazo: '' }
+      ],
     },
   })
 
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "hitos"
+  })
+
   const handleSubmit = (values) => {
-    setPendingValues(values)
+    const formattedValues = {
+      ...values,
+      plazo: values.plazo && values.plazo.length <= 10 ? `${values.plazo}T23:59:59` : values.plazo,
+      hitos: values.hitos?.map(h => ({
+        ...h,
+        plazo: h.plazo && h.plazo.length <= 10 ? `${h.plazo}T23:59:59` : h.plazo
+      }))
+    }
+    setPendingValues(formattedValues)
     setShowDisclaimer(true)
   }
 
   const goal = Number(form.watch('montoRequerido')) || 0;
   const isInvalidTotal = total !== goal && goal > 0;
+  
+  const watchedHitos = form.watch('hitos') || []
+  const totalPercentage = watchedHitos.reduce((acc, curr) => acc + (Number(curr.porcentaje) || 0), 0)
+  const isInvalidPercentage = Math.abs(totalPercentage - 100) > 0.01
 
   const handleConfirmSubmit = async () => {
     setShowDisclaimer(false)
@@ -319,6 +399,100 @@ export function ProjectForm({ defaultValues, onSubmit, isEdit, projectState }) {
               })()}
           </Card>
 
+          {/* Card 4: Hitos del Proyecto */}
+          <Card icon={ListTodo} title="Hitos del Proyecto" description="Dividí la recaudación en etapas (milestones) para mayor transparencia">
+            <div className="space-y-4">
+              {fields.map((field, index) => (
+                <div key={field.id} className="flex gap-4 items-start bg-white/5 p-4 rounded-lg border border-white/10 relative">
+                  <div className="flex-1 space-y-4">
+                    <FormField
+                      control={form.control}
+                      name={`hitos.${index}.titulo`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Título del hito</FormLabel>
+                          <FormControl>
+                            <Input disabled={isDescriptionOnly} placeholder="ej: Compra de maquinaria" required {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <div className="w-32 space-y-4">
+                    <FormField
+                      control={form.control}
+                      name={`hitos.${index}.porcentaje`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Porcentaje (%)</FormLabel>
+                          <FormControl>
+                            <Input disabled={isDescriptionOnly} type="number" step="0.01" min="0.01" max="100" required {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <div className="w-48 space-y-4">
+                    <FormField
+                      control={form.control}
+                      name={`hitos.${index}.plazo`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Fecha estimada</FormLabel>
+                          <FormControl>
+                            <Input disabled={isDescriptionOnly} type="date" required {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  {!isDescriptionOnly && fields.length > 1 && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => remove(index)}
+                      className="absolute top-2 right-2 text-gray-500 hover:text-red-400"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
+              ))}
+
+              {!isDescriptionOnly && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => append({ titulo: '', porcentaje: '' })}
+                  className="w-full border-dashed border-gray-700 hover:border-gray-500 text-gray-400 hover:text-white"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Agregar Hito
+                </Button>
+              )}
+
+              {form.formState.errors.hitos?.root?.message && (
+                <p className="text-sm font-medium text-red-500 mt-2">
+                  {form.formState.errors.hitos.root.message}
+                </p>
+              )}
+              {form.formState.errors.hitos?.message && typeof form.formState.errors.hitos.message === 'string' && (
+                <p className="text-sm font-medium text-red-500 mt-2">
+                  {form.formState.errors.hitos.message}
+                </p>
+              )}
+
+              <div className={`p-4 rounded-lg flex justify-between items-center ${isInvalidPercentage ? 'bg-red-500/10 text-red-400' : 'bg-emerald-500/10 text-emerald-400'}`}>
+                <span className="text-sm font-medium">Suma total de porcentajes:</span>
+                <span className="text-lg font-bold">{totalPercentage.toFixed(2)}%</span>
+              </div>
+            </div>
+          </Card>
+
           {/* Footer */}
           <div className="flex items-center justify-between pt-2">
             <div className="flex items-center gap-3">
@@ -342,7 +516,7 @@ export function ProjectForm({ defaultValues, onSubmit, isEdit, projectState }) {
               <Button type="button" variant="ghost" onClick={() => window.history.back()} className="text-gray-400 hover:text-white">
                 Cancelar
               </Button>
-              <Button type="submit" className="bg-indigo-600 hover:bg-indigo-500 text-white px-6" disabled={submitting || isInvalidTotal}>
+              <Button type="submit" className="bg-indigo-600 hover:bg-indigo-500 text-white px-6" disabled={submitting || isInvalidTotal || isInvalidPercentage}>
                 {submitting ? 'Guardando...' : isEdit ? 'Guardar Cambios' : 'Crear Proyecto'}
               </Button>
             </div>

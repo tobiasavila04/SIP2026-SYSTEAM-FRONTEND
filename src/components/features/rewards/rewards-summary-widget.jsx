@@ -42,13 +42,6 @@ export function RewardsSummaryWidget() {
           <Trophy className="w-4 h-4 text-amber-400" />
           Recompensas
         </h3>
-        <Link
-          to="/recompensas"
-          className="text-xs text-violet-400 hover:text-violet-300 transition-colors flex items-center gap-1"
-        >
-          Ver todo
-          <ArrowRight className="w-3 h-3" />
-        </Link>
       </div>
 
       <div className="mb-4">
@@ -64,11 +57,11 @@ export function RewardsSummaryWidget() {
           return (
             <div
               key={key}
-              className="rounded-lg bg-white/[0.03] border border-white/[0.06] p-3 text-center"
+              className="rounded-lg bg-white/[0.03] border border-white/[0.06] p-5 text-center flex flex-col items-center justify-center"
             >
-              <Icon className={`w-4 h-4 mx-auto mb-1.5 ${color}`} />
-              <p className="text-sm font-semibold text-white">{value.toLocaleString()}</p>
-              <p className="text-[10px] text-slate-500">{label}</p>
+              <Icon className={`w-6 h-6 mb-3 ${color}`} />
+              <p className="text-2xl font-bold text-white tracking-tight">{value.toLocaleString()}</p>
+              <p className="text-sm text-slate-400 mt-1">{label}</p>
             </div>
           )
         })}

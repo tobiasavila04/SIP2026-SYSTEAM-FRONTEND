@@ -68,97 +68,6 @@ function BalanceCard({ currency, balance, icon: Icon, index }) {
   )
 }
 
-function PortfolioItem({ proyectoNombre, subtokenNombre, subtokenSimbolo, cantidad, precioActual, index }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, x: -8 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: 0.2 + index * 0.05, duration: 0.3 }}
-      className="flex items-center justify-between py-2.5 border-b border-white/[0.04] last:border-0"
-    >
-      <div className="flex items-center gap-2.5 min-w-0">
-        <div className="w-2 h-2 rounded-full bg-violet-500/40 shrink-0" />
-        <span className="text-sm text-slate-300 truncate">{proyectoNombre} - {subtokenSimbolo ? `$ ${subtokenSimbolo}` : subtokenNombre}</span>
-      </div>
-      <div className="text-right shrink-0 ml-4">
-        <p className="text-sm font-medium text-white">{Number(cantidad).toLocaleString('es-AR')}</p>
-        {precioActual && (
-          <p className="text-[10px] text-slate-600">@ {Number(precioActual).toLocaleString('es-AR', { minimumFractionDigits: 2 })} IDEA</p>
-        )}
-      </div>
-    </motion.div>
-  )
-}
-
-function WalletPanel() {
-  const { data, isLoading, isError, dataUpdatedAt } = useWalletSummary()
-  const saldoIdea = data?.balances?.idea ?? 0
-  const portfolio = data?.portfolio ?? []
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: 0.15 }}
-      className="rounded-xl border border-white/5 bg-card p-6"
-    >
-      <div className="flex items-center justify-between mb-5">
-        <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-lg bg-violet-500/10 flex items-center justify-center">
-            <Wallet className="w-4 h-4 text-violet-400" />
-          </div>
-          <div>
-            <h3 className="text-sm font-semibold text-white">Billetera</h3>
-            <p className="text-[10px] text-slate-600">
-              {dataUpdatedAt ? `Actualizado ${new Date(dataUpdatedAt).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}` : 'Saldos en tiempo real'}
-            </p>
-          </div>
-        </div>
-        {isLoading && <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-600" />}
-      </div>
-
-      {isError ? (
-        <div className="flex items-center gap-2 text-sm text-red-400 bg-red-500/10 rounded-lg px-4 py-3">
-          <AlertCircle className="w-4 h-4 shrink-0" />
-          <span>Error al cargar los saldos</span>
-        </div>
-      ) : isLoading && !data ? (
-        <div className="space-y-4">
-          <div className="flex gap-3">
-            <div className="flex-1 h-24 rounded-xl bg-white/[0.03] animate-pulse" />
-            <div className="flex-1 h-24 rounded-xl bg-white/[0.03] animate-pulse" />
-          </div>
-          <div className="space-y-2">
-            <div className="h-10 rounded-lg bg-white/[0.02] animate-pulse" />
-            <div className="h-10 rounded-lg bg-white/[0.02] animate-pulse" />
-          </div>
-        </div>
-      ) : (
-        <div className="space-y-5">
-          <div className="flex gap-3">
-            <BalanceCard currency="IDEA" balance={saldoIdea} icon={TrendingUp} index={0} />
-          </div>
-          {portfolio.length > 0 && (
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <Layers className="w-3.5 h-3.5 text-slate-500" />
-                <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">Portfolio ({portfolio.length})</span>
-              </div>
-              <div className="bg-black/10 rounded-lg px-3">
-                {portfolio.map((item, i) => (
-                  <PortfolioItem key={item.subtokenId ?? i} {...item} index={i} />
-                ))}
-              </div>
-            </div>
-          )}
-          {!isLoading && portfolio.length === 0 && (
-            <p className="text-xs text-slate-600 text-center py-2">No tenés subtokens en tu portfolio</p>
-          )}
-        </div>
-      )}
-    </motion.div>
-  )
-}
 
 function KycPanel() {
   const user = useAuthStore((s) => s.user)
@@ -470,7 +379,6 @@ export default function ProfilePage() {
               </div>
 
               <InvestorLevelCard />
-              <WalletPanel />
             </section>
           )}
 
@@ -532,26 +440,7 @@ export default function ProfilePage() {
                 </form>
               </div>
 
-              <div className="rounded-xl border border-white/5 bg-card p-6 space-y-4">
-                <div className="flex items-center gap-3 pb-4 border-b border-white/5">
-                  <div className="w-9 h-9 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-                    <Shield className="w-4 h-4 text-emerald-400" />
-                  </div>
-                  <div>
-                    <h2 className="text-sm font-semibold text-white">Autenticación de dos factores</h2>
-                    <p className="text-xs text-slate-500">Protegé tu cuenta con 2FA</p>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-white">Próximamente</p>
-                    <p className="text-xs text-slate-500">Añadí una capa extra de seguridad a tu cuenta</p>
-                  </div>
-                  <div className="w-10 h-6 rounded-full bg-white/5 border border-white/10 flex items-center px-0.5">
-                    <div className="w-5 h-5 rounded-full bg-slate-600" />
-                  </div>
-                </div>
-              </div>
+
 
               <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-6 space-y-4">
                 <div className="flex items-center gap-3">

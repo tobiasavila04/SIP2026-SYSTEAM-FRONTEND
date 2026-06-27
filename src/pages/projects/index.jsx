@@ -174,8 +174,8 @@ export default function ProjectCatalogPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Proyectos</h1>
-          <p className="text-sm text-slate-400 mt-1">Explorá y gestioná proyectos tokenizados</p>
+          <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">Proyectos</h1>
+          <p className="text-base sm:text-lg text-slate-400 mt-2 max-w-3xl">Explorá y gestioná proyectos tokenizados</p>
         </div>
         {puedeCrear && (
           <Link to="/proyectos/crear">

@@ -232,33 +232,36 @@ function StatusActions({ project, isCreator, isAdmin, isAuditor, canAudit, canIn
         </>
       )}
 
-      {isCreator && !project.esDestacado && project.estado !== 'FINALIZADO' && project.estado !== 'RECHAZADO' && project.estado !== 'CANCELADO' && (
-        <Button onClick={onBoost} variant="outline" size="sm" className="gap-2 border-amber-500/20 text-amber-400 hover:bg-amber-500/10">
-          <Star className="w-3.5 h-3.5" />
-          Destacar (100 $IDEA)
-        </Button>
-      )}
+      {isCreator && (
+        <div className="flex items-center gap-2">
+          {!project.esDestacado && project.estado !== 'FINALIZADO' && project.estado !== 'RECHAZADO' && project.estado !== 'CANCELADO' && (
+            <Button onClick={onBoost} variant="outline" className="gap-2 border-amber-500/20 text-amber-400 hover:bg-amber-500/10 h-9 px-4 text-sm rounded-lg">
+              <Star className="w-4 h-4" />
+              Destacar (100 $IDEA)
+            </Button>
+          )}
 
+          {project.estado === 'PREPARACION' && (
+            <Button onClick={() => onTransition('EN_AUDITORIA')} disabled={transitioning} className="bg-amber-600 hover:bg-amber-500 text-white gap-2 h-9 px-4 text-sm rounded-lg shadow-lg shadow-amber-600/20">
+              {transitioning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Scale className="w-4 h-4" />}
+              {transitioning ? 'Enviando...' : 'Solicitar auditoría'}
+            </Button>
+          )}
 
-      {isCreator && project.estado === 'PREPARACION' && (
-        <Button onClick={() => onTransition('EN_AUDITORIA')} disabled={transitioning} className="bg-amber-600 hover:bg-amber-500 text-white gap-2 h-9 px-5 text-sm rounded-lg shadow-lg shadow-amber-600/20">
-          {transitioning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Scale className="w-4 h-4" />}
-          {transitioning ? 'Enviando...' : 'Solicitar auditoría'}
-        </Button>
-      )}
+          {project.estado === 'EN_AUDITORIA' && (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-800/50 text-slate-400 rounded-lg border border-slate-700/50 text-sm h-9">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Pendiente de revisión
+            </div>
+          )}
 
-      {isCreator && project.estado === 'EN_AUDITORIA' && (
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-800/50 text-slate-400 rounded-lg border border-slate-700/50 text-sm">
-          <Loader2 className="w-4 h-4 animate-spin" />
-          Pendiente de revisión
+          {project.estado === 'AUDITADO' && (
+            <Button onClick={onPublish} disabled={transitioning} className="bg-emerald-600 hover:bg-emerald-500 text-white gap-2 h-9 px-4 text-sm rounded-lg shadow-lg shadow-emerald-600/20">
+              {transitioning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Rocket className="w-4 h-4" />}
+              {transitioning ? 'Publicando...' : 'Publicar'}
+            </Button>
+          )}
         </div>
-      )}
-
-      {isCreator && project.estado === 'AUDITADO' && (
-        <Button onClick={onPublish} disabled={transitioning} className="bg-emerald-600 hover:bg-emerald-500 text-white gap-2 h-9 px-4 text-sm rounded-lg shadow-lg shadow-emerald-600/20">
-          {transitioning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Rocket className="w-4 h-4" />}
-          {transitioning ? 'Publicando...' : 'Publicar'}
-        </Button>
       )}
       {isCreator && project.estado === 'EJECUCION' && (
         <Button onClick={onClose} disabled={closing} className="bg-emerald-600 hover:bg-emerald-500 text-white gap-2 h-9 px-4 text-sm rounded-lg">
@@ -283,20 +286,24 @@ function StatusActions({ project, isCreator, isAdmin, isAuditor, canAudit, canIn
           </Button>
         )}
 
-      {isCreator && ['PREPARACION', 'EN_AUDITORIA', 'AUDITADO', 'FINANCIAMIENTO'].includes(project.estado) && (
-        <Link to={`/proyectos/${project.id}/editar`}>
-          <Button variant="outline" className="gap-2 border-white/10 h-9 px-4 text-sm rounded-lg">
-            <SquarePen className="w-4 h-4" />
-            Editar
-          </Button>
-        </Link>
-      )}
+      {isCreator && (
+        <div className="flex items-center gap-2">
+          {['PREPARACION', 'EN_AUDITORIA', 'AUDITADO', 'FINANCIAMIENTO'].includes(project.estado) && (
+            <Link to={`/proyectos/${project.id}/editar`}>
+              <Button variant="outline" className="gap-2 border-white/10 h-9 px-4 text-sm rounded-lg">
+                <SquarePen className="w-4 h-4" />
+                Editar
+              </Button>
+            </Link>
+          )}
 
-      {isCreator && ['PREPARACION', 'EN_AUDITORIA', 'AUDITADO'].includes(project.estado) && (
-        <Button onClick={() => onTransition('CANCELADO')} disabled={transitioning} variant="outline" className="gap-2 border-red-500/20 text-red-400 hover:bg-red-500/10 h-9 px-4 text-sm rounded-lg">
-          {transitioning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Ban className="w-4 h-4" />}
-          Cancelar
-        </Button>
+          {['PREPARACION', 'EN_AUDITORIA', 'AUDITADO'].includes(project.estado) && (
+            <Button onClick={() => onTransition('CANCELADO')} disabled={transitioning} variant="outline" className="gap-2 border-red-500/20 text-red-400 hover:bg-red-500/10 h-9 px-4 text-sm rounded-lg">
+              {transitioning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Ban className="w-4 h-4" />}
+              Cancelar
+            </Button>
+          )}
+        </div>
       )}
 
       {/* Admin actions */}
@@ -408,7 +415,7 @@ export default function ProjectDetailPage() {
       
       await apiRequest(`/api/projects/${projectId}/publish`, {
         method: 'PATCH',
-        body: JSON.stringify({ signature, walletAddress: address })
+        body: { signature, walletAddress: address }
       })
       
       toast.success('Proyecto enviado a auditoría con tu firma digital')
@@ -588,7 +595,7 @@ export default function ProjectDetailPage() {
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
           <div className="space-y-2">
             <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-2xl font-bold text-white">{project.titulo}</h1>
+              <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">{project.titulo}</h1>
               {project.montoBoost > 0 && (
                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-500/15 text-amber-300 border border-amber-500/25 shadow-sm shadow-amber-500/10">
                   <Star className="w-3 h-3 fill-amber-400" />

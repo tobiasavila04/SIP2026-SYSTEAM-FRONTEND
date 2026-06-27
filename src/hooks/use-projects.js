@@ -11,6 +11,7 @@ function mapProjectFormToApi(formData) {
   if (formData.cupoMaximoTokens != null) apiData.cupoMaximoTokens = formData.cupoMaximoTokens
   if (formData.valorNominalToken != null) apiData.valorNominalToken = formData.valorNominalToken
   if (formData.simbolo) apiData.simbolo = formData.simbolo
+  if (formData.hitos) apiData.hitos = formData.hitos
   return apiData
 }
 
@@ -195,5 +196,20 @@ export function useCreatorProjects(creatorId, page = 0, size = 10) {
       return apiRequest(`${API_ENDPOINTS.PROJECTS}/creator/${creatorId}?${searchParams.toString()}`)
     },
     enabled: !!creatorId,
+  })
+}
+
+export function useReleaseHito(projectId, hitoId) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (data) => 
+      apiRequest(API_ENDPOINTS.PROJECT_HITO_RELEASE(projectId, hitoId), {
+        method: 'POST',
+        body: data
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: projectKeys.detail(projectId) })
+      toast.success('Hito liberado exitosamente')
+    }
   })
 }

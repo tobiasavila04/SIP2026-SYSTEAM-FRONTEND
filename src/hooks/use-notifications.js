@@ -35,6 +35,23 @@ export function useMarkAsRead() {
   return useMutation({
     mutationFn: (id) =>
       apiRequest(API_ENDPOINTS.NOTIFICATION_READ(id), { method: 'PATCH' }),
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: notificationKeys.all })
+
+      queryClient.setQueriesData({ queryKey: notificationKeys.lists() }, (oldData) => {
+        if (!oldData) return oldData
+        return {
+          ...oldData,
+          content: oldData.content?.map((n) =>
+            n.id === id ? { ...n, readAt: new Date().toISOString() } : n
+          ),
+        }
+      })
+
+      queryClient.setQueryData(notificationKeys.unreadCount(), (old) => {
+        return typeof old === 'number' ? Math.max(0, old - 1) : old
+      })
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: notificationKeys.all })
     },

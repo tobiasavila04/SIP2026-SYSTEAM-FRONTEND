@@ -70,8 +70,8 @@ export default function PublicCatalogPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-white tracking-tight">Proyectos</h1>
-            <p className="text-sm text-slate-400 mt-1">
+            <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">Proyectos</h1>
+            <p className="text-base sm:text-lg text-slate-400 mt-2 max-w-3xl">
               Explorá proyectos tokenizados en la plataforma
             </p>
           </div>

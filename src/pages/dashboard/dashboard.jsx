@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import { usePermissions, useAuthStore } from '@/stores/auth-store'
 import { useProjects, useEvaluateStates } from '@/hooks/use-projects'
 import { useDashboardStats, useModulesStatus } from '@/hooks/use-dashboard'
-import { PageHeader } from '@/components/shared/page-header'
+import { useGamification } from '@/hooks/use-gamification'
 import { statusLabels } from '@/lib/project-constants'
 import { Skeleton, StatSkeleton } from '@/components/shared/loading-skeleton'
 import { ErrorState } from '@/components/shared/error-state'
@@ -22,7 +22,11 @@ import {
   ShieldCheck,
   FolderKanban,
   ArrowRight,
-  Clock
+  Clock,
+  Star,
+  Shield,
+  Trophy,
+  Crown
 } from 'lucide-react'
 import {
   ResponsiveContainer,
@@ -35,9 +39,15 @@ import {
   YAxis,
   Tooltip
 } from 'recharts'
-import { RewardsSummaryWidget } from '@/components/features/rewards/rewards-summary-widget'
 
 // --- CONSTANTES Y COMPONENTES AUXILIARES ---
+
+const INVESTOR_LEVELS = {
+  STARTER: { label: 'Starter', color: 'text-emerald-400', border: 'border-emerald-500/20', bg: 'bg-emerald-500/10', Icon: Star },
+  INVESTOR: { label: 'Investor', color: 'text-blue-400', border: 'border-blue-500/20', bg: 'bg-blue-500/10', Icon: Shield },
+  PARTNER: { label: 'Partner', color: 'text-amber-400', border: 'border-amber-500/20', bg: 'bg-amber-500/10', Icon: Trophy },
+  VISIONARY: { label: 'Visionary', color: 'text-violet-400', border: 'border-violet-500/20', bg: 'bg-violet-500/10', Icon: Crown }
+}
 
 const typeIcons = {
   project_created: 'bg-blue-500/20 text-blue-400',
@@ -178,7 +188,12 @@ export default function DashboardPage() {
   const { data: projectsData, isLoading: projectsLoading } = useProjects({ page: 0, size: 100 })
   const { data: stats, isLoading: statsLoading, isError: statsError, refetch: refetchStats } = useDashboardStats()
   const { data: modulesStatus, isLoading: modulesLoading, refetch: refetchModules } = useModulesStatus(isAdmin)
+  const { data: gamificationData } = useGamification()
   const evaluateStates = useEvaluateStates()
+
+  const userLevelCode = gamificationData?.nivel_inversor || 'STARTER'
+  const userLevel = INVESTOR_LEVELS[userLevelCode] || INVESTOR_LEVELS.STARTER
+  const LevelIcon = userLevel.Icon
 
   // Diagnóstico detallado en consola de desarrollo
   if (import.meta.env.DEV) {
@@ -190,9 +205,17 @@ export default function DashboardPage() {
 
   // Parseo de actividad reciente
   const recentActivity = useMemo(() => {
-    const projects = Array.isArray(projectsData?.content) ? projectsData.content : []
+    const projects = Array.isArray(projectsData?.content) ? [...projectsData.content] : []
     if (!projects.length) return []
-    return projects.slice(0, 5).map((p, i) => ({
+    
+    // Ordenar por fecha de forma descendente (más reciente arriba)
+    const sortedProjects = projects.sort((a, b) => {
+      const dateA = new Date(a.createdAt || a.updatedAt || 0)
+      const dateB = new Date(b.createdAt || b.updatedAt || 0)
+      return dateB - dateA
+    })
+
+    return sortedProjects.slice(0, 5).map((p, i) => ({
       id: p.id || i,
       type: i === 0 ? 'project_created' : i === 1 ? 'investment' : 'status_change',
       title: p.titulo,
@@ -357,7 +380,16 @@ export default function DashboardPage() {
   if (statsLoading || projectsLoading) {
     return (
       <div className="space-y-8">
-        <PageHeader title={`Bienvenido, ${user?.name || 'Usuario'}`} description="Cargando estadísticas del ecosistema..." />
+        <div className="mb-8 flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
+          <div>
+            <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
+              ¡Hola, <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">{user?.name || 'Usuario'}</span>! 👋
+            </h1>
+            <p className="text-slate-400 mt-2 text-sm sm:text-base max-w-2xl">
+              Cargando estadísticas del ecosistema...
+            </p>
+          </div>
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {Array.from({ length: 4 }).map((_, i) => <StatSkeleton key={i} />)}
         </div>
@@ -372,7 +404,16 @@ export default function DashboardPage() {
   if (statsError) {
     return (
       <div className="space-y-8">
-        <PageHeader title={`Bienvenido, ${user?.name || 'Usuario'}`} description="Error al cargar la información del panel" />
+        <div className="mb-8 flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
+          <div>
+            <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
+              ¡Hola, <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">{user?.name || 'Usuario'}</span>! 👋
+            </h1>
+            <p className="text-slate-400 mt-2 text-sm sm:text-base max-w-2xl">
+              Error al cargar la información del panel
+            </p>
+          </div>
+        </div>
         <ErrorState message="No se pudieron cargar las estadísticas generales. Por favor, verifica la conexión con el servidor de proyectos." onRetry={handleRefetchAll} />
       </div>
     )
@@ -381,18 +422,56 @@ export default function DashboardPage() {
   // RENDERIZADO PRINCIPAL
   return (
     <div className="space-y-8 pb-12">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <PageHeader
-          title={`Bienvenido, ${user?.name || 'Usuario'}`}
-          description="Resumen de tu actividad en la plataforma"
-        />
-        <Button asChild size="lg" className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white shadow-lg shadow-indigo-500/20 border-0 group whitespace-nowrap">
-          <Link to="/wrapped">
-            <Play className="w-4 h-4 mr-2 fill-current group-hover:scale-110 transition-transform" />
-            Ver mi IdeaWrapped 2026
-          </Link>
-        </Button>
+      <div className="mb-8 flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
+        <div>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-2">
+            <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
+              ¡Hola, <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">{user?.name || 'Usuario'}</span>! 👋
+            </h1>
+            {!isAdmin && (
+              <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border ${userLevel.bg} ${userLevel.border} w-fit`}>
+                <LevelIcon className={`w-4 h-4 ${userLevel.color}`} />
+                <span className={`text-xs font-bold uppercase tracking-wider ${userLevel.color}`}>
+                  {userLevel.label}
+                </span>
+              </div>
+            )}
+          </div>
+          <p className="text-slate-400 text-sm sm:text-base max-w-2xl mt-1">
+            Descubrí Systeam, explorá nuevas oportunidades de inversión y monitoreá las últimas actividades.
+          </p>
+        </div>
       </div>
+
+      {/* IdeaWrapped Premium Banner */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1, duration: 0.5 }}
+        className="rounded-xl border border-white/5 bg-card p-6 sm:p-8 mb-8 shadow-lg flex flex-col sm:flex-row items-center justify-between gap-6"
+      >
+        <div className="text-left flex-1">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 mb-4 text-xs font-bold text-indigo-400 uppercase tracking-wider">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            Ya disponible
+          </div>
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mb-2">
+            Tu IdeaWrapped 2026
+          </h2>
+          <p className="text-sm text-slate-400 font-medium max-w-lg">
+            Descubrí tu impacto en el ecosistema, repasá tus mejores inversiones y reviví tu año en Systeam.
+          </p>
+        </div>
+        
+        <div className="shrink-0 w-full sm:w-auto">
+          <Button asChild size="lg" className="w-full sm:w-auto bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white shadow-lg shadow-indigo-500/20 border-0 group whitespace-nowrap h-12 px-8 rounded-xl">
+            <Link to="/wrapped" className="flex items-center">
+              <Play className="w-4 h-4 mr-2 fill-current group-hover:scale-110 transition-transform" />
+              Descubrir ahora
+            </Link>
+          </Button>
+        </div>
+      </motion.div>
 
       {/* 1. Métricas Principales (Del código Original) */}
       {isAdmin && (
@@ -406,8 +485,12 @@ export default function DashboardPage() {
       )}
 
       {/* 3. Gráficos del ecosistema (NUEVO) */}
-      <section aria-label="Gráficos del ecosistema" className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="rounded-xl border border-white/5 bg-card p-6 shadow-lg flex flex-col h-[400px]">
+      <section aria-label="Gráficos del ecosistema" className="space-y-4">
+        <div className="px-1">
+          <h2 className="text-2xl font-bold text-white tracking-tight">Estadísticas de la App</h2>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="rounded-xl border border-white/5 bg-card p-6 shadow-lg flex flex-col h-[400px]">
           <div className="mb-4">
             <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-violet-400" />
@@ -469,7 +552,9 @@ export default function DashboardPage() {
             ) : null}
           </div>
         </div>
+      </div>
       </section>
+
 
       {/* 4. Rankings de Proyectos (NUEVO) */}
       <section aria-label="Rankings de proyectos" className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -543,45 +628,15 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      {/* 5. Rewards Summary Widget */}
-      <section aria-label="Recompensas">
-        <RewardsSummaryWidget />
+
+      {/* 6. Actividad Reciente */}
+      <section aria-label="Actividad reciente" className="rounded-xl border border-white/5 bg-card p-6 shadow-lg">
+        <h2 className="text-sm font-semibold text-white mb-6 flex items-center gap-2">
+          <Clock className="w-4 h-4 text-violet-400" />
+          Actividad Reciente
+        </h2>
+        <ActivityTimeline activities={recentActivity} />
       </section>
-
-      {/* 6. Actividad y Accesos Rápidos (Del código Original) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <section aria-label="Actividad reciente" className="lg:col-span-2 rounded-xl border border-white/5 bg-card p-6 shadow-lg">
-          <h2 className="text-sm font-semibold text-white mb-6 flex items-center gap-2">
-            <Clock className="w-4 h-4 text-violet-400" />
-            Actividad Reciente
-          </h2>
-          <ActivityTimeline activities={recentActivity} />
-        </section>
-
-        <aside aria-label="Acceso rápido" className="rounded-xl border border-white/5 bg-card p-6 shadow-lg h-fit">
-          <h2 className="text-sm font-semibold text-white mb-4">Acceso Rápido</h2>
-          <div className="space-y-2">
-            <Link to="/proyectos" className="group flex items-center justify-between px-3 py-3 rounded-lg text-sm text-slate-400 hover:text-white hover:bg-white/5 transition-colors">
-              Explorar proyectos
-              <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
-            </Link>
-            <Link to="/perfil" className="group flex items-center justify-between px-3 py-3 rounded-lg text-sm text-slate-400 hover:text-white hover:bg-white/5 transition-colors">
-              Mi perfil
-              <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
-            </Link>
-            {isAdmin && (
-              <Link to="/admin/usuarios" className="group flex items-center justify-between px-3 py-3 rounded-lg text-sm text-slate-400 hover:text-white hover:bg-white/5 transition-colors">
-                Administrar usuarios
-                <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
-              </Link>
-            )}
-            <Link to="/configuracion" className="group flex items-center justify-between px-3 py-3 rounded-lg text-sm text-slate-400 hover:text-white hover:bg-white/5 transition-colors">
-              Configuración
-              <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
-            </Link>
-          </div>
-        </aside>
-      </div>
     </div>
   )
 }

@@ -6,6 +6,8 @@ import { Skeleton } from '@/components/shared/loading-skeleton'
 import { useAuthStore } from '@/stores/auth-store'
 import { AlertCircle, ShieldAlert } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { ConnectButton } from '@rainbow-me/rainbowkit'
+import { useAccount } from 'wagmi'
 
 export default function ProjectEditorPage() {
   const { id } = useParams()
@@ -13,6 +15,7 @@ export default function ProjectEditorPage() {
   const navigate = useNavigate()
   const isEdit = !!projectId
   const user = useAuthStore((s) => s.user)
+  const { isConnected, address } = useAccount()
 
   const { data: project, isLoading, isError, refetch } = useProject(projectId)
   const createProject = useCreateProject()
@@ -59,6 +62,25 @@ export default function ProjectEditorPage() {
     )
   }
 
+  const hasWallet = (user?.walletAddress && user.walletAddress.trim() !== '') || (isConnected && address)
+
+  if (!isEdit && !hasWallet) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-16 text-center">
+        <div className="w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
+          <AlertCircle className="w-8 h-8 text-amber-500" />
+        </div>
+        <h2 className="text-2xl font-semibold text-white mb-3">Billetera Requerida</h2>
+        <p className="text-slate-400 mb-8 max-w-md mx-auto">
+          Para crear un proyecto y poder recibir los fondos recaudados, necesitás conectar una billetera Web3 a tu cuenta.
+        </p>
+        <div className="flex justify-center">
+          <ConnectButton />
+        </div>
+      </div>
+    )
+  }
+
   if (isEdit && (isError || !project)) {
     return <ErrorState message="No se pudo cargar el proyecto." onRetry={() => refetch()} />
   }
@@ -76,6 +98,7 @@ export default function ProjectEditorPage() {
             cupoMaximoTokens: project.cupoMaximoTokens ?? undefined,
             valorNominalToken: project.valorNominalToken ?? undefined,
             simbolo: project.simbolo ?? '',
+            hitos: project.hitos ?? [{ titulo: '', porcentaje: 100 }],
           }}
         onSubmit={handleSubmit}
         isEdit

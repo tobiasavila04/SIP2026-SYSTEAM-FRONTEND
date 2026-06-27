@@ -50,7 +50,7 @@ export function NotificationPanel({ unreadCount = 0 }) {
   const notifications = data?.content ?? (Array.isArray(data) ? data : [])
 
   function handleClick(notification) {
-    if (!notification.leida) {
+    if (!notification.readAt) {
       markAsRead.mutate(notification.id)
     }
   }
@@ -97,13 +97,13 @@ export function NotificationPanel({ unreadCount = 0 }) {
                 onClick={() => handleClick(notification)}
                 className={cn(
                   'flex w-full items-start gap-3 border-b border-white/5 px-4 py-3 text-left transition-colors hover:bg-white/5',
-                  !notification.leida && 'bg-violet-500/5'
+                  !notification.readAt && 'bg-violet-500/5'
                 )}
               >
                 <div
                   className={cn(
                     'mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg',
-                    notification.leida
+                    notification.readAt
                       ? 'bg-slate-800 text-slate-400'
                       : 'bg-violet-500/20 text-violet-400'
                   )}
@@ -116,14 +116,14 @@ export function NotificationPanel({ unreadCount = 0 }) {
                     <span
                       className={cn(
                         'truncate text-sm',
-                        notification.leida
+                        notification.readAt
                           ? 'text-slate-400'
                           : 'font-medium text-white'
                       )}
                     >
                       {notification.title}
                     </span>
-                    {!notification.leida && (
+                    {!notification.readAt && (
                       <span className="h-2 w-2 shrink-0 rounded-full bg-violet-500" />
                     )}
                   </div>
