@@ -8,3 +8,10 @@ export function useGamification() {
     queryFn: () => apiRequest(API_ENDPOINTS.USER_GAMIFICATION),
   })
 }
+
+export function useGamificationNFTs() {
+  return useQuery({
+    queryKey: ['gamification-nfts'],
+    queryFn: () => apiRequest(`${API_ENDPOINTS.USER_GAMIFICATION}/nfts`),
+  })
+}

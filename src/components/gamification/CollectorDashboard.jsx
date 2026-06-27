@@ -1,11 +1,12 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Trophy, Users, Building, Globe, Shield, Star, Crown, Zap, Loader2 } from 'lucide-react';
-import { useGamification } from '@/hooks/use-gamification';
+import { useGamification, useGamificationNFTs } from '@/hooks/use-gamification';
 import { useWalletSummary } from '@/hooks/use-wallet';
 
 export function CollectorDashboard() {
   const { data, isLoading } = useGamification();
+  const { data: nftsData, isLoading: nftsLoading } = useGamificationNFTs();
   const { data: walletData, isLoading: walletLoading } = useWalletSummary();
   
   const userLevel = data?.nivel_inversor || 'STARTER';
@@ -17,6 +18,50 @@ export function CollectorDashboard() {
   // Dynamic unlocked state based on synced level for presentation
   const isPartnerOrHigher = ['PARTNER', 'VISIONARY'].includes(userLevel);
   const isInvestorOrHigher = ['INVESTOR', 'PARTNER', 'VISIONARY'].includes(userLevel);
+
+  const REAL_NFTS = (nftsData || []).map((nft, index) => {
+    // Determine colors/icons based on rarityName
+    let glow = '';
+    let color = '';
+    let textColors = '';
+    let IconComponent = Shield;
+
+    switch (nft.rarityName) {
+      case 'Legendario':
+        color = 'from-[#fbbf24] to-[#ea580c]';
+        textColors = 'text-amber-300';
+        IconComponent = Crown;
+        glow = 'shadow-[0_0_20px_rgba(251,191,36,0.3)]';
+        break;
+      case 'Epic': // Épico
+        color = 'from-[#d946ef] to-[#7e22ce]';
+        textColors = 'text-fuchsia-300';
+        IconComponent = Star;
+        glow = 'shadow-[0_0_20px_rgba(217,70,239,0.3)]';
+        break;
+      case 'Rare': // Raro
+        color = 'from-[#67e8f9] via-[#3b82f6] to-[#4f46e5]';
+        textColors = 'text-cyan-300';
+        IconComponent = Zap;
+        glow = 'shadow-[0_0_20px_rgba(59,130,246,0.3)]';
+        break;
+      default: // Common
+        color = 'from-[#10b981] to-[#047857]';
+        textColors = 'text-emerald-300';
+        IconComponent = Shield;
+        break;
+    }
+
+    return {
+      id: nft.id.toString(),
+      name: nft.rarityName,
+      color,
+      text: textColors,
+      icon: IconComponent,
+      glow,
+      date: new Date(Number(nft.timestamp) * 1000).toLocaleDateString()
+    };
+  });
 
   const SET_BONUSES = [
     {
@@ -69,36 +114,13 @@ export function CollectorDashboard() {
     }
   ];
 
-  const REAL_NFTS = portfolio.map((item, index) => {
-    const colors = [
-      'from-[#64748b] to-[#334155]',
-      'from-[#fbbf24] to-[#ea580c]',
-      'from-[#d946ef] to-[#7e22ce]',
-      'from-[#67e8f9] via-[#3b82f6] to-[#4f46e5]',
-      'from-[#10b981] to-[#047857]'
-    ];
-    const textColors = [
-      'text-slate-300', 'text-amber-300', 'text-fuchsia-300', 'text-cyan-300', 'text-emerald-300'
-    ];
-    const icons = [Shield, Star, Trophy, Crown, Zap];
-    const rarities = ['Comun', 'Raro', 'Epico', 'Legendario', 'Exclusivo'];
 
-    const cIdx = index % colors.length;
-    let rIdx = 0;
-    if (item.cantidad >= 1000) rIdx = 1;
-    if (item.cantidad >= 5000) rIdx = 2;
-    if (item.cantidad >= 10000) rIdx = 3;
-    if (item.cantidad >= 50000) rIdx = 4;
-    
-    return {
-      id: index,
-      rarity: rarities[rIdx],
-      projectName: item.proyectoNombre,
-      icon: icons[rIdx],
-      color: colors[cIdx],
-      text: textColors[cIdx]
-    };
-  });
+
+  if (isLoading || walletLoading || nftsLoading) {
+    return <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-[#030712] text-white">
+      <Loader2 className="w-10 h-10 animate-spin text-indigo-500" />
+    </div>;
+  }
 
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-[#030712] text-white p-8 font-sans">
@@ -237,14 +259,18 @@ export function CollectorDashboard() {
                   </div>
                   
                   <div className="w-full flex flex-col items-center gap-2 mb-2">
-                    <div className="px-3 py-1 bg-black/40 rounded-full border border-white/10 backdrop-blur-md">
-                      <span className={`text-[10px] font-black uppercase tracking-widest ${nft.text}`}>
-                        {nft.rarity}
-                      </span>
+                    {/* Rarity */}
+                    <div className="mt-4 w-full">
+                      <div className="text-[10px] uppercase tracking-widest text-white/40 mb-1 font-semibold text-center">
+                        Rarity Level
+                      </div>
+                      <div className={`text-sm font-bold text-center tracking-wide ${nft.text}`}>
+                        {nft.name}
+                      </div>
+                      <div className="text-[10px] text-white/30 text-center mt-2">
+                        Minted: {nft.date}
+                      </div>
                     </div>
-                    <span className="text-sm text-center font-bold text-white leading-tight mt-2">
-                      {nft.projectName}
-                    </span>
                     <span className="text-[9px] text-[#64748b] text-center px-2 mt-1 leading-snug border-t border-white/5 pt-2">
                       Coleccioná más NFTs de este creador para activar recompensas.
                     </span>

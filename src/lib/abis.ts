@@ -205,3 +205,37 @@ export const OFFERING_ABI = [
   }
 ] as const
 
+export const IDEA_SWAP_ABI = [
+  {
+    type: 'function',
+    name: 'getAmountsOut',
+    stateMutability: 'view',
+    inputs: [
+      { name: 'amountIn', type: 'uint256' },
+      { name: 'ideaToUsdc', type: 'bool' }
+    ],
+    outputs: [
+      { name: 'amountOut', type: 'uint256' },
+      { name: 'fee', type: 'uint256' }
+    ],
+  },
+  {
+    type: 'function',
+    name: 'swapIdeaForExactUsdc',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'usdcOut', type: 'uint256' }
+    ],
+    outputs: [],
+  },
+  {
+    type: 'function',
+    name: 'swapUsdcForExactIdea',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'ideaOut', type: 'uint256' }
+    ],
+    outputs: [],
+  }
+] as const
+

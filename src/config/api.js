@@ -42,6 +42,7 @@ export const API_ENDPOINTS = {
   USER_BY_ID: (id) => buildUrl(`/api/users/${id}`),
   USERS_SEARCH: buildUrl("/api/users/search"),
   USER_GAMIFICATION: buildProjectUrl("/api/dashboard/gamification"),
+  WALLET_RECORD_SWAP: buildProjectUrl("/api/wallet/swap"),
   USER_ROLE: (userId, roleId) =>
     buildUrl(`/api/users/${userId}/roles/${roleId}`),
 
