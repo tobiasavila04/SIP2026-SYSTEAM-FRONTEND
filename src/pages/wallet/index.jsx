@@ -15,7 +15,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { TransferModal } from "@/components/features/wallet/transfer-modal";
+import { SwapModal } from "@/components/features/wallet/swap-modal";
 import { formatCurrency } from "@/lib/utils";
+import { useAccount, useReadContract } from "wagmi";
+import { ERC20_ABI } from "@/lib/abis";
+import { formatUnits } from "viem";
 import {
   Wallet,
   Coins,
@@ -27,11 +31,33 @@ import {
   History,
   Receipt,
   Send,
+  ArrowDownUp,
 } from "lucide-react";
 
 export default function WalletPage() {
+  const { address } = useAccount();
+  const ideaAddress = import.meta.env.VITE_IDEA_TOKEN_ADDRESS;
+  const usdcAddress = import.meta.env.VITE_USDC_TOKEN_ADDRESS || import.meta.env.VITE_BLOCKCHAIN_USDC_ADDRESS;
+
+  const { data: realIdeaBalance } = useReadContract({
+    address: ideaAddress,
+    abi: ERC20_ABI,
+    functionName: 'balanceOf',
+    args: [address],
+    query: { enabled: !!address && !!ideaAddress, refetchInterval: 5000 }
+  });
+
+  const { data: realUsdcBalance } = useReadContract({
+    address: usdcAddress,
+    abi: ERC20_ABI,
+    functionName: 'balanceOf',
+    args: [address],
+    query: { enabled: !!address && !!usdcAddress, refetchInterval: 5000 }
+  });
+
   const { data, isLoading, isError, refetch } = useWalletSummary();
   const [transferOpen, setTransferOpen] = useState(false);
+  const [swapOpen, setSwapOpen] = useState(false);
 
   const [inputDesde, setInputDesde] = useState("");
   const [inputHasta, setInputHasta] = useState("");
@@ -69,13 +95,16 @@ export default function WalletPage() {
 
   const balances = data?.balances ?? {};
   const portfolio = data?.portfolio ?? [];
-  const saldoIdea = Number(balances.idea ?? 0);
-  const saldoUsdt = Number(balances.usdt ?? 0);
+  
+  // Usar balance real de la blockchain si está disponible, sino usar el de la base de datos
+  const saldoIdea = realIdeaBalance ? Number(formatUnits(realIdeaBalance, 18)) : Number(balances.idea ?? 0);
+  const saldoUsdc = realUsdcBalance ? Number(formatUnits(realUsdcBalance, 18)) : Number(balances.usdc ?? balances.usdt ?? 0);
+  
   const valorPortfolio = portfolio.reduce(
     (acc, p) => acc + Number(p.cantidad) * Number(p.precioActual ?? 0),
     0,
   );
-  const total = saldoIdea + saldoUsdt + valorPortfolio;
+  const total = saldoIdea + saldoUsdc + valorPortfolio;
 
   const handleAplicar = () => {
     setQueryDesde(inputDesde ? `${inputDesde}T00:00:00` : null);
@@ -121,6 +150,10 @@ export default function WalletPage() {
     VENTA: {
       label: "Venta",
       classes: "bg-sky-500/10 text-sky-400 border border-sky-500/20",
+    },
+    SWAP: {
+      label: "Swap",
+      classes: "bg-fuchsia-500/10 text-fuchsia-400 border border-fuchsia-500/20",
     },
     TRANSFERENCIA_ENVIADA: {
       label: "Transferencia enviada",
@@ -169,13 +202,22 @@ export default function WalletPage() {
         title="Mi Billetera"
         description="Resumen de tu saldo y portfolio de subtokens"
       >
-        <Button
-          onClick={() => setTransferOpen(true)}
-          className="bg-violet-600 hover:bg-violet-500 text-white font-medium shadow-md shadow-violet-600/10 cursor-pointer"
-        >
-          <Send className="w-4 h-4 mr-2" />
-          Transferir $IDEA
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={() => setSwapOpen(true)}
+            className="bg-emerald-600 hover:bg-emerald-500 text-white font-medium shadow-md shadow-emerald-600/10 cursor-pointer"
+          >
+            <ArrowDownUp className="w-4 h-4 mr-2 text-white" />
+            Swap USDC
+          </Button>
+          <Button
+            onClick={() => setTransferOpen(true)}
+            className="bg-violet-600 hover:bg-violet-500 text-white font-medium shadow-md shadow-violet-600/10 cursor-pointer"
+          >
+            <Send className="w-4 h-4 mr-2" />
+            Transferir $IDEA
+          </Button>
+        </div>
       </PageHeader>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -188,8 +230,8 @@ export default function WalletPage() {
         />
         <BalanceCard
           icon={TrendingUp}
-          label="USDT"
-          value={`${saldoUsdt.toLocaleString()} USDT`}
+          label="USDC"
+          value={`${saldoUsdc.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDC`}
           sub="Stablecoin"
           accent="emerald"
         />
@@ -410,18 +452,23 @@ export default function WalletPage() {
                           {item.descripcion || "—"}
                         </td>
                         <td className="px-4 py-3 text-right font-medium text-white">
-                          {item.monto !== null && item.monto !== undefined ? (
-                            <span className="text-violet-300 font-mono">
-                              {item.monto.toLocaleString()} $IDEA
-                            </span>
-                          ) : item.cantidad !== null &&
-                            item.cantidad !== undefined ? (
-                            <span className="text-slate-300">
-                              {item.cantidad.toLocaleString()} tokens
-                            </span>
-                          ) : (
-                            <span className="text-slate-500">—</span>
-                          )}
+                            {item.tipo === 'SWAP' ? (
+                              <div className="flex flex-col items-end leading-tight">
+                                <span className="text-emerald-400 font-mono">+{item.monto.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 4})} USDC</span>
+                                <span className="text-xs text-slate-400 mt-0.5">-{item.cantidad.toLocaleString()} $IDEA</span>
+                              </div>
+                            ) : item.monto !== null && item.monto !== undefined ? (
+                              <span className="text-violet-300 font-mono">
+                                {item.monto.toLocaleString()} $IDEA
+                              </span>
+                            ) : item.cantidad !== null &&
+                              item.cantidad !== undefined ? (
+                              <span className="text-slate-300">
+                                {item.cantidad.toLocaleString()} tokens
+                              </span>
+                            ) : (
+                              <span className="text-slate-500">—</span>
+                            )}
                         </td>
                         <td className="px-4 py-3 text-center">
                           {item.txHash ? (
@@ -446,7 +493,21 @@ export default function WalletPage() {
           </div>
         )}
       </div>
-      <TransferModal open={transferOpen} onOpenChange={setTransferOpen} />
+      <TransferModal
+        open={transferOpen}
+        onOpenChange={(v) => {
+          setTransferOpen(v);
+          if (!v) refetch();
+        }}
+      />
+      
+      <SwapModal
+        open={swapOpen}
+        onOpenChange={(v) => {
+          setSwapOpen(v);
+          if (!v) refetch();
+        }}
+      />
     </motion.div>
   );
 }
